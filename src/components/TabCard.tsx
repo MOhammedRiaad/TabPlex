@@ -14,10 +14,17 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
   const [editUrl, setEditUrl] = useState(tab.url);
   
   const updateTab = useBoardStore(state => state.updateTab);
+  const deleteTab = useBoardStore(state => state.deleteTab);
   
   const handleTabClick = () => {
     // Open the tab in a new browser tab
     window.open(tab.url, '_blank');
+  };
+  
+  const handleDelete = () => {
+    if (window.confirm(`Are you sure you want to delete "${tab.title}"?`)) {
+      deleteTab(tab.id);
+    }
   };
   
   const handleEdit = () => {
@@ -86,6 +93,9 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
           <div className="edit-actions">
             <button onClick={handleSave}>Save</button>
             <button onClick={handleCancel}>Cancel</button>
+            <button onClick={(e) => { e.stopPropagation(); handleDelete(); }} className="delete-btn">
+              Delete
+            </button>
           </div>
         </div>
       </div>
@@ -121,6 +131,9 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
         <div className="tab-actions">
           <button className="edit-btn" onClick={(e) => { e.stopPropagation(); handleEdit(); }}>
             ✏️
+          </button>
+          <button className="delete-btn" onClick={(e) => { e.stopPropagation(); handleDelete(); }}>
+            🗑️
           </button>
         </div>
       </div>

@@ -12,22 +12,28 @@ interface BoardState {
   addBoard: (board: Omit<Board, 'createdAt' | 'updatedAt'>) => void;
   updateBoard: (id: string, updates: Partial<Omit<Board, 'id' | 'createdAt'>>) => void;
   deleteBoard: (id: string) => void;
+  deleteBoardSilently: (id: string) => void;
   addFolder: (folder: Omit<Folder, 'createdAt'>) => void;
   updateFolder: (id: string, updates: Partial<Omit<Folder, 'id' | 'createdAt'>>) => void;
   deleteFolder: (id: string) => void;
+  deleteFolderSilently: (id: string) => void;
   addTab: (tab: Omit<Tab, 'createdAt'>) => void;
   updateTab: (id: string, updates: Partial<Omit<Tab, 'id' | 'createdAt'>>) => void;
   deleteTab: (id: string) => void;
+  deleteTabSilently: (id: string) => void;
   moveTab: (tabId: string, newFolderId: string) => void;
   addTask: (task: Omit<Task, 'createdAt' | 'updatedAt'>) => void;
   updateTask: (id: string, updates: Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>>) => void;
   deleteTask: (id: string) => void;
+  deleteTaskSilently: (id: string) => void;
   addNote: (note: Omit<Note, 'createdAt' | 'updatedAt'>) => void;
   updateNote: (id: string, updates: Partial<Omit<Note, 'id' | 'createdAt' | 'updatedAt'>>) => void;
   deleteNote: (id: string) => void;
+  deleteNoteSilently: (id: string) => void;
   addSession: (session: Omit<Session, 'createdAt'>) => void;
   updateSession: (id: string, updates: Partial<Omit<Session, 'id' | 'createdAt'>>) => void;
   deleteSession: (id: string) => void;
+  deleteSessionSilently: (id: string) => void;
   addHistory: (history: Omit<HistoryItem, 'createdAt'>) => void;
   updateHistory: (id: string, updates: Partial<Omit<HistoryItem, 'id' | 'createdAt'>>) => void;
   deleteHistory: (id: string) => void;
@@ -141,9 +147,43 @@ export const useBoardStore = create<BoardState>((set) => ({
     )
   })),
   
-  deleteBoard: (id) => set((state) => ({
-    boards: state.boards.filter(board => board.id !== id)
-  })),
+  deleteBoard: (id) => {
+    // Update local state immediately
+    set((state) => ({
+      boards: state.boards.filter(board => board.id !== id)
+    }));
+    
+    // Delete from IndexedDB
+    import('../utils/storage').then(({ deleteBoard: deleteBoardFromIndexedDB }) => {
+      deleteBoardFromIndexedDB(id).catch(error => {
+        console.error('Error deleting board from IndexedDB:', error);
+      });
+    });
+    
+    // Send message to background script to delete from chrome.storage.local
+    chrome.runtime.sendMessage({
+      type: 'DELETE_BOARD',
+      payload: { id }
+    }).catch(error => {
+      console.error('Error deleting board from storage:', error);
+    });
+  },
+  
+  // Internal function to delete board without sending message to background
+  // Used when receiving delete message from background to avoid loop
+  deleteBoardSilently: (id) => {
+    // Update local state
+    set((state) => ({
+      boards: state.boards.filter(board => board.id !== id)
+    }));
+    
+    // Delete from IndexedDB
+    import('../utils/storage').then(({ deleteBoard: deleteBoardFromIndexedDB }) => {
+      deleteBoardFromIndexedDB(id).catch(error => {
+        console.error('Error deleting board from IndexedDB:', error);
+      });
+    });
+  },
   
   addFolder: (folder) => set((state) => ({
     folders: [
@@ -163,11 +203,47 @@ export const useBoardStore = create<BoardState>((set) => ({
     )
   })),
   
-  deleteFolder: (id) => set((state) => ({
-    folders: state.folders.filter(folder => folder.id !== id),
-    // Also remove tabs in this folder
-    tabs: state.tabs.filter(tab => tab.folderId !== id)
-  })),
+  deleteFolder: (id) => {
+    // Update local state immediately
+    set((state) => ({
+      folders: state.folders.filter(folder => folder.id !== id),
+      // Also remove tabs in this folder
+      tabs: state.tabs.filter(tab => tab.folderId !== id)
+    }));
+    
+    // Delete from IndexedDB
+    import('../utils/storage').then(({ deleteFolder: deleteFolderFromIndexedDB }) => {
+      deleteFolderFromIndexedDB(id).catch(error => {
+        console.error('Error deleting folder from IndexedDB:', error);
+      });
+    });
+    
+    // Send message to background script to delete from chrome.storage.local
+    chrome.runtime.sendMessage({
+      type: 'DELETE_FOLDER',
+      payload: { id }
+    }).catch(error => {
+      console.error('Error deleting folder from storage:', error);
+    });
+  },
+  
+  // Internal function to delete folder without sending message to background
+  // Used when receiving delete message from background to avoid loop
+  deleteFolderSilently: (id) => {
+    // Update local state
+    set((state) => ({
+      folders: state.folders.filter(folder => folder.id !== id),
+      // Also remove tabs in this folder
+      tabs: state.tabs.filter(tab => tab.folderId !== id)
+    }));
+    
+    // Delete from IndexedDB
+    import('../utils/storage').then(({ deleteFolder: deleteFolderFromIndexedDB }) => {
+      deleteFolderFromIndexedDB(id).catch(error => {
+        console.error('Error deleting folder from IndexedDB:', error);
+      });
+    });
+  },
   
   addTab: (tab) => set((state) => ({
     tabs: [
@@ -187,9 +263,46 @@ export const useBoardStore = create<BoardState>((set) => ({
     )
   })),
   
-  deleteTab: (id) => set((state) => ({
-    tabs: state.tabs.filter(tab => tab.id !== id)
-  })),
+  deleteTab: (id) => {
+    // Update local state immediately
+    set((state) => ({
+      tabs: state.tabs.filter(tab => tab.id !== id)
+    }));
+    
+    // Delete from IndexedDB
+    import('../utils/storage').then(({ deleteTab: deleteTabFromIndexedDB }) => {
+      deleteTabFromIndexedDB(id).catch(error => {
+        console.error('Error deleting tab from IndexedDB:', error);
+      });
+    });
+    
+    // Send message to background script to delete from chrome.storage.local
+    chrome.runtime.sendMessage({
+      type: 'DELETE_TAB',
+      payload: { id }
+    }).catch(error => {
+      console.error('Error deleting tab from storage:', error);
+      // If deletion failed, we might want to revert the UI change
+      // For now, we'll just log the error
+    });
+  },
+  
+  // Internal function to delete tab without sending message to background
+  // Used when receiving delete message from background to avoid loop
+  deleteTabSilently: (id) => {
+    // Update local state
+    set((state) => ({
+      tabs: state.tabs.filter(tab => tab.id !== id)
+    }));
+    
+    // Delete from IndexedDB
+    import('../utils/storage').then(({ deleteTab: deleteTabFromIndexedDB }) => {
+      deleteTabFromIndexedDB(id).catch(error => {
+        console.error('Error deleting tab from IndexedDB:', error);
+      });
+    });
+  },
+
   
   moveTab: (tabId, newFolderId) => set((state) => ({
     tabs: state.tabs.map(tab => 
@@ -218,9 +331,43 @@ export const useBoardStore = create<BoardState>((set) => ({
     )
   })),
   
-  deleteTask: (id) => set((state) => ({
-    tasks: state.tasks.filter(task => task.id !== id)
-  })),
+  deleteTask: (id) => {
+    // Update local state immediately
+    set((state) => ({
+      tasks: state.tasks.filter(task => task.id !== id)
+    }));
+    
+    // Delete from IndexedDB
+    import('../utils/storage').then(({ deleteTask: deleteTaskFromIndexedDB }) => {
+      deleteTaskFromIndexedDB(id).catch(error => {
+        console.error('Error deleting task from IndexedDB:', error);
+      });
+    });
+    
+    // Send message to background script to delete from chrome.storage.local
+    chrome.runtime.sendMessage({
+      type: 'DELETE_TASK',
+      payload: { id }
+    }).catch(error => {
+      console.error('Error deleting task from storage:', error);
+    });
+  },
+  
+  // Internal function to delete task without sending message to background
+  // Used when receiving delete message from background to avoid loop
+  deleteTaskSilently: (id) => {
+    // Update local state
+    set((state) => ({
+      tasks: state.tasks.filter(task => task.id !== id)
+    }));
+    
+    // Delete from IndexedDB
+    import('../utils/storage').then(({ deleteTask: deleteTaskFromIndexedDB }) => {
+      deleteTaskFromIndexedDB(id).catch(error => {
+        console.error('Error deleting task from IndexedDB:', error);
+      });
+    });
+  },
   
   addNote: (note) => set((state) => ({
     notes: [
@@ -241,9 +388,43 @@ export const useBoardStore = create<BoardState>((set) => ({
     )
   })),
   
-  deleteNote: (id) => set((state) => ({
-    notes: state.notes.filter(note => note.id !== id)
-  })),
+  deleteNote: (id) => {
+    // Update local state immediately
+    set((state) => ({
+      notes: state.notes.filter(note => note.id !== id)
+    }));
+    
+    // Delete from IndexedDB
+    import('../utils/storage').then(({ deleteNote: deleteNoteFromIndexedDB }) => {
+      deleteNoteFromIndexedDB(id).catch(error => {
+        console.error('Error deleting note from IndexedDB:', error);
+      });
+    });
+    
+    // Send message to background script to delete from chrome.storage.local
+    chrome.runtime.sendMessage({
+      type: 'DELETE_NOTE',
+      payload: { id }
+    }).catch(error => {
+      console.error('Error deleting note from storage:', error);
+    });
+  },
+  
+  // Internal function to delete note without sending message to background
+  // Used when receiving delete message from background to avoid loop
+  deleteNoteSilently: (id) => {
+    // Update local state
+    set((state) => ({
+      notes: state.notes.filter(note => note.id !== id)
+    }));
+    
+    // Delete from IndexedDB
+    import('../utils/storage').then(({ deleteNote: deleteNoteFromIndexedDB }) => {
+      deleteNoteFromIndexedDB(id).catch(error => {
+        console.error('Error deleting note from IndexedDB:', error);
+      });
+    });
+  },
   
   addSession: (session) => set((state) => ({
     sessions: [
@@ -263,9 +444,43 @@ export const useBoardStore = create<BoardState>((set) => ({
     )
   })),
   
-  deleteSession: (id) => set((state) => ({
-    sessions: state.sessions.filter(session => session.id !== id)
-  })),
+  deleteSession: (id) => {
+    // Update local state immediately
+    set((state) => ({
+      sessions: state.sessions.filter(session => session.id !== id)
+    }));
+    
+    // Delete from IndexedDB
+    import('../utils/storage').then(({ deleteSession: deleteSessionFromIndexedDB }) => {
+      deleteSessionFromIndexedDB(id).catch(error => {
+        console.error('Error deleting session from IndexedDB:', error);
+      });
+    });
+    
+    // Send message to background script to delete from chrome.storage.local
+    chrome.runtime.sendMessage({
+      type: 'DELETE_SESSION',
+      payload: { id }
+    }).catch(error => {
+      console.error('Error deleting session from storage:', error);
+    });
+  },
+  
+  // Internal function to delete session without sending message to background
+  // Used when receiving delete message from background to avoid loop
+  deleteSessionSilently: (id) => {
+    // Update local state
+    set((state) => ({
+      sessions: state.sessions.filter(session => session.id !== id)
+    }));
+    
+    // Delete from IndexedDB
+    import('../utils/storage').then(({ deleteSession: deleteSessionFromIndexedDB }) => {
+      deleteSessionFromIndexedDB(id).catch(error => {
+        console.error('Error deleting session from IndexedDB:', error);
+      });
+    });
+  },
   
   fetchSessions: async () => {
     try {

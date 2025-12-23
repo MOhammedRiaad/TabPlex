@@ -5,6 +5,7 @@ import {
   getAllTabs,
   getAllFolders,
   addFolder,
+  deleteFolder,
   getAllHistory,
   addHistory,
   updateHistory,
@@ -14,7 +15,9 @@ import {
   addSession,
   updateSession,
   deleteSession,
-  getSession
+  getSession,
+  deleteTask,
+  deleteNote
 } from './storage';
 
 // Reimport the interfaces to avoid conflicts
@@ -188,6 +191,74 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
       _sendResponse({ success: true });
       break;
     
+    case 'DELETE_TAB':
+      // Delete a tab
+      if (message.payload && message.payload.id) {
+        handledAsynchronously = true;
+        let deleteTabResponseSent = false;
+        
+        deleteTab(message.payload.id).then(() => {
+          // Notify the side panel about the deletion
+          chrome.runtime.sendMessage({
+            type: 'STORAGE_TAB_DELETED',
+            payload: { id: message.payload.id }
+          });
+          
+          if (!deleteTabResponseSent) {
+            deleteTabResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!deleteTabResponseSent) {
+            deleteTabResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!deleteTabResponseSent) {
+            deleteTabResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'DELETE_FOLDER':
+      // Delete a folder
+      if (message.payload && message.payload.id) {
+        handledAsynchronously = true;
+        let deleteFolderResponseSent = false;
+        
+        deleteFolder(message.payload.id).then(() => {
+          // Notify the side panel about the deletion
+          chrome.runtime.sendMessage({
+            type: 'STORAGE_FOLDER_DELETED',
+            payload: { id: message.payload.id }
+          });
+          
+          if (!deleteFolderResponseSent) {
+            deleteFolderResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!deleteFolderResponseSent) {
+            deleteFolderResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!deleteFolderResponseSent) {
+            deleteFolderResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
     case 'GET_HISTORY':
       // Return browser history items
       handledAsynchronously = true;
@@ -290,6 +361,86 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
         setTimeout(() => {
           if (!deleteHistoryResponseSent) {
             deleteHistoryResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'DELETE_BOARD':
+      // Delete a board
+      if (message.payload && message.payload.id) {
+        handledAsynchronously = true;
+        let deleteBoardResponseSent = false;
+        
+        // For now, we'll just delete the board from storage
+        // In a real implementation, you might want to also delete associated folders/tabs
+        chrome.storage.local.get(['tabboard_boards']).then((result: any) => {
+          const boards: any[] = result['tabboard_boards'] || [];
+          const filteredBoards = boards.filter((board: any) => board.id !== message.payload.id);
+          
+          chrome.storage.local.set({ 'tabboard_boards': filteredBoards }).then(() => {
+            // Notify the side panel about the deletion
+            chrome.runtime.sendMessage({
+              type: 'STORAGE_BOARD_DELETED',
+              payload: { id: message.payload.id }
+            });
+            
+            if (!deleteBoardResponseSent) {
+              deleteBoardResponseSent = true;
+              _sendResponse({ success: true });
+            }
+          }).catch(error => {
+            if (!deleteBoardResponseSent) {
+              deleteBoardResponseSent = true;
+              _sendResponse({ error: error.message });
+            }
+          });
+        }).catch(error => {
+          if (!deleteBoardResponseSent) {
+            deleteBoardResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!deleteBoardResponseSent) {
+            deleteBoardResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'DELETE_TASK':
+      // Delete a task
+      if (message.payload && message.payload.id) {
+        handledAsynchronously = true;
+        let deleteTaskResponseSent = false;
+        
+        deleteTask(message.payload.id).then(() => {
+          // Notify the side panel about the deletion
+          chrome.runtime.sendMessage({
+            type: 'STORAGE_TASK_DELETED',
+            payload: { id: message.payload.id }
+          });
+          
+          if (!deleteTaskResponseSent) {
+            deleteTaskResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!deleteTaskResponseSent) {
+            deleteTaskResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!deleteTaskResponseSent) {
+            deleteTaskResponseSent = true;
           }
         }, 1000);
         
@@ -456,6 +607,40 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
         setTimeout(() => {
           if (!deleteSessionResponseSent) {
             deleteSessionResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'DELETE_NOTE':
+      // Delete a note
+      if (message.payload && message.payload.id) {
+        handledAsynchronously = true;
+        let deleteNoteResponseSent = false;
+        
+        deleteNote(message.payload.id).then(() => {
+          // Notify the side panel about the deletion
+          chrome.runtime.sendMessage({
+            type: 'STORAGE_NOTE_DELETED',
+            payload: { id: message.payload.id }
+          });
+          
+          if (!deleteNoteResponseSent) {
+            deleteNoteResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!deleteNoteResponseSent) {
+            deleteNoteResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!deleteNoteResponseSent) {
+            deleteNoteResponseSent = true;
           }
         }, 1000);
         

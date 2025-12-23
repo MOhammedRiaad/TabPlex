@@ -40,7 +40,9 @@
 }
 
 .tab-card.dragging {
-  opacity: 0.5;
+  opacity: 0.8;
+  z-index: 1000;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
 }
 
 .tab-card:hover {
@@ -126,6 +128,20 @@
 
 .edit-btn:hover {
   background-color: #f3f4f6;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.125rem;
+  border-radius: 0.25rem;
+}
+
+.delete-btn:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
 }
 
 .tab-edit {

@@ -75,6 +75,76 @@
   min-height: 200px;
 }
 
+.notes-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.notes-header {
+  margin: 0 0 1rem 0;
+  padding: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.note-count {
+  background-color: #10b981;
+  color: white;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.note-card {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+}
+
+.note-content {
+  margin-bottom: 0.5rem;
+}
+
+.note-text {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.note-markdown {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.note-meta {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: right;
+}
+
+.no-notes {
+  margin: 0;
+  font-style: italic;
+  color: #9ca3af;
+  text-align: center;
+  padding: 1rem;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .tasks-container {

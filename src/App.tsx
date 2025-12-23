@@ -3,6 +3,7 @@ import { useState } from 'react';
 import BoardView from './components/BoardView';
 import HistoryView from './components/HistoryView';
 import SessionsView from './components/SessionsView';
+import TodayView from './components/TodayView';
 import { useStorageSync } from './hooks/useStorageSync';
 import './App.css';
 import './components/HistoryView.css';
@@ -11,7 +12,7 @@ import './components/SessionsView.css';
 function App() {
   useStorageSync(); // Initialize storage sync
   
-  const [activeView, setActiveView] = useState<'board' | 'history' | 'sessions'>('board');
+  const [activeView, setActiveView] = useState<'board' | 'history' | 'sessions' | 'today'>('today');
   
   return (
     <div className="app">
@@ -36,12 +37,19 @@ function App() {
           >
             Sessions
           </button>
+          <button 
+            className={activeView === 'today' ? 'nav-btn active' : 'nav-btn'}
+            onClick={() => setActiveView('today')}
+          >
+            Today
+          </button>
         </nav>
       </header>
       <main className="app-main">
         {activeView === 'board' ? <BoardView /> :
          activeView === 'history' ? <HistoryView /> :
-         <SessionsView />}
+         activeView === 'sessions' ? <SessionsView /> :
+         <TodayView />}
       </main>
     </div>
   );

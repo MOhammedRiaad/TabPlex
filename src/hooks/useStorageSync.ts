@@ -19,7 +19,13 @@ import {
   updateTab,
   updateTask,
   updateNote,
-  updateSession
+  updateSession,
+  deleteTab,
+  deleteTask,
+  deleteNote,
+  deleteFolder,
+  deleteSession,
+  deleteBoard
 } from '../utils/storage';
 
 export const useStorageSync = () => {
@@ -41,7 +47,13 @@ export const useStorageSync = () => {
     updateTab: updateTabInStore,
     updateTask: updateTaskInStore,
     updateNote: updateNoteInStore,
-    updateSession: updateSessionInStore
+    updateSession: updateSessionInStore,
+    deleteTabSilently: deleteTabSilentlyFromStore,
+    deleteTaskSilently: deleteTaskSilentlyFromStore,
+    deleteNoteSilently: deleteNoteSilentlyFromStore,
+    deleteFolderSilently: deleteFolderSilentlyFromStore,
+    deleteSessionSilently: deleteSessionSilentlyFromStore,
+    deleteBoardSilently: deleteBoardSilentlyFromStore
   } = useBoardStore();
 
   // Load data from IndexedDB on mount
@@ -80,6 +92,17 @@ export const useStorageSync = () => {
   // Sync boards to storage
   useEffect(() => {
     const syncBoards = async () => {
+      // Get all boards currently in IndexedDB
+      const indexedDBBoards = await getAllBoards();
+      
+      // Delete boards that exist in IndexedDB but not in the store
+      for (const indexedDBBoard of indexedDBBoards) {
+        if (!boards.some(board => board.id === indexedDBBoard.id)) {
+          await deleteBoard(indexedDBBoard.id);
+        }
+      }
+      
+      // Update/add boards that exist in the store
       for (const board of boards) {
         try {
           await updateBoard(board);
@@ -95,6 +118,17 @@ export const useStorageSync = () => {
   // Sync folders to storage
   useEffect(() => {
     const syncFolders = async () => {
+      // Get all folders currently in IndexedDB
+      const indexedDBFolders = await getAllFolders();
+      
+      // Delete folders that exist in IndexedDB but not in the store
+      for (const indexedDBFolder of indexedDBFolders) {
+        if (!folders.some(folder => folder.id === indexedDBFolder.id)) {
+          await deleteFolder(indexedDBFolder.id);
+        }
+      }
+      
+      // Update/add folders that exist in the store
       for (const folder of folders) {
         try {
           await updateFolder(folder);
@@ -110,6 +144,17 @@ export const useStorageSync = () => {
   // Sync tabs to storage
   useEffect(() => {
     const syncTabs = async () => {
+      // Get all tabs currently in IndexedDB
+      const indexedDBTabs = await getAllTabs();
+      
+      // Delete tabs that exist in IndexedDB but not in the store
+      for (const indexedDBTab of indexedDBTabs) {
+        if (!tabs.some(tab => tab.id === indexedDBTab.id)) {
+          await deleteTab(indexedDBTab.id);
+        }
+      }
+      
+      // Update/add tabs that exist in the store
       for (const tab of tabs) {
         try {
           await updateTab(tab);
@@ -125,6 +170,17 @@ export const useStorageSync = () => {
   // Sync tasks to storage
   useEffect(() => {
     const syncTasks = async () => {
+      // Get all tasks currently in IndexedDB
+      const indexedDBTasks = await getAllTasks();
+      
+      // Delete tasks that exist in IndexedDB but not in the store
+      for (const indexedDBTask of indexedDBTasks) {
+        if (!tasks.some(task => task.id === indexedDBTask.id)) {
+          await deleteTask(indexedDBTask.id);
+        }
+      }
+      
+      // Update/add tasks that exist in the store
       for (const task of tasks) {
         try {
           await updateTask(task);
@@ -140,6 +196,17 @@ export const useStorageSync = () => {
   // Sync notes to storage
   useEffect(() => {
     const syncNotes = async () => {
+      // Get all notes currently in IndexedDB
+      const indexedDBNotes = await getAllNotes();
+      
+      // Delete notes that exist in IndexedDB but not in the store
+      for (const indexedDBNote of indexedDBNotes) {
+        if (!notes.some(note => note.id === indexedDBNote.id)) {
+          await deleteNote(indexedDBNote.id);
+        }
+      }
+      
+      // Update/add notes that exist in the store
       for (const note of notes) {
         try {
           await updateNote(note);
@@ -155,6 +222,17 @@ export const useStorageSync = () => {
   // Sync sessions to storage
   useEffect(() => {
     const syncSessions = async () => {
+      // Get all sessions currently in IndexedDB
+      const indexedDBSessions = await getAllSessions();
+      
+      // Delete sessions that exist in IndexedDB but not in the store
+      for (const indexedDBSession of indexedDBSessions) {
+        if (!sessions.some(session => session.id === indexedDBSession.id)) {
+          await deleteSession(indexedDBSession.id);
+        }
+      }
+      
+      // Update/add sessions that exist in the store
       for (const session of sessions) {
         try {
           await updateSession(session);
@@ -178,6 +256,10 @@ export const useStorageSync = () => {
           case 'STORAGE_BOARD_UPDATED':
             updateBoardInStore(event.data.payload.id, event.data.payload);
             break;
+          
+          case 'STORAGE_BOARD_DELETED':
+            deleteBoardSilentlyFromStore(event.data.payload.id);
+            break;
 
           case 'STORAGE_FOLDER_ADDED':
             addFolderToStore(event.data.payload);
@@ -191,6 +273,9 @@ export const useStorageSync = () => {
             break;
           case 'STORAGE_TAB_UPDATED':
             updateTabInStore(event.data.payload.id, event.data.payload);
+            break;
+          case 'STORAGE_TAB_DELETED':
+            deleteTabSilentlyFromStore(event.data.payload.id);
             break;
 
           case 'STORAGE_TASK_ADDED':
@@ -212,6 +297,22 @@ export const useStorageSync = () => {
             break;
           case 'STORAGE_SESSION_UPDATED':
             updateSessionInStore(event.data.payload.id, event.data.payload);
+            break;
+          
+          case 'STORAGE_TASK_DELETED':
+            deleteTaskSilentlyFromStore(event.data.payload.id);
+            break;
+          
+          case 'STORAGE_NOTE_DELETED':
+            deleteNoteSilentlyFromStore(event.data.payload.id);
+            break;
+          
+          case 'STORAGE_FOLDER_DELETED':
+            deleteFolderSilentlyFromStore(event.data.payload.id);
+            break;
+          
+          case 'STORAGE_SESSION_DELETED':
+            deleteSessionSilentlyFromStore(event.data.payload.id);
             break;
 
         }
