@@ -80,6 +80,16 @@ interface Session {
   createdAt: string;
 }
 
+interface HistoryItem {
+  id: string;
+  url: string;
+  title: string;
+  lastVisitTime?: number;
+  visitCount?: number;
+  typedCount?: number;
+  favicon?: string;
+}
+
 // Generic storage functions
 async function getAllItems<T>(key: string): Promise<T[]> {
   const result = await chrome.storage.local.get([key]);
@@ -235,6 +245,29 @@ export async function updateSession(session: Session): Promise<void> {
 
 export async function deleteSession(id: string): Promise<void> {
   await deleteItem(SESSIONS_KEY, id);
+}
+
+// History functions
+const HISTORY_KEY = 'history_items';
+
+export async function getAllHistory(): Promise<HistoryItem[]> {
+  return await getAllItems<HistoryItem>(HISTORY_KEY);
+}
+
+export async function getHistory(id: string): Promise<HistoryItem | undefined> {
+  return await getItemById<HistoryItem>(HISTORY_KEY, id);
+}
+
+export async function addHistory(history: HistoryItem): Promise<void> {
+  await addItem<HistoryItem>(HISTORY_KEY, history);
+}
+
+export async function updateHistory(history: HistoryItem): Promise<void> {
+  await updateItem<HistoryItem>(HISTORY_KEY, history);
+}
+
+export async function deleteHistory(id: string): Promise<void> {
+  await deleteItem(HISTORY_KEY, id);
 }
 
 // Bulk operations

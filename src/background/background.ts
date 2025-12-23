@@ -4,7 +4,17 @@ import {
   deleteTab,
   getAllTabs,
   getAllFolders,
-  addFolder
+  addFolder,
+  getAllHistory,
+  addHistory,
+  updateHistory,
+  deleteHistory,
+  getHistory,
+  getAllSessions,
+  addSession,
+  updateSession,
+  deleteSession,
+  getSession
 } from './storage';
 
 // Reimport the interfaces to avoid conflicts
@@ -178,6 +188,316 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
       _sendResponse({ success: true });
       break;
     
+    case 'GET_HISTORY':
+      // Return browser history items
+      handledAsynchronously = true;
+      let historyResponseSent = false;
+      
+      getAllHistory().then(history => {
+        if (!historyResponseSent) {
+          historyResponseSent = true;
+          _sendResponse(history);
+        }
+      }).catch(error => {
+        if (!historyResponseSent) {
+          historyResponseSent = true;
+          _sendResponse({ error: error.message });
+        }
+      });
+      
+      setTimeout(() => {
+        if (!historyResponseSent) {
+          historyResponseSent = true;
+        }
+      }, 1000);
+      
+      return true;
+    
+    case 'ADD_HISTORY':
+      // Add a history item
+      if (message.payload) {
+        handledAsynchronously = true;
+        let addHistoryResponseSent = false;
+        
+        addHistory(message.payload).then(() => {
+          if (!addHistoryResponseSent) {
+            addHistoryResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!addHistoryResponseSent) {
+            addHistoryResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!addHistoryResponseSent) {
+            addHistoryResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'UPDATE_HISTORY':
+      // Update a history item
+      if (message.payload) {
+        handledAsynchronously = true;
+        let updateHistoryResponseSent = false;
+        
+        updateHistory(message.payload).then(() => {
+          if (!updateHistoryResponseSent) {
+            updateHistoryResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!updateHistoryResponseSent) {
+            updateHistoryResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!updateHistoryResponseSent) {
+            updateHistoryResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'DELETE_HISTORY':
+      // Delete a history item
+      if (message.payload && message.payload.id) {
+        handledAsynchronously = true;
+        let deleteHistoryResponseSent = false;
+        
+        deleteHistory(message.payload.id).then(() => {
+          if (!deleteHistoryResponseSent) {
+            deleteHistoryResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!deleteHistoryResponseSent) {
+            deleteHistoryResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!deleteHistoryResponseSent) {
+            deleteHistoryResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'GET_HISTORY_ITEM':
+      // Get a specific history item
+      if (message.payload && message.payload.id) {
+        handledAsynchronously = true;
+        let getHistoryItemResponseSent = false;
+        
+        getHistory(message.payload.id).then(historyItem => {
+          if (!getHistoryItemResponseSent) {
+            getHistoryItemResponseSent = true;
+            _sendResponse(historyItem);
+          }
+        }).catch(error => {
+          if (!getHistoryItemResponseSent) {
+            getHistoryItemResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!getHistoryItemResponseSent) {
+            getHistoryItemResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'GET_BROWSER_HISTORY':
+      // Get actual browser history using chrome.history API
+      handledAsynchronously = true;
+      let browserHistoryResponseSent = false;
+      
+      chrome.history.search({
+        text: '',
+        startTime: Date.now() - (30 * 24 * 60 * 60 * 1000), // Last 30 days
+        maxResults: 100
+      }).then(browserHistory => {
+        if (!browserHistoryResponseSent) {
+          browserHistoryResponseSent = true;
+          _sendResponse(browserHistory);
+        }
+      }).catch(error => {
+        if (!browserHistoryResponseSent) {
+          browserHistoryResponseSent = true;
+          _sendResponse({ error: error.message });
+        }
+      });
+      
+      setTimeout(() => {
+        if (!browserHistoryResponseSent) {
+          browserHistoryResponseSent = true;
+        }
+      }, 3000); // Longer timeout for history search
+      
+      return true;
+    
+    case 'GET_SESSIONS':
+      // Return all sessions
+      handledAsynchronously = true;
+      let sessionsResponseSent = false;
+      
+      getAllSessions().then(sessions => {
+        if (!sessionsResponseSent) {
+          sessionsResponseSent = true;
+          _sendResponse(sessions);
+        }
+      }).catch(error => {
+        if (!sessionsResponseSent) {
+          sessionsResponseSent = true;
+          _sendResponse({ error: error.message });
+        }
+      });
+      
+      setTimeout(() => {
+        if (!sessionsResponseSent) {
+          sessionsResponseSent = true;
+        }
+      }, 1000);
+      
+      return true;
+    
+    case 'ADD_SESSION':
+      // Add a session
+      if (message.payload) {
+        handledAsynchronously = true;
+        let addSessionResponseSent = false;
+        
+        addSession(message.payload).then(() => {
+          if (!addSessionResponseSent) {
+            addSessionResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!addSessionResponseSent) {
+            addSessionResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!addSessionResponseSent) {
+            addSessionResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'UPDATE_SESSION':
+      // Update a session
+      if (message.payload) {
+        handledAsynchronously = true;
+        let updateSessionResponseSent = false;
+        
+        updateSession(message.payload).then(() => {
+          if (!updateSessionResponseSent) {
+            updateSessionResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!updateSessionResponseSent) {
+            updateSessionResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!updateSessionResponseSent) {
+            updateSessionResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'DELETE_SESSION':
+      // Delete a session
+      if (message.payload && message.payload.id) {
+        handledAsynchronously = true;
+        let deleteSessionResponseSent = false;
+        
+        deleteSession(message.payload.id).then(() => {
+          if (!deleteSessionResponseSent) {
+            deleteSessionResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!deleteSessionResponseSent) {
+            deleteSessionResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!deleteSessionResponseSent) {
+            deleteSessionResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'GET_SESSION':
+      // Get a specific session
+      if (message.payload && message.payload.id) {
+        handledAsynchronously = true;
+        let getSessionResponseSent = false;
+        
+        getSession(message.payload.id).then(session => {
+          if (!getSessionResponseSent) {
+            getSessionResponseSent = true;
+            _sendResponse(session);
+          }
+        }).catch(error => {
+          if (!getSessionResponseSent) {
+            getSessionResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!getSessionResponseSent) {
+            getSessionResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'SESSION_INFERENCE_COMPLETE':
+      // Handle session inference completion
+      // This message is sent from the inferSessions function
+      // We don't need to send a response for this
+      console.log('Session inference completed:', message.payload);
+      break;
+    
     default:
       _sendResponse({ error: 'Unknown message type' });
       break;
@@ -260,6 +580,53 @@ async function createTabInFolder(payload: { url: string; folderId: string }) {
     }
   });
 }
+
+// Function to infer sessions based on tab usage patterns
+async function inferSessions() {
+  try {
+    // Get all tabs from storage
+    const allTabs = await getAllTabs();
+    const now = new Date();
+    
+    // Group tabs by recency and patterns
+    // For now, let's create sessions based on tabs accessed in the last hour
+    const recentThreshold = new Date(now.getTime() - (60 * 60 * 1000)); // 1 hour ago
+    const recentTabs = allTabs.filter(tab => new Date(tab.lastAccessed) > recentThreshold);
+    
+    if (recentTabs.length > 0) {
+      // Create a session for recently accessed tabs
+      const session = {
+        id: `session_${Date.now()}`,
+        name: `Recent Activity Session - ${now.toLocaleString()}`,
+        tabIds: recentTabs.map(tab => tab.id),
+        startTime: recentThreshold.toISOString(),
+        endTime: now.toISOString(),
+        createdAt: now.toISOString()
+      };
+      
+      // Add the inferred session to storage
+      await addSession(session);
+      
+      // Notify the UI about the new session
+      chrome.runtime.sendMessage({
+        type: 'SESSION_INFERENCE_COMPLETE',
+        payload: session
+      });
+    }
+  } catch (error) {
+    console.error('Error inferring sessions:', error);
+  }
+}
+
+// Set up automatic session inference periodically
+// Check for session patterns every 30 minutes
+setInterval(inferSessions, 30 * 60 * 1000); // 30 minutes
+
+// Also infer sessions when the extension starts
+chrome.runtime.onStartup.addListener(() => {
+  // Small delay to ensure everything is loaded
+  setTimeout(inferSessions, 5000); // 5 seconds after startup
+});
 
 // Listen for tab activation (switching between tabs)
 chrome.tabs.onActivated.addListener(async (activeInfo) => {

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Folder, Tab } from '../types';
+import { useBoardStore } from '../store/boardStore';
 import TabCard from './TabCard';
 import AddTabForm from './AddTabForm';
 import './FolderColumn.css';
@@ -12,7 +13,34 @@ interface FolderColumnProps {
 
 const FolderColumn: React.FC<FolderColumnProps> = ({ folder, tabs }) => {
   const { setNodeRef, isOver } = useDroppable({ id: folder.id });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(folder.name);
+  
+  const updateFolder = useBoardStore(state => state.updateFolder);
 
+  const handleEdit = () => {
+    setIsEditing(true);
+    setEditName(folder.name);
+  };
+  
+  const handleSave = () => {
+    updateFolder(folder.id, { name: editName });
+    setIsEditing(false);
+  };
+  
+  const handleCancel = () => {
+    setEditName(folder.name);
+    setIsEditing(false);
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+  
   return (
     <div 
       ref={setNodeRef} 
@@ -20,7 +48,27 @@ const FolderColumn: React.FC<FolderColumnProps> = ({ folder, tabs }) => {
       style={{ backgroundColor: folder.color + '20' }}
     >
       <div className="folder-header">
-        <h3>{folder.name}</h3>
+        {isEditing ? (
+          <div className="folder-edit">
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              autoFocus
+              className="folder-name-input"
+            />
+            <div className="folder-edit-actions">
+              <button onClick={handleSave} className="save-btn">✓</button>
+              <button onClick={handleCancel} className="cancel-btn">✕</button>
+            </div>
+          </div>
+        ) : (
+          <div className="folder-display">
+            <h3 onClick={handleEdit}>{folder.name}</h3>
+            <button onClick={handleEdit} className="edit-folder-btn">✏️</button>
+          </div>
+        )}
       </div>
       <div className="tabs-container">
         {tabs.map(tab => (

@@ -1,11 +1,46 @@
 .tab-card {
   display: flex;
+  flex-direction: column;
   gap: 0.5rem;
   padding: 0.75rem;
   background-color: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.375rem;
-  cursor: pointer;
+  cursor: default;
+}
+
+.tab-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.drag-handle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 12px;
+  height: 20px;
+  cursor: grab;
+  opacity: 0.5;
+  padding: 2px;
+  border-radius: 2px;
+  font-size: 0.5rem;
+  line-height: 0.6rem;
+}
+
+.drag-handle:hover {
+  opacity: 1;
+  background-color: #f3f4f6;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.tab-card.dragging {
+  opacity: 0.5;
 }
 
 .tab-card:hover {
@@ -22,8 +57,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .tab-icon img {

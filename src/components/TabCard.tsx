@@ -9,18 +9,11 @@ interface TabCardProps {
 }
 
 const TabCard: React.FC<TabCardProps> = ({ tab }) => {
-  const { attributes, listeners, setNodeRef, transform } = 
-    useDraggable({ id: tab.id });
-  
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(tab.title);
   const [editUrl, setEditUrl] = useState(tab.url);
   
   const updateTab = useBoardStore(state => state.updateTab);
-  
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined;
   
   const handleTabClick = () => {
     // Open the tab in a new browser tab
@@ -51,20 +44,28 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
   };
 
   if (isEditing) {
+    const { attributes, listeners, setNodeRef, transform } = 
+      useDraggable({ id: tab.id });
+    
+    const style = transform ? {
+      transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    } : undefined;
+    
     return (
       <div 
         ref={setNodeRef}
         style={style}
         className="tab-card editing"
-        {...listeners}
-        {...attributes}
       >
-        <div className="tab-icon">
-          {tab.favicon ? (
-            <img src={tab.favicon} alt="" />
-          ) : (
-            <div className="default-icon">🌐</div>
-          )}
+        <div className="tab-header" {...listeners} {...attributes}>
+          <div className="drag-handle" {...listeners} {...attributes}>⋮⋮</div>
+          <div className="tab-icon">
+            {tab.favicon ? (
+              <img src={tab.favicon} alt="" />
+            ) : (
+              <div className="default-icon">🌐</div>
+            )}
+          </div>
         </div>
         <div className="tab-edit">
           <input
@@ -91,24 +92,32 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
     );
   }
 
+  const { attributes, listeners, setNodeRef, transform } = 
+    useDraggable({ id: tab.id });
+  
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  } : undefined;
+  
   return (
     <div 
       ref={setNodeRef}
       style={style}
       className="tab-card"
-      {...listeners}
-      {...attributes}
     >
-      <div className="tab-icon" onClick={handleTabClick}>
-        {tab.favicon ? (
-          <img src={tab.favicon} alt="" />
-        ) : (
-          <div className="default-icon" onClick={handleTabClick}>🌐</div>
-        )}
+      <div className="tab-header" {...listeners} {...attributes}>
+        <div className="drag-handle" {...listeners} {...attributes}>⋮⋮</div>
+        <div className="tab-icon" onClick={handleTabClick}>
+          {tab.favicon ? (
+            <img src={tab.favicon} alt="" />
+          ) : (
+            <div className="default-icon" onClick={handleTabClick}>🌐</div>
+          )}
+        </div>
       </div>
       <div className="tab-content">
-        <h4 className="tab-title" onClick={handleTabClick}>{tab.title}</h4>
-        <p className="tab-url" onClick={handleTabClick}>{tab.url}</p>
+        <h4 className="tab-title" onClick={(e) => { e.stopPropagation(); handleTabClick(); }}>{tab.title}</h4>
+        <p className="tab-url" onClick={(e) => { e.stopPropagation(); handleTabClick(); }}>{tab.url}</p>
         <div className="tab-actions">
           <button className="edit-btn" onClick={(e) => { e.stopPropagation(); handleEdit(); }}>
             ✏️

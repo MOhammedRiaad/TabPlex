@@ -68,3 +68,14 @@ export interface Session {
   summary?: string;
   createdAt: string;
 }
+
+export interface HistoryItem {
+  id: string;
+  url: string;
+  title: string;
+  lastVisitTime?: string;
+  visitCount?: number;
+  typedCount?: number;
+  favicon?: string;
+  createdAt: string;
+}

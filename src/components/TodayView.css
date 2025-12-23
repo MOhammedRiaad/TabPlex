@@ -1,0 +1,88 @@
+.today-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.today-header {
+  padding: 1rem 0;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
+}
+
+.today-header h2 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.today-date {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.tasks-container {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+}
+
+.task-column {
+  min-width: 300px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.column-header {
+  padding: 0.75rem;
+  margin: 0;
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.status-icon {
+  margin-right: 0.5rem;
+}
+
+.task-count {
+  background-color: #d1d5db;
+  color: #374151;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.tasks-list {
+  flex: 1;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  min-height: 200px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .tasks-container {
+    flex-direction: column;
+  }
+  
+  .task-column {
+    min-width: 100%;
+    width: 100%;
+  }
+}

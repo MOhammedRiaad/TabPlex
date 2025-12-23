@@ -24,6 +24,71 @@
   font-size: 1rem;
   font-weight: 500;
   color: #374151;
+  cursor: pointer;
+}
+
+.folder-header h3:hover {
+  color: #1f2937;
+}
+
+.folder-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.edit-folder-btn {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.125rem;
+  border-radius: 0.25rem;
+  opacity: 0.6;
+}
+
+.edit-folder-btn:hover {
+  opacity: 1;
+  background-color: #f3f4f6;
+}
+
+.folder-edit {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.folder-name-input {
+  flex: 1;
+  padding: 0.125rem 0.25rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  font-size: 1rem;
+}
+
+.folder-name-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.folder-edit-actions {
+  display: flex;
+  gap: 0.125rem;
+}
+
+.save-btn, .cancel-btn {
+  padding: 0.125rem 0.25rem;
+  border: 1px solid #d1d5db;
+  background-color: white;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.save-btn:hover, .cancel-btn:hover {
+  background-color: #f3f4f6;
 }
 
 .tabs-container {

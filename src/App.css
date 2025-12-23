@@ -25,3 +25,29 @@
   overflow: auto;
   padding: 0.5rem;
 }
+
+.app-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.nav-btn {
+  background-color: #e5e7eb;
+  color: #374151;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.nav-btn:hover {
+  background-color: #d1d5db;
+}
+
+.nav-btn.active {
+  background-color: #3b82f6;
+  color: white;
+}

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Board, Folder, Tab, Task, Note, Session } from '../types';
+import { Board, Folder, Tab, Task, Note, Session, HistoryItem } from '../types';
 
 interface BoardState {
   boards: Board[];
@@ -8,6 +8,7 @@ interface BoardState {
   tasks: Task[];
   notes: Note[];
   sessions: Session[];
+  history: HistoryItem[];
   addBoard: (board: Omit<Board, 'createdAt' | 'updatedAt'>) => void;
   updateBoard: (id: string, updates: Partial<Omit<Board, 'id' | 'createdAt'>>) => void;
   deleteBoard: (id: string) => void;
@@ -27,6 +28,15 @@ interface BoardState {
   addSession: (session: Omit<Session, 'createdAt'>) => void;
   updateSession: (id: string, updates: Partial<Omit<Session, 'id' | 'createdAt'>>) => void;
   deleteSession: (id: string) => void;
+  addHistory: (history: Omit<HistoryItem, 'createdAt'>) => void;
+  updateHistory: (id: string, updates: Partial<Omit<HistoryItem, 'id' | 'createdAt'>>) => void;
+  deleteHistory: (id: string) => void;
+  fetchHistory: () => Promise<void>;
+  fetchBrowserHistory: () => Promise<chrome.history.HistoryItem[]>;
+  fetchSessions: () => Promise<void>;
+  addSessionFromBackground: (session: Omit<Session, 'createdAt'>) => Promise<void>;
+  updateSessionFromBackground: (id: string, updates: Partial<Omit<Session, 'id' | 'createdAt'>>) => Promise<void>;
+  deleteSessionFromBackground: (id: string) => Promise<void>;
 }
 
 export const useBoardStore = create<BoardState>((set) => ({
@@ -36,6 +46,7 @@ export const useBoardStore = create<BoardState>((set) => ({
   tasks: [],
   notes: [],
   sessions: [],
+  history: [],
   
   addBoard: (board) => set((state) => ({
     boards: [
@@ -47,6 +58,80 @@ export const useBoardStore = create<BoardState>((set) => ({
       }
     ]
   })),
+  
+  addHistory: (history) => set((state) => ({
+    history: [
+      ...state.history,
+      {
+        ...history,
+        createdAt: new Date().toISOString()
+      }
+    ]
+  })),
+  
+  updateHistory: (id, updates) => set((state) => ({
+    history: state.history.map(historyItem => 
+      historyItem.id === id 
+        ? { ...historyItem, ...updates } 
+        : historyItem
+    )
+  })),
+  
+  deleteHistory: (id) => set((state) => ({
+    history: state.history.filter(historyItem => historyItem.id !== id)
+  })),
+  
+  fetchHistory: async () => {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'GET_HISTORY'
+      });
+      
+      if (response && !response.error) {
+        set({ history: response });
+      }
+    } catch (error) {
+      console.error('Error fetching history:', error);
+    }
+  },
+  
+  fetchBrowserHistory: async () => {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'GET_BROWSER_HISTORY'
+      });
+      
+      if (response && !response.error) {
+        // Transform chrome.history items to our HistoryItem format
+        const transformedHistory = response.map((item: chrome.history.HistoryItem) => ({
+          id: item.id,
+          url: item.url || '',
+          title: item.title || '',
+          lastVisitTime: item.lastVisitTime ? new Date(item.lastVisitTime).toISOString() : undefined,
+          visitCount: item.visitCount,
+          typedCount: item.typedCount,
+          favicon: undefined, // Chrome history doesn't provide favicons directly
+          createdAt: new Date().toISOString()
+        }));
+        
+        set(state => ({
+          history: [
+            ...state.history,
+            ...transformedHistory.filter((newItem: HistoryItem) => 
+              !state.history.some(existingItem => existingItem.id === newItem.id)
+            )
+          ]
+        }));
+        
+        return response;
+      }
+    } catch (error) {
+      console.error('Error fetching browser history:', error);
+      throw error;
+    }
+    
+    return [];
+  },
   
   updateBoard: (id, updates) => set((state) => ({
     boards: state.boards.map(board => 
@@ -180,5 +265,77 @@ export const useBoardStore = create<BoardState>((set) => ({
   
   deleteSession: (id) => set((state) => ({
     sessions: state.sessions.filter(session => session.id !== id)
-  }))
-}));
+  })),
+  
+  fetchSessions: async () => {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'GET_SESSIONS'
+      });
+      
+      if (response && !response.error) {
+        set({ sessions: response });
+      }
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+    }
+  },
+  
+  addSessionFromBackground: async (session) => {
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'ADD_SESSION',
+        payload: session
+      });
+      
+      // Also update local state
+      set((state) => ({
+        sessions: [
+          ...state.sessions,
+          {
+            ...session,
+            createdAt: new Date().toISOString()
+          }
+        ]
+      }));
+    } catch (error) {
+      console.error('Error adding session:', error);
+    }
+  },
+  
+  updateSessionFromBackground: async (id, updates) => {
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'UPDATE_SESSION',
+        payload: { id, ...updates }
+      });
+      
+      // Also update local state
+      set((state) => ({
+        sessions: state.sessions.map(session => 
+          session.id === id 
+            ? { ...session, ...updates } 
+            : session
+        )
+      }));
+    } catch (error) {
+      console.error('Error updating session:', error);
+    }
+  },
+  
+  deleteSessionFromBackground: async (id) => {
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'DELETE_SESSION',
+        payload: { id }
+      });
+      
+      // Also update local state
+      set((state) => ({
+        sessions: state.sessions.filter(session => session.id !== id)
+      }));
+    } catch (error) {
+      console.error('Error deleting session:', error);
+    }
+  }
+}))
