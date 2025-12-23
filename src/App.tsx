@@ -19,6 +19,12 @@ function App() {
       <header className="app-header">
         <h1>TabBoard</h1>
         <nav className="app-nav">
+            <button 
+            className={activeView === 'today' ? 'nav-btn active' : 'nav-btn'}
+            onClick={() => setActiveView('today')}
+          >
+            Today
+          </button>
           <button 
             className={activeView === 'board' ? 'nav-btn active' : 'nav-btn'}
             onClick={() => setActiveView('board')}
@@ -37,12 +43,7 @@ function App() {
           >
             Sessions
           </button>
-          <button 
-            className={activeView === 'today' ? 'nav-btn active' : 'nav-btn'}
-            onClick={() => setActiveView('today')}
-          >
-            Today
-          </button>
+          
         </nav>
       </header>
       <main className="app-main">

@@ -1,7 +1,9 @@
 import React from 'react';
 import { useBoardStore } from '../store/boardStore';
 import TaskCard from './TaskCard';
+import NoteCard from './NoteCard';
 import AddTaskForm from './AddTaskForm';
+import AddNoteForm from './AddNoteForm';
 import './TodayView.css';
 
 // For now, we'll render plain text instead of markdown
@@ -71,18 +73,12 @@ const TodayView: React.FC = () => {
         <div className="notes-list">
           {todayNotes.length > 0 ? (
             todayNotes.map(note => (
-              <div key={note.id} className="note-card">
-                <div className="note-content">
-                  <p className="note-text">{note.content}</p>
-                </div>
-                <div className="note-meta">
-                  Created: {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </div>
+              <NoteCard key={note.id} note={note} />
             ))
           ) : (
             <p className="no-notes">No notes for today</p>
           )}
+          <AddNoteForm />
         </div>
       </div>
       
