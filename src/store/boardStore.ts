@@ -529,6 +529,7 @@ export const useBoardStore = create<BoardState>((set) => ({
   addSession: (session) => {
     const newSession = {
       ...session,
+      tabIds: session.tabIds || [],
       createdAt: new Date().toISOString()
     };
     
@@ -629,6 +630,7 @@ export const useBoardStore = create<BoardState>((set) => ({
           ...state.sessions,
           {
             ...session,
+            tabIds: session.tabIds || [],
             createdAt: new Date().toISOString()
           }
         ]
@@ -649,7 +651,7 @@ export const useBoardStore = create<BoardState>((set) => ({
       set((state) => ({
         sessions: state.sessions.map(session => 
           session.id === id 
-            ? { ...session, ...updates } 
+            ? { ...session, ...updates, tabIds: updates.tabIds !== undefined ? updates.tabIds : session.tabIds } 
             : session
         )
       }));

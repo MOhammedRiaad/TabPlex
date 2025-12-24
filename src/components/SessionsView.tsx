@@ -33,9 +33,37 @@ const SessionsView: React.FC = () => {
       // Get all currently open tabs in the browser
       const browserTabs = await chrome.tabs.query({ currentWindow: true, windowType: 'normal' });
       
-      // Get all our stored tabs to match with browser tabs
-      // For now, we'll just create a session with the current window's tabs
-      const tabIds = browserTabs.map(tab => `tab_${Date.now()}_${tab.id}`);
+      // Create actual tab objects and add them to the store if they don't exist
+      const { tabs, addTab } = useBoardStore.getState();
+      const tabIds = [];
+      
+      for (const browserTab of browserTabs) {
+        // Check if this tab already exists in our store
+        const existingTab = tabs.find(tab => tab.tabId === browserTab.id);
+        
+        if (existingTab) {
+          // If it exists, use the existing tab ID
+          tabIds.push(existingTab.id);
+        } else {
+          // If it doesn't exist, create a new tab entry
+          const tabId = `tab_${Date.now()}_${browserTab.id}`;
+          const newTab = {
+            id: tabId,
+            title: browserTab.title || browserTab.url || '',
+            url: browserTab.url || '',
+            favicon: browserTab.favIconUrl,
+            folderId: '', // No folder association for session tabs
+            tabId: browserTab.id || null,
+            lastAccessed: new Date().toISOString(),
+            status: 'open' as const,
+            createdAt: new Date().toISOString()
+          };
+          
+          // Add the tab to the store
+          await addTab(newTab);
+          tabIds.push(tabId);
+        }
+      }
       
       const newSession: Omit<Session, 'createdAt'> = {
         id: `session_${Date.now()}`,
@@ -123,7 +151,7 @@ const SessionsView: React.FC = () => {
               const newSession: Omit<Session, 'createdAt'> = {
                 id: `session_${Date.now()}_${domain}_${startTime.substring(0, 10)}`,
                 name: `${domain} - ${new Date(startTime).toLocaleDateString()}`,
-                tabIds: [], // Will be populated with actual tab IDs if available
+                tabIds: [], // Inferred sessions from history won't have stored tab IDs
                 startTime: startTime,
                 endTime: endTime,
                 summary: `Browsing session with ${cluster.length} related visits to ${domain}`
@@ -155,7 +183,7 @@ const SessionsView: React.FC = () => {
                 const newSession: Omit<Session, 'createdAt'> = {
                   id: `session_${Date.now()}_${domain}_recent`,
                   name: `Recently Closed: ${domain}`,
-                  tabIds: [`tab_${session.tab.windowId}_${session.tab.id}`],
+                  tabIds: [], // Recently closed tabs don't have stored tab IDs
                   startTime: new Date(session.tab.windowId ? session.tab.windowId * 1000 : Date.now()).toISOString(),
                   endTime: new Date().toISOString(),
                   summary: `Recently closed tab from ${domain}`
@@ -183,6 +211,79 @@ const SessionsView: React.FC = () => {
 
   const deleteSession = async (sessionId: string) => {
     await deleteSessionFromBackground(sessionId);
+  };
+
+  const restoreSession = async (session: Session) => {
+    try {
+      // Get all our stored tabs
+      const { tabs, addTab } = useBoardStore.getState();
+      
+      // Check if tabIds exists before filtering
+      if (!session.tabIds) {
+        alert('This session has no tabs to restore.');
+        return;
+      }
+      
+      // First, get tabs that already exist in the store
+      const existingSessionTabs = tabs.filter(tab => session.tabIds.includes(tab.id));
+      
+      // Find tab IDs that don't exist in the store
+      const missingTabIds = session.tabIds.filter(tabId => !tabs.some(tab => tab.id === tabId));
+      
+      // If there are missing tabs, try to get browser tab info to recreate them
+      let missingTabs = [];
+      if (missingTabIds.length > 0) {
+        // Extract browser tab IDs from the missing tab IDs (format: tab_timestamp_browserTabId)
+        const browserTabIds = missingTabIds.map(id => {
+          const parts = id.split('_');
+          if (parts.length >= 3) {
+            return parseInt(parts[parts.length - 1]); // Last part should be the browser tab ID
+          }
+          return null;
+        }).filter(id => id !== null);
+        
+        // Get info about these browser tabs if they're still open
+        for (const browserTabId of browserTabIds) {
+          try {
+            const browserTab = await chrome.tabs.get(browserTabId);
+            if (browserTab) {
+              const newTab = {
+                id: `tab_${Date.now()}_${browserTabId}`,
+                title: browserTab.title || browserTab.url || '',
+                url: browserTab.url || '',
+                favicon: browserTab.favIconUrl,
+                folderId: '',
+                tabId: browserTabId,
+                lastAccessed: new Date().toISOString(),
+                status: 'open' as const,
+                createdAt: new Date().toISOString()
+              };
+              
+              // Add the tab to the store
+              await addTab(newTab);
+              missingTabs.push(newTab);
+            }
+          } catch (error) {
+            console.warn(`Could not get browser tab with ID ${browserTabId}:`, error);
+            // If the browser tab doesn't exist, we can't restore it
+          }
+        }
+      }
+      
+      // Combine existing and recreated tabs
+      const allSessionTabs = [...existingSessionTabs, ...missingTabs];
+      
+      // Open each tab in the session
+      for (const tab of allSessionTabs) {
+        await chrome.tabs.create({ url: tab.url, active: false });
+      }
+      
+      console.log(`Restored ${allSessionTabs.length} tabs from session: ${session.name}`);
+      alert(`Restored ${allSessionTabs.length} tabs from session: ${session.name}`);
+    } catch (error) {
+      console.error('Error restoring session:', error);
+      alert('Error restoring session. Please try again.');
+    }
   };
 
   return (
@@ -243,6 +344,12 @@ const SessionsView: React.FC = () => {
                 <div className="session-header">
                   <h3 className="session-name">{session.name}</h3>
                   <div className="session-actions">
+                    <button 
+                      onClick={() => restoreSession(session)}
+                      className="btn-restore-session"
+                    >
+                      Restore
+                    </button>
                     {session.endTime ? (
                       <span className="session-status ended">Ended</span>
                     ) : (
@@ -272,7 +379,7 @@ const SessionsView: React.FC = () => {
                     </p>
                   )}
                   <p className="session-tab-count">
-                    <strong>Tabs:</strong> {session.tabIds.length}
+                    <strong>Tabs:</strong> {session.tabIds ? session.tabIds.length : 0}
                   </p>
                   {session.summary && (
                     <p className="session-summary">

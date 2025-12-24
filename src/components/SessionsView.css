@@ -143,9 +143,9 @@
 
 .session-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.25rem;
-  align-items: flex-end;
+  align-items: center;
 }
 
 .session-status {
@@ -182,6 +182,21 @@
 
 .btn-delete-session:hover {
   background-color: #fecaca;
+}
+
+.btn-restore-session {
+  background-color: #d9f99d;
+  color: #166534;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: background-color 0.2s;
+}
+
+.btn-restore-session:hover {
+  background-color: #b2f5a9;
 }
 
 .session-details {
