@@ -54,16 +54,36 @@ export const useBoardStore = create<BoardState>((set) => ({
   sessions: [],
   history: [],
   
-  addBoard: (board) => set((state) => ({
-    boards: [
-      ...state.boards,
-      {
-        ...board,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ]
-  })),
+  addBoard: (board) => {
+    const newBoard = {
+      ...board,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Update local state
+    set((state) => ({
+      boards: [
+        ...state.boards,
+        newBoard
+      ]
+    }));
+    
+    // Add to IndexedDB
+    import('../utils/storage').then(({ addBoard: addBoardToIndexedDB }) => {
+      addBoardToIndexedDB(newBoard).catch(error => {
+        console.error('Error adding board to IndexedDB:', error);
+      });
+    });
+    
+    // Send message to background script to add to chrome.storage.local
+    chrome.runtime.sendMessage({
+      type: 'ADD_BOARD',
+      payload: newBoard
+    }).catch(error => {
+      console.error('Error adding board to storage:', error);
+    });
+  },
   
   addHistory: (history) => set((state) => ({
     history: [
@@ -185,15 +205,35 @@ export const useBoardStore = create<BoardState>((set) => ({
     });
   },
   
-  addFolder: (folder) => set((state) => ({
-    folders: [
-      ...state.folders,
-      {
-        ...folder,
-        createdAt: new Date().toISOString()
-      }
-    ]
-  })),
+  addFolder: (folder) => {
+    const newFolder = {
+      ...folder,
+      createdAt: new Date().toISOString()
+    };
+    
+    // Update local state
+    set((state) => ({
+      folders: [
+        ...state.folders,
+        newFolder
+      ]
+    }));
+    
+    // Add to IndexedDB
+    import('../utils/storage').then(({ addFolder: addFolderToIndexedDB }) => {
+      addFolderToIndexedDB(newFolder).catch(error => {
+        console.error('Error adding folder to IndexedDB:', error);
+      });
+    });
+    
+    // Send message to background script to add to chrome.storage.local
+    chrome.runtime.sendMessage({
+      type: 'ADD_FOLDER',
+      payload: newFolder
+    }).catch(error => {
+      console.error('Error adding folder to storage:', error);
+    });
+  },
   
   updateFolder: (id, updates) => set((state) => ({
     folders: state.folders.map(folder => 
@@ -245,15 +285,35 @@ export const useBoardStore = create<BoardState>((set) => ({
     });
   },
   
-  addTab: (tab) => set((state) => ({
-    tabs: [
-      ...state.tabs,
-      {
-        ...tab,
-        createdAt: new Date().toISOString()
-      }
-    ]
-  })),
+  addTab: (tab) => {
+    const newTab = {
+      ...tab,
+      createdAt: new Date().toISOString()
+    };
+    
+    // Update local state
+    set((state) => ({
+      tabs: [
+        ...state.tabs,
+        newTab
+      ]
+    }));
+    
+    // Add to IndexedDB
+    import('../utils/storage').then(({ addTab: addTabToIndexedDB }) => {
+      addTabToIndexedDB(newTab).catch(error => {
+        console.error('Error adding tab to IndexedDB:', error);
+      });
+    });
+    
+    // Send message to background script to add to chrome.storage.local
+    chrome.runtime.sendMessage({
+      type: 'ADD_TAB',
+      payload: newTab
+    }).catch(error => {
+      console.error('Error adding tab to storage:', error);
+    });
+  },
   
   updateTab: (id, updates) => set((state) => ({
     tabs: state.tabs.map(tab => 
@@ -312,16 +372,36 @@ export const useBoardStore = create<BoardState>((set) => ({
     )
   })),
   
-  addTask: (task) => set((state) => ({
-    tasks: [
-      ...state.tasks,
-      {
-        ...task,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ]
-  })),
+  addTask: (task) => {
+    const newTask = {
+      ...task,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Update local state
+    set((state) => ({
+      tasks: [
+        ...state.tasks,
+        newTask
+      ]
+    }));
+    
+    // Add to IndexedDB
+    import('../utils/storage').then(({ addTask: addTaskToIndexedDB }) => {
+      addTaskToIndexedDB(newTask).catch(error => {
+        console.error('Error adding task to IndexedDB:', error);
+      });
+    });
+    
+    // Send message to background script to add to chrome.storage.local
+    chrome.runtime.sendMessage({
+      type: 'ADD_TASK',
+      payload: newTask
+    }).catch(error => {
+      console.error('Error adding task to storage:', error);
+    });
+  },
   
   updateTask: (id, updates) => set((state) => ({
     tasks: state.tasks.map(task => 
@@ -369,16 +449,36 @@ export const useBoardStore = create<BoardState>((set) => ({
     });
   },
   
-  addNote: (note) => set((state) => ({
-    notes: [
-      ...state.notes,
-      {
-        ...note,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ]
-  })),
+  addNote: (note) => {
+    const newNote = {
+      ...note,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Update local state
+    set((state) => ({
+      notes: [
+        ...state.notes,
+        newNote
+      ]
+    }));
+    
+    // Add to IndexedDB
+    import('../utils/storage').then(({ addNote: addNoteToIndexedDB }) => {
+      addNoteToIndexedDB(newNote).catch(error => {
+        console.error('Error adding note to IndexedDB:', error);
+      });
+    });
+    
+    // Send message to background script to add to chrome.storage.local
+    chrome.runtime.sendMessage({
+      type: 'ADD_NOTE',
+      payload: newNote
+    }).catch(error => {
+      console.error('Error adding note to storage:', error);
+    });
+  },
   
   updateNote: (id, updates) => set((state) => ({
     notes: state.notes.map(note => 
@@ -426,15 +526,35 @@ export const useBoardStore = create<BoardState>((set) => ({
     });
   },
   
-  addSession: (session) => set((state) => ({
-    sessions: [
-      ...state.sessions,
-      {
-        ...session,
-        createdAt: new Date().toISOString()
-      }
-    ]
-  })),
+  addSession: (session) => {
+    const newSession = {
+      ...session,
+      createdAt: new Date().toISOString()
+    };
+    
+    // Update local state
+    set((state) => ({
+      sessions: [
+        ...state.sessions,
+        newSession
+      ]
+    }));
+    
+    // Add to IndexedDB
+    import('../utils/storage').then(({ addSession: addSessionToIndexedDB }) => {
+      addSessionToIndexedDB(newSession).catch(error => {
+        console.error('Error adding session to IndexedDB:', error);
+      });
+    });
+    
+    // Send message to background script to add to chrome.storage.local
+    chrome.runtime.sendMessage({
+      type: 'ADD_SESSION',
+      payload: newSession
+    }).catch(error => {
+      console.error('Error adding session to storage:', error);
+    });
+  },
   
   updateSession: (id, updates) => set((state) => ({
     sessions: state.sessions.map(session => 

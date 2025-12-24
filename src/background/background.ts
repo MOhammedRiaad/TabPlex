@@ -17,7 +17,9 @@ import {
   deleteSession,
   getSession,
   deleteTask,
-  deleteNote
+  deleteNote,
+  addTask,
+  addNote
 } from './storage';
 
 // Reimport the interfaces to avoid conflicts
@@ -157,6 +159,40 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
       handleMoveTab(message.payload);
       _sendResponse({ success: true });
       break;
+    
+    case 'ADD_TAB':
+      // Add a tab
+      if (message.payload) {
+        handledAsynchronously = true;
+        let addTabResponseSent = false;
+        
+        addTab(message.payload).then(() => {
+          // Notify the side panel about the addition
+          chrome.runtime.sendMessage({
+            type: 'STORAGE_TAB_ADDED',
+            payload: message.payload
+          });
+          
+          if (!addTabResponseSent) {
+            addTabResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!addTabResponseSent) {
+            addTabResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!addTabResponseSent) {
+            addTabResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
       
     case 'GET_ACTIVE_TAB':
       // Return information about the currently active tab
@@ -189,6 +225,40 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
       // Create a new tab and associate it with a folder
       createTabInFolder(message.payload);
       _sendResponse({ success: true });
+      break;
+    
+    case 'ADD_TASK':
+      // Add a task
+      if (message.payload) {
+        handledAsynchronously = true;
+        let addTaskResponseSent = false;
+        
+        addTask(message.payload).then(() => {
+          // Notify the side panel about the addition
+          chrome.runtime.sendMessage({
+            type: 'STORAGE_TASK_ADDED',
+            payload: message.payload
+          });
+          
+          if (!addTaskResponseSent) {
+            addTaskResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!addTaskResponseSent) {
+            addTaskResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!addTaskResponseSent) {
+            addTaskResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
       break;
     
     case 'DELETE_TAB':
@@ -340,6 +410,40 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
       }
       break;
     
+    case 'ADD_FOLDER':
+      // Add a folder
+      if (message.payload) {
+        handledAsynchronously = true;
+        let addFolderResponseSent = false;
+        
+        addFolder(message.payload).then(() => {
+          // Notify the side panel about the addition
+          chrome.runtime.sendMessage({
+            type: 'STORAGE_FOLDER_ADDED',
+            payload: message.payload
+          });
+          
+          if (!addFolderResponseSent) {
+            addFolderResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!addFolderResponseSent) {
+            addFolderResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!addFolderResponseSent) {
+            addFolderResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
     case 'DELETE_HISTORY':
       // Delete a history item
       if (message.payload && message.payload.id) {
@@ -361,6 +465,51 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
         setTimeout(() => {
           if (!deleteHistoryResponseSent) {
             deleteHistoryResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'ADD_BOARD':
+      // Add a board
+      if (message.payload) {
+        handledAsynchronously = true;
+        let addBoardResponseSent = false;
+        
+        // For now, we'll just add the board to storage
+        chrome.storage.local.get(['tabboard_boards']).then((result: any) => {
+          const boards: any[] = result['tabboard_boards'] || [];
+          boards.push(message.payload);
+          
+          chrome.storage.local.set({ 'tabboard_boards': boards }).then(() => {
+            // Notify the side panel about the addition
+            chrome.runtime.sendMessage({
+              type: 'STORAGE_BOARD_ADDED',
+              payload: message.payload
+            });
+            
+            if (!addBoardResponseSent) {
+              addBoardResponseSent = true;
+              _sendResponse({ success: true });
+            }
+          }).catch(error => {
+            if (!addBoardResponseSent) {
+              addBoardResponseSent = true;
+              _sendResponse({ error: error.message });
+            }
+          });
+        }).catch(error => {
+          if (!addBoardResponseSent) {
+            addBoardResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!addBoardResponseSent) {
+            addBoardResponseSent = true;
           }
         }, 1000);
         
@@ -607,6 +756,40 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
         setTimeout(() => {
           if (!deleteSessionResponseSent) {
             deleteSessionResponseSent = true;
+          }
+        }, 1000);
+        
+        return true;
+      }
+      break;
+    
+    case 'ADD_NOTE':
+      // Add a note
+      if (message.payload) {
+        handledAsynchronously = true;
+        let addNoteResponseSent = false;
+        
+        addNote(message.payload).then(() => {
+          // Notify the side panel about the addition
+          chrome.runtime.sendMessage({
+            type: 'STORAGE_NOTE_ADDED',
+            payload: message.payload
+          });
+          
+          if (!addNoteResponseSent) {
+            addNoteResponseSent = true;
+            _sendResponse({ success: true });
+          }
+        }).catch(error => {
+          if (!addNoteResponseSent) {
+            addNoteResponseSent = true;
+            _sendResponse({ error: error.message });
+          }
+        });
+        
+        setTimeout(() => {
+          if (!addNoteResponseSent) {
+            addNoteResponseSent = true;
           }
         }, 1000);
         
