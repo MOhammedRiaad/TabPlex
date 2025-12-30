@@ -51,18 +51,23 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
   };
 
   if (isEditing) {
-    const { attributes, listeners, setNodeRef, transform } = 
+    const { attributes, listeners, setNodeRef, transform, isDragging } = 
       useDraggable({ id: tab.id });
     
-    const style = transform ? {
+    const style: React.CSSProperties = transform ? {
       transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    } : undefined;
+      zIndex: isDragging ? 1000 : 'auto',
+      position: isDragging ? 'relative' as const : 'static' as const,
+    } : {
+      zIndex: isDragging ? 1000 : 'auto',
+      position: isDragging ? 'relative' as const : 'static' as const,
+    };
     
     return (
       <div 
         ref={setNodeRef}
         style={style}
-        className="tab-card editing"
+        className={`tab-card editing ${isDragging ? 'dragging' : ''}`}
       >
         <div className="tab-header" {...listeners} {...attributes}>
           <div className="drag-handle" {...listeners} {...attributes}>⋮⋮</div>
@@ -102,18 +107,23 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
     );
   }
 
-  const { attributes, listeners, setNodeRef, transform } = 
+  const { attributes, listeners, setNodeRef, transform, isDragging } = 
     useDraggable({ id: tab.id });
   
-  const style = transform ? {
+  const style: React.CSSProperties = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined;
+    zIndex: isDragging ? 1000 : 'auto',
+    position: isDragging ? 'relative' as const : 'static' as const,
+  } : {
+    zIndex: isDragging ? 1000 : 'auto',
+    position: isDragging ? 'relative' as const : 'static' as const,
+  };
   
   return (
     <div 
       ref={setNodeRef}
       style={style}
-      className="tab-card"
+      className={`tab-card ${isDragging ? 'dragging' : ''}`}
     >
       <div className="tab-header" {...listeners} {...attributes}>
         <div className="drag-handle" {...listeners} {...attributes}>⋮⋮</div>

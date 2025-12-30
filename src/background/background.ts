@@ -164,9 +164,28 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
   switch (message.type) {
     case 'MOVE_TAB':
       // Handle tab movement between folders
-      handleMoveTab(message.payload);
-      safeSendResponse({ success: true });
-      break;
+      let moveTabResponseSent = false;
+      
+      handleMoveTab(message.payload).then(() => {
+        if (!moveTabResponseSent) {
+          moveTabResponseSent = true;
+          safeSendResponse({ success: true });
+        }
+      }).catch(error => {
+        if (!moveTabResponseSent) {
+          moveTabResponseSent = true;
+          safeSendResponse({ error: error.message });
+        }
+      });
+      
+      setTimeout(() => {
+        if (!moveTabResponseSent) {
+          moveTabResponseSent = true;
+          safeSendResponse({ success: true }); // Fallback response
+        }
+      }, 1000);
+      
+      return true;
     
     case 'ADD_TAB':
       // Add a tab
