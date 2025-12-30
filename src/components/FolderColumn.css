@@ -80,6 +80,28 @@
   gap: 0.125rem;
 }
 
+.folder-actions {
+  display: flex;
+  gap: 0.125rem;
+  align-items: center;
+}
+
+.delete-folder-btn {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.125rem;
+  border-radius: 0.25rem;
+  opacity: 0.6;
+}
+
+.delete-folder-btn:hover {
+  opacity: 1;
+  background-color: #fee;
+  color: #ef4444;
+}
+
 .save-btn, .cancel-btn {
   padding: 0.125rem 0.25rem;
   border: 1px solid #d1d5db;

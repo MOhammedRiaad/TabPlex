@@ -13,6 +13,9 @@ A Microsoft Edge extension to organize browser tabs, tasks, and work context in 
 - Browser history integration
 - Session inference
 - Edit and delete functionality for all items
+- Delete folders with smart tab management (move or delete tabs)
+- Keyboard shortcuts for enhanced productivity
+- Export/Import functionality for data backup and transfer
 
 ## Installation
 
@@ -62,6 +65,37 @@ npm run dev
 - **Grid Layout**: Responsive grid layout for notes to prevent page overflow
 - **Edit Functionality**: Full edit capabilities for tasks and notes
 - **Delete Functionality**: Safe delete with confirmation dialogs
+
+## Phase 3: Productivity Enhancements
+
+### Folder Deletion with Smart Tab Management
+- **Delete Folders**: Now supports deleting folders with intuitive user interface
+- **Empty Folders**: Simple confirmation for deleting empty folders
+- **Folders with Tabs**: Smart handling when folders contain tabs:
+  - Option to delete folder and all contained tabs
+  - Option to move tabs to another folder before deletion
+  - Dialog-based selection of target folder for moving tabs
+- **Data Consistency**: Proper synchronization between IndexedDB and chrome.storage.local
+
+### Keyboard Shortcuts
+- **Navigation Shortcuts**:
+  - `Ctrl/Cmd + Shift + B`: Switch to Boards view
+  - `Ctrl/Cmd + Shift + H`: Switch to History view
+  - `Ctrl/Cmd + Shift + S`: Switch to Sessions view
+  - `Ctrl/Cmd + Shift + T`: Switch to Today view
+- **Creation Shortcuts**:
+  - `Ctrl/Cmd + Shift + A`: Add a new tab to the current context
+  - `Ctrl/Cmd + Shift + N`: Add a new note
+  - `Ctrl/Cmd + Shift + K`: Add a new task
+  - `Ctrl/Cmd + Shift + F`: Add a new folder
+- **Export Shortcut**:
+  - `Ctrl/Cmd + Shift + E`: Export all data
+
+### Export/Import Functionality
+- **Data Export**: Export all your boards, tabs, tasks, notes, sessions, and history with one click
+- **Data Import**: Import data from a JSON file to restore your workspace
+- **Complete Backup**: Data includes all metadata and relationships
+- **One-Click Operations**: Simple export/import buttons in the main navigation
 
 ### History & Sessions
 - **Browser History Integration**: Import and organize browser history items
@@ -114,18 +148,3 @@ npm run dev
 - Cross-browser synchronization
 - Advanced session analytics
 - Integration with productivity tools
-- **Keyboard Shortcuts**:
-  - `Ctrl/Cmd + Shift + B`: Switch to Boards view
-  - `Ctrl/Cmd + Shift + H`: Switch to History view
-  - `Ctrl/Cmd + Shift + S`: Switch to Sessions view
-  - `Ctrl/Cmd + Shift + T`: Switch to Today view
-  - `Ctrl/Cmd + Shift + A`: Add a new tab to the current context
-  - `Ctrl/Cmd + Shift + N`: Add a new note
-  - `Ctrl/Cmd + Shift + K`: Add a new task
-  - `Ctrl/Cmd + Shift + F`: Add a new folder
-  - `Ctrl/Cmd + Shift + E`: Export all data
-
-- **Export/Import Functionality**:
-  - Export all your boards, tabs, tasks, notes, sessions, and history with one click
-  - Import data from a JSON file to restore your workspace
-  - Data includes all metadata and relationships

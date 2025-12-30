@@ -17,8 +17,8 @@ interface BoardState {
   addFolder: (folder: Omit<Folder, 'createdAt'>) => void;
   addFolderSilently: (folder: Folder) => void;
   updateFolder: (id: string, updates: Partial<Omit<Folder, 'id' | 'createdAt'>>) => void;
-  deleteFolder: (id: string) => void;
-  deleteFolderSilently: (id: string) => void;
+  deleteFolder: (id: string, moveTabs?: boolean, targetFolderId?: string) => void;
+  deleteFolderSilently: (id: string, moveTabs?: boolean, targetFolderId?: string) => void;
   addTab: (tab: Omit<Tab, 'createdAt'>) => void;
   updateTab: (id: string, updates: Partial<Omit<Tab, 'id' | 'createdAt'>>) => void;
   deleteTab: (id: string) => void;
@@ -267,12 +267,16 @@ export const useBoardStore = create<BoardState>((set) => ({
     )
   })),
   
-  deleteFolder: (id) => {
+  deleteFolder: (id, moveTabs = false, targetFolderId = '') => {
     // Update local state immediately
     set((state) => ({
       folders: state.folders.filter(folder => folder.id !== id),
-      // Also remove tabs in this folder
-      tabs: state.tabs.filter(tab => tab.folderId !== id)
+      // If moving tabs, update their folderId, otherwise remove them
+      tabs: moveTabs 
+        ? state.tabs.map(tab => 
+            tab.folderId === id ? { ...tab, folderId: targetFolderId } : tab
+          )
+        : state.tabs.filter(tab => tab.folderId !== id)
     }));
     
     // Delete from IndexedDB
@@ -285,7 +289,11 @@ export const useBoardStore = create<BoardState>((set) => ({
     // Send message to background script to delete from chrome.storage.local
     chrome.runtime.sendMessage({
       type: 'DELETE_FOLDER',
-      payload: { id }
+      payload: { 
+        id,
+        moveTabs,
+        targetFolderId
+      }
     }).catch(error => {
       console.error('Error deleting folder from storage:', error);
     });
@@ -293,12 +301,16 @@ export const useBoardStore = create<BoardState>((set) => ({
   
   // Internal function to delete folder without sending message to background
   // Used when receiving delete message from background to avoid loop
-  deleteFolderSilently: (id) => {
+  deleteFolderSilently: (id, moveTabs = false, targetFolderId = '') => {
     // Update local state
     set((state) => ({
       folders: state.folders.filter(folder => folder.id !== id),
-      // Also remove tabs in this folder
-      tabs: state.tabs.filter(tab => tab.folderId !== id)
+      // If moving tabs, update their folderId, otherwise remove them
+      tabs: moveTabs 
+        ? state.tabs.map(tab => 
+            tab.folderId === id ? { ...tab, folderId: targetFolderId } : tab
+          )
+        : state.tabs.filter(tab => tab.folderId !== id)
     }));
     
     // Delete from IndexedDB
