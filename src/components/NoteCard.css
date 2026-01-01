@@ -14,6 +14,11 @@
   box-shadow: var(--shadow-sm);
 }
 
+.note-card.editing {
+  min-height: auto;
+  padding: var(--spacing-sm);
+}
+
 .note-display {
   display: flex;
   flex-direction: column;
@@ -22,7 +27,9 @@
 }
 
 .note-content {
+  flex: 1;
   margin-bottom: var(--spacing-sm);
+  overflow: hidden;
 }
 
 .note-text {
@@ -34,10 +41,72 @@
   word-break: break-word;
 }
 
+/* Markdown Styling in Note Cards */
+.note-markdown {
+  font-size: var(--font-sm);
+  line-height: 1.6;
+  color: var(--color-text-primary);
+}
+
+.note-markdown strong {
+  font-weight: 600;
+}
+
+.note-markdown em {
+  font-style: italic;
+}
+
+.note-markdown del {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.note-markdown code {
+  background-color: var(--color-bg-tertiary);
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+  font-family: 'SF Mono', 'Monaco', monospace;
+  font-size: 0.85em;
+}
+
+.note-markdown pre {
+  background-color: var(--color-bg-tertiary);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  margin: var(--spacing-xs) 0;
+}
+
+.note-markdown pre code {
+  background: none;
+  padding: 0;
+}
+
+.note-markdown a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.note-markdown a:hover {
+  text-decoration: underline;
+}
+
 .note-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
   font-size: var(--font-xs);
   color: var(--color-text-muted);
-  text-align: right;
+}
+
+.format-badge {
+  background-color: var(--color-info);
+  color: var(--color-text-inverse);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: auto;
 }
 
 .note-actions {
@@ -77,29 +146,11 @@
   flex: 1;
 }
 
-.note-edit-input {
-  width: 100%;
-  min-height: 80px;
-  padding: var(--spacing-sm);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-sm);
-  font-family: inherit;
-  resize: vertical;
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-}
-
-.note-edit-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-}
-
 .note-edit-actions {
   display: flex;
   gap: var(--spacing-sm);
   justify-content: flex-end;
+  margin-top: var(--spacing-sm);
 }
 
 .note-edit-actions .save-btn,

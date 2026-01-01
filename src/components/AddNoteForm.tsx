@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useBoardStore } from '../store/boardStore';
+import MarkdownEditor from './MarkdownEditor';
+import { generateNoteId } from '../utils/idGenerator';
 import './AddNoteForm.css';
 
 interface AddNoteFormProps {
@@ -14,54 +16,56 @@ const AddNoteForm: React.FC<AddNoteFormProps> = ({ folderId, boardId }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (content.trim()) {
       addNote({
-        id: `note_${Date.now()}`,
+        id: generateNoteId(),
         content: content.trim(),
         folderId,
         boardId,
-        format: 'text',
+        format: 'markdown',
       });
-      
+
       setContent('');
       setIsExpanded(false);
     }
+  };
+
+  const handleCancel = () => {
+    setIsExpanded(false);
+    setContent('');
   };
 
   return (
     <div className="add-note-form">
       {isExpanded ? (
         <form onSubmit={handleSubmit}>
-          <textarea
+          <MarkdownEditor
             value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Write your note here..."
-            className="note-input"
+            onChange={setContent}
+            placeholder="Write your note in markdown..."
+            minHeight={150}
             autoFocus
           />
-          <div className="note-actions">
-            <button type="submit" className="add-note-btn">
-              Add Note
+          <div className="note-form-actions">
+            <button type="submit" className="add-note-btn" disabled={!content.trim()}>
+              ✅ Add Note
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="cancel-note-btn"
-              onClick={() => {
-                setIsExpanded(false);
-                setContent('');
-              }}
+              onClick={handleCancel}
             >
               Cancel
             </button>
           </div>
         </form>
       ) : (
-        <button 
+        <button
           className="expand-note-btn"
           onClick={() => setIsExpanded(true)}
         >
-          + Add Note
+          + Add Note with Markdown
         </button>
       )}
     </div>
