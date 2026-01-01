@@ -7,7 +7,7 @@ A Microsoft Edge extension to organize browser tabs, tasks, and work context in 
 - Organize tabs into boards and folders
 - Drag and drop tabs between folders
 - Local-only storage with no cloud sync
-- Side panel interface for easy access
+- Full screen tab interface for easy access
 - Task management with Today view
 - Note-taking functionality
 - Browser history integration
@@ -17,6 +17,11 @@ A Microsoft Edge extension to organize browser tabs, tasks, and work context in 
 - Keyboard shortcuts for enhanced productivity
 - Export/Import functionality for data backup and transfer
 - Toggle to show all tasks regardless of due date on Today view
+- **🌙 Dark Mode** with system theme detection
+- **🔍 Global Search** across tabs, tasks, notes, and sessions
+- **⌘ Command Palette** for quick actions (Ctrl+K)
+- **📊 Analytics Dashboard** with productivity insights
+- **🎨 Consistent theming** with CSS variables
 
 ## Installation
 
@@ -43,16 +48,18 @@ npm run dev
 
 ## Architecture
 
-- **Frontend**: React 18 with TypeScript
+- **Frontend**: React 19 with TypeScript
 - **State Management**: Zustand
 - **Storage**: IndexedDB via idb for structured data, chrome.storage.local for settings
 - **Drag & Drop**: DndKit
 - **Build Tool**: Vite
+- **Theming**: CSS Custom Properties (Variables)
+- **Animations**: Framer Motion
 
 ## Phase 1 Completed
 
 - Extension shell
-- Side panel interface
+- Full screen tab interface
 - Manual boards/folders
 - Tab dragging between folders
 - Local data persistence
@@ -91,6 +98,8 @@ npm run dev
   - `Ctrl/Cmd + Shift + F`: Add a new folder
 - **Export Shortcut**:
   - `Ctrl/Cmd + Shift + E`: Export all data
+- **Command Palette**:
+  - `Ctrl/Cmd + K`: Open command palette
 
 ### Export/Import Functionality
 - **Data Export**: Export all your boards, tabs, tasks, notes, sessions, and history with one click
@@ -129,13 +138,64 @@ npm run dev
 - **Infinite Loops**: Fixed infinite loops in deletion synchronization
 - **Storage Sync**: Fixed bidirectional state sync between storage systems
 
+## Phase 4: Comprehensive Improvements
+
+### 🌙 Dark Mode Support
+- **System Theme Detection**: Automatically matches your OS theme preference
+- **Manual Toggle**: Switch between Light, Dark, and System modes
+- **Persistent Preference**: Theme choice is saved in localStorage
+- **Smooth Transitions**: CSS transitions for seamless theme switching
+- **Full Coverage**: All components styled for both light and dark themes
+
+### 🔍 Global Search
+- **Universal Search**: Search across tabs, tasks, notes, folders, and sessions
+- **Real-time Results**: Instant search results as you type
+- **Keyboard Navigation**: Use arrow keys and Enter to navigate results
+- **Result Categories**: Results grouped by type with icons
+- **Quick Access**: Search bar prominently placed in the header
+
+### ⌘ Command Palette
+- **Quick Actions**: Access all features via `Ctrl/Cmd + K`
+- **Fuzzy Search**: Find commands by typing partial names
+- **Keyboard Navigation**: Full keyboard support for power users
+- **Categorized Commands**: Commands grouped by Navigation, Creation, and Actions
+- **Shortcut Hints**: Shows keyboard shortcuts for each command
+
+### 📊 Analytics Dashboard
+- **Summary Cards**: Total tabs, tasks, notes, and sessions at a glance
+- **Task Progress**: Visual progress bar showing completion rate
+- **Weekly Activity**: Bar chart showing activity trends over 7 days
+- **Top Domains**: Most visited domains with percentage breakdown
+- **Session Statistics**: Average session duration and insights
+
+### 🎨 Code Quality Improvements
+- **CSS Variables**: Comprehensive design tokens for colors, spacing, and typography
+- **Unique ID Generation**: Using `crypto.randomUUID()` for collision-free IDs
+- **Improved Types**: Extended TypeScript interfaces with tags, pinned, and analytics types
+- **Accessibility**: ARIA labels and keyboard navigation throughout
+- **Responsive Design**: Mobile-friendly layouts with proper breakpoints
+
+### New Files Added
+- `src/hooks/useTheme.ts` - Theme management hook
+- `src/utils/idGenerator.ts` - Unique ID generation utilities
+- `src/components/ThemeToggle.tsx` - Theme toggle component
+- `src/components/SearchBar.tsx` - Global search component
+- `src/components/CommandPalette.tsx` - Command palette component
+- `src/components/AnalyticsDashboard.tsx` - Analytics dashboard component
+
 ## Usage
 
 ### Main Interface
-1. **Boards View**: Organize tabs into folders using drag and drop
-2. **History View**: Browse browser history and add items to folders
-3. **Sessions View**: View and manage inferred work sessions
-4. **Today View**: See today's tasks and notes in a consolidated view
+1. **Today View**: See today's tasks and notes in a consolidated view
+2. **Boards View**: Organize tabs into folders using drag and drop
+3. **History View**: Browse browser history and add items to folders
+4. **Sessions View**: View and manage inferred work sessions
+5. **Analytics View**: View productivity statistics and insights
+
+### Quick Actions
+- **Command Palette**: Press `Ctrl/Cmd + K` for quick access to all actions
+- **Search**: Use the search bar to find anything across your workspace
+- **Theme Toggle**: Switch between light/dark modes from the header
 
 ### Creating Items
 - **Tabs**: Automatically captured from browser activity or manually added
@@ -155,3 +215,7 @@ npm run dev
 - Cross-browser synchronization
 - Advanced session analytics
 - Integration with productivity tools
+- Tags and labels for items
+- Pinned/favorites functionality
+- Rich markdown editor for notes
+- Pomodoro timer integration

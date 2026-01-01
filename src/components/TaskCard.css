@@ -1,60 +1,61 @@
 .task-card {
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-  padding: 0.75rem;
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
   position: relative;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .task-card:hover {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .task-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--spacing-sm);
 }
 
 .priority-indicator {
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
   flex-shrink: 0;
 }
 
 .task-actions {
   display: flex;
-  gap: 0.25rem;
+  gap: var(--spacing-xs);
 }
 
 .task-actions button {
   background: none;
   border: none;
-  font-size: 0.875rem;
+  font-size: var(--font-sm);
   cursor: pointer;
-  padding: 0.125rem;
-  border-radius: 0.25rem;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
 }
 
 .task-actions button:hover {
-  background-color: #f3f4f6;
+  background-color: var(--color-bg-tertiary);
 }
 
 .task-title {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.875rem;
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: var(--font-sm);
   font-weight: 500;
-  color: #1f2937;
+  color: var(--color-text-primary);
   line-height: 1.25;
 }
 
 .task-due-date {
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-bottom: 0.5rem;
+  font-size: var(--font-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-sm);
 }
 
 .task-status-actions {
@@ -65,59 +66,65 @@
 
 .status-buttons {
   display: flex;
-  gap: 0.25rem;
+  gap: var(--spacing-xs);
 }
 
 .status-btn {
   background: none;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  padding: 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs);
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: var(--font-xs);
+  transition: all var(--transition-fast);
 }
 
 .status-btn.active {
-  border-color: #3b82f6;
-  background-color: #dbeafe;
+  border-color: var(--color-primary);
+  background-color: rgba(59, 130, 246, 0.1);
 }
 
 .status-btn:hover {
-  background-color: #f3f4f6;
+  background-color: var(--color-bg-tertiary);
 }
 
 /* Editing state */
 .task-card.editing {
-  padding: 0.75rem;
+  padding: var(--spacing-md);
 }
 
 .edit-title {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-sm);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 .edit-title:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }
 
 .edit-fields {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
   flex-wrap: wrap;
 }
 
-.edit-date, .edit-priority {
-  padding: 0.25rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
+.edit-date,
+.edit-priority {
+  padding: var(--spacing-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-xs);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 .edit-date {
@@ -131,33 +138,34 @@
 
 .edit-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
   justify-content: flex-end;
 }
 
 .edit-actions button {
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: var(--font-xs);
+  transition: all var(--transition-fast);
 }
 
 .save-btn {
-  background-color: #10b981;
-  color: white;
-  border-color: #10b981;
+  background-color: var(--color-success);
+  color: var(--color-text-inverse);
+  border-color: var(--color-success);
 }
 
 .save-btn:hover {
-  background-color: #059669;
+  background-color: var(--color-success-hover);
 }
 
 .cancel-btn {
-  background-color: #f3f4f6;
-  color: #374151;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
 }
 
 .cancel-btn:hover {
-  background-color: #e5e7eb;
+  background-color: var(--color-bg-hover);
 }

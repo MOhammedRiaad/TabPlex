@@ -3,123 +3,134 @@
   width: 280px;
   display: flex;
   flex-direction: column;
-  border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
   overflow: hidden;
   z-index: 1;
   position: relative;
+  background-color: var(--color-bg-secondary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .folder-column.dropping {
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
 }
 
 .folder-header {
-  padding: 0.75rem;
-  background-color: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  padding: var(--spacing-md);
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .folder-header h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--font-base);
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text-secondary);
   cursor: pointer;
+  transition: color var(--transition-fast);
 }
 
 .folder-header h3:hover {
-  color: #1f2937;
+  color: var(--color-text-primary);
 }
 
 .folder-display {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--spacing-xs);
 }
 
 .edit-folder-btn {
   background: none;
   border: none;
-  font-size: 0.75rem;
+  font-size: var(--font-xs);
   cursor: pointer;
-  padding: 0.125rem;
-  border-radius: 0.25rem;
+  padding: 2px;
+  border-radius: var(--radius-sm);
   opacity: 0.6;
+  transition: all var(--transition-fast);
 }
 
 .edit-folder-btn:hover {
   opacity: 1;
-  background-color: #f3f4f6;
+  background-color: var(--color-bg-tertiary);
 }
 
 .folder-edit {
   display: flex;
-  gap: 0.25rem;
+  gap: var(--spacing-xs);
   align-items: center;
 }
 
 .folder-name-input {
   flex: 1;
-  padding: 0.125rem 0.25rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  font-size: 1rem;
+  padding: 2px var(--spacing-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-base);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 .folder-name-input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }
 
 .folder-edit-actions {
   display: flex;
-  gap: 0.125rem;
+  gap: 2px;
 }
 
 .folder-actions {
   display: flex;
-  gap: 0.125rem;
+  gap: 2px;
   align-items: center;
 }
 
 .delete-folder-btn {
   background: none;
   border: none;
-  font-size: 0.75rem;
+  font-size: var(--font-xs);
   cursor: pointer;
-  padding: 0.125rem;
-  border-radius: 0.25rem;
+  padding: 2px;
+  border-radius: var(--radius-sm);
   opacity: 0.6;
+  transition: all var(--transition-fast);
 }
 
 .delete-folder-btn:hover {
   opacity: 1;
-  background-color: #fee;
-  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--color-danger);
 }
 
-.save-btn, .cancel-btn {
-  padding: 0.125rem 0.25rem;
-  border: 1px solid #d1d5db;
-  background-color: white;
-  border-radius: 0.25rem;
+.save-btn,
+.cancel-btn {
+  padding: 2px var(--spacing-xs);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
 }
 
-.save-btn:hover, .cancel-btn:hover {
-  background-color: #f3f4f6;
+.save-btn:hover,
+.cancel-btn:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .tabs-container {
   flex: 1;
-  padding: 0.5rem;
+  padding: var(--spacing-sm);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
   overflow-y: auto;
 }

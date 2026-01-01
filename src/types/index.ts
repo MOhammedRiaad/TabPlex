@@ -33,11 +33,14 @@ export interface Tab {
   lastAccessed: string;
   status: 'open' | 'suspended' | 'closed';
   createdAt: string;
+  tags?: string[];
+  pinned?: boolean;
 }
 
 export interface Task {
   id: string;
   title: string;
+  description?: string;
   status: 'todo' | 'doing' | 'done';
   dueDate?: string;
   priority: 'low' | 'medium' | 'high';
@@ -46,6 +49,8 @@ export interface Task {
   tabIds?: string[];
   createdAt: string;
   updatedAt: string;
+  tags?: string[];
+  pinned?: boolean;
 }
 
 export interface Note {
@@ -57,6 +62,8 @@ export interface Note {
   createdAt: string;
   updatedAt: string;
   format: 'markdown' | 'text';
+  tags?: string[];
+  pinned?: boolean;
 }
 
 export interface Session {
@@ -67,6 +74,7 @@ export interface Session {
   endTime?: string;
   summary?: string;
   createdAt: string;
+  duration?: number; // Duration in milliseconds
 }
 
 export interface HistoryItem {
@@ -78,4 +86,51 @@ export interface HistoryItem {
   typedCount?: number;
   favicon?: string;
   createdAt: string;
+}
+
+// Analytics types
+export interface AnalyticsData {
+  totalTabs: number;
+  totalTasks: number;
+  totalNotes: number;
+  totalSessions: number;
+  completedTasks: number;
+  pendingTasks: number;
+  averageSessionDuration: number;
+  mostVisitedDomains: DomainStat[];
+  taskCompletionRate: number;
+  activityByDay: DayActivity[];
+}
+
+export interface DomainStat {
+  domain: string;
+  count: number;
+  percentage: number;
+}
+
+export interface DayActivity {
+  date: string;
+  tabsOpened: number;
+  tasksCompleted: number;
+  sessionsStarted: number;
+}
+
+// Search types
+export interface SearchResult {
+  id: string;
+  type: 'tab' | 'task' | 'note' | 'folder' | 'session';
+  title: string;
+  subtitle?: string;
+  url?: string;
+  tags?: string[];
+}
+
+// Command palette types
+export interface Command {
+  id: string;
+  name: string;
+  shortcut?: string;
+  icon?: string;
+  action: () => void;
+  category: 'navigation' | 'creation' | 'action' | 'settings';
 }

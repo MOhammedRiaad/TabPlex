@@ -1,25 +1,35 @@
 // React is used for JSX compilation
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import BoardView from './components/BoardView';
 import HistoryView from './components/HistoryView';
 import SessionsView from './components/SessionsView';
 import TodayView from './components/TodayView';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
+import ThemeToggle from './components/ThemeToggle';
+import SearchBar from './components/SearchBar';
+import CommandPalette from './components/CommandPalette';
 import { useStorageSync } from './hooks/useStorageSync';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useTheme } from './hooks/useTheme';
 import { downloadExportFile, importFromFile } from './utils/exportImport';
+import { SearchResult } from './types';
 import './App.css';
 import './components/HistoryView.css';
 import './components/SessionsView.css';
 
+type ViewType = 'boards' | 'history' | 'sessions' | 'today' | 'analytics';
+
 function App() {
   useStorageSync(); // Initialize storage sync
-  
-  const [activeView, setActiveView] = useState<'boards' | 'history' | 'sessions' | 'today'>('today');
+  useTheme(); // Initialize theme
+
+  const [activeView, setActiveView] = useState<ViewType>('today');
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Use keyboard shortcuts
-  useKeyboardShortcuts(activeView as 'boards' | 'history' | 'sessions' | 'today', setActiveView);
-  
+  useKeyboardShortcuts(activeView as 'boards' | 'history' | 'sessions' | 'today', setActiveView as (view: 'boards' | 'history' | 'sessions' | 'today') => void);
+
   const handleExport = async () => {
     try {
       await downloadExportFile();
@@ -29,11 +39,11 @@ function App() {
       alert('Export failed. Please try again.');
     }
   };
-  
+
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
-  
+
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -49,73 +59,175 @@ function App() {
     // Reset the input so the same file can be imported again if needed
     e.target.value = '';
   };
-  
+
+  const handleSearchResultClick = useCallback((result: SearchResult) => {
+    // Navigate to appropriate view based on result type
+    switch (result.type) {
+      case 'tab':
+      case 'folder':
+        setActiveView('boards');
+        break;
+      case 'task':
+      case 'note':
+        setActiveView('today');
+        break;
+      case 'session':
+        setActiveView('sessions');
+        break;
+    }
+  }, []);
+
+  // Listen for command palette shortcut (Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Listen for export event from keyboard shortcuts
-  React.useEffect(() => {
+  useEffect(() => {
     const handleExportEvent = () => {
       handleExport();
     };
-    
+
+    const handleImportEvent = () => {
+      handleImportClick();
+    };
+
     window.addEventListener('exportData', handleExportEvent);
-    
+    window.addEventListener('importData', handleImportEvent);
+
     return () => {
       window.removeEventListener('exportData', handleExportEvent);
+      window.removeEventListener('importData', handleImportEvent);
     };
   }, []);
-  
+
+  const renderView = () => {
+    switch (activeView) {
+      case 'boards':
+        return <BoardView />;
+      case 'history':
+        return <HistoryView />;
+      case 'sessions':
+        return <SessionsView />;
+      case 'analytics':
+        return <AnalyticsDashboard />;
+      case 'today':
+      default:
+        return <TodayView />;
+    }
+  };
+
   return (
     <div className="app">
       <header className="app-header">
-        <h1>TabBoard</h1>
-        <nav className="app-nav">
-          <button 
+        <div className="header-left">
+          <h1>TabBoard</h1>
+        </div>
+
+        <div className="header-center">
+          <SearchBar onResultClick={handleSearchResultClick} />
+        </div>
+
+        <div className="header-right">
+          <ThemeToggle />
+          <button
+            className="command-palette-trigger"
+            onClick={() => setIsCommandPaletteOpen(true)}
+            title="Command Palette (Ctrl+K)"
+            aria-label="Open command palette"
+          >
+            ⌘K
+          </button>
+        </div>
+      </header>
+
+      <nav className="app-nav" role="navigation" aria-label="Main navigation">
+        <div className="nav-links">
+          <button
             className={activeView === 'today' ? 'nav-btn active' : 'nav-btn'}
             onClick={() => setActiveView('today')}
+            aria-current={activeView === 'today' ? 'page' : undefined}
           >
-            Today
+            📅 Today
           </button>
-          <button 
+          <button
             className={activeView === 'boards' ? 'nav-btn active' : 'nav-btn'}
             onClick={() => setActiveView('boards')}
+            aria-current={activeView === 'boards' ? 'page' : undefined}
           >
-            Boards
+            📋 Boards
           </button>
-          <button 
+          <button
             className={activeView === 'history' ? 'nav-btn active' : 'nav-btn'}
             onClick={() => setActiveView('history')}
+            aria-current={activeView === 'history' ? 'page' : undefined}
           >
-            History
+            📜 History
           </button>
-          <button 
+          <button
             className={activeView === 'sessions' ? 'nav-btn active' : 'nav-btn'}
             onClick={() => setActiveView('sessions')}
+            aria-current={activeView === 'sessions' ? 'page' : undefined}
           >
-            Sessions
+            ⏱️ Sessions
           </button>
-          
-          <div className="export-import">
-            <button className="nav-btn" onClick={handleExport} title="Export Data (Ctrl+Shift+E)">
-              📤 Export
-            </button>
-            <button className="nav-btn" onClick={handleImportClick} title="Import Data">
-              📥 Import
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImport}
-              accept=".json"
-              style={{ display: 'none' }}
-            />
-          </div>
-        </nav>
-      </header>
+          <button
+            className={activeView === 'analytics' ? 'nav-btn active' : 'nav-btn'}
+            onClick={() => setActiveView('analytics')}
+            aria-current={activeView === 'analytics' ? 'page' : undefined}
+          >
+            📊 Analytics
+          </button>
+        </div>
+
+        <div className="export-import">
+          <button
+            className="nav-btn export-btn"
+            onClick={handleExport}
+            title="Export Data (Ctrl+Shift+E)"
+            aria-label="Export data"
+          >
+            📤 Export
+          </button>
+          <button
+            className="nav-btn import-btn"
+            onClick={handleImportClick}
+            title="Import Data"
+            aria-label="Import data"
+          >
+            📥 Import
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImport}
+            accept=".json"
+            style={{ display: 'none' }}
+            aria-hidden="true"
+          />
+        </div>
+      </nav>
+
       <main className="app-main">
-        {activeView === 'boards' ? <BoardView /> :
-         activeView === 'history' ? <HistoryView /> :
-         activeView === 'sessions' ? <SessionsView /> :
-         <TodayView />}
+        {renderView()}
       </main>
+
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigate={(view) => {
+          setActiveView(view);
+          setIsCommandPaletteOpen(false);
+        }}
+      />
     </div>
   );
 }

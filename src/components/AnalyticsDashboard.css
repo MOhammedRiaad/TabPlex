@@ -1,0 +1,301 @@
+.analytics-dashboard {
+    padding: var(--spacing-lg);
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.analytics-header {
+    margin-bottom: var(--spacing-xl);
+}
+
+.analytics-header h2 {
+    font-size: var(--font-2xl);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.analytics-subtitle {
+    color: var(--color-text-secondary);
+    font-size: var(--font-sm);
+}
+
+/* Summary Cards */
+.analytics-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.analytics-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-primary));
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.analytics-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.card-icon {
+    font-size: 2rem;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-bg-tertiary);
+    border-radius: var(--radius-lg);
+}
+
+.card-content {
+    flex: 1;
+}
+
+.card-value {
+    font-size: var(--font-2xl);
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.card-label {
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
+}
+
+/* Sections */
+.analytics-section {
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.analytics-section h3 {
+    font-size: var(--font-lg);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+/* Task Progress */
+.task-progress-container {
+    padding: var(--spacing-sm) 0;
+}
+
+.progress-stats {
+    display: flex;
+    gap: var(--spacing-xl);
+    margin-bottom: var(--spacing-md);
+}
+
+.progress-stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.progress-stat .stat-value {
+    font-size: var(--font-xl);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.progress-stat .stat-label {
+    font-size: var(--font-xs);
+    color: var(--color-text-muted);
+}
+
+.progress-bar-container {
+    height: 12px;
+    background-color: var(--color-bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-success), var(--color-primary));
+    border-radius: var(--radius-full);
+    transition: width var(--transition-slow);
+}
+
+/* Activity Chart */
+.activity-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--spacing-sm);
+    height: 150px;
+    padding: var(--spacing-md) 0;
+}
+
+.activity-day {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+}
+
+.activity-bars {
+    display: flex;
+    gap: 3px;
+    align-items: flex-end;
+    height: 120px;
+    width: 100%;
+    justify-content: center;
+}
+
+.activity-bar {
+    width: 12px;
+    min-height: 4px;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    transition: height var(--transition-normal);
+}
+
+.activity-bar.tabs {
+    background-color: var(--color-primary);
+}
+
+.activity-bar.tasks {
+    background-color: var(--color-success);
+}
+
+.activity-bar.sessions {
+    background-color: var(--color-warning);
+}
+
+.activity-label {
+    font-size: var(--font-xs);
+    color: var(--color-text-muted);
+    margin-top: var(--spacing-xs);
+}
+
+.activity-legend {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-md);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-xs);
+    color: var(--color-text-secondary);
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-sm);
+}
+
+.legend-color.tabs {
+    background-color: var(--color-primary);
+}
+
+.legend-color.tasks {
+    background-color: var(--color-success);
+}
+
+.legend-color.sessions {
+    background-color: var(--color-warning);
+}
+
+/* Domains List */
+.domains-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.domain-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background-color: var(--color-bg-primary);
+    border-radius: var(--radius-md);
+}
+
+.domain-rank {
+    width: 30px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.domain-name {
+    width: 120px;
+    font-size: var(--font-sm);
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.domain-bar-container {
+    flex: 1;
+    height: 8px;
+    background-color: var(--color-bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.domain-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-info), var(--color-primary));
+    border-radius: var(--radius-full);
+}
+
+.domain-count {
+    width: 40px;
+    text-align: right;
+    font-size: var(--font-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.no-data {
+    color: var(--color-text-muted);
+    text-align: center;
+    padding: var(--spacing-lg);
+}
+
+/* Session Stats */
+.session-stats {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.session-stat-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background-color: var(--color-bg-primary);
+    border-radius: var(--radius-lg);
+    flex: 1;
+}
+
+.stat-icon {
+    font-size: 1.5rem;
+}
+
+.stat-info .stat-value {
+    font-size: var(--font-xl);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.stat-info .stat-label {
+    font-size: var(--font-xs);
+    color: var(--color-text-muted);
+}
