@@ -23,7 +23,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         sidepanel: 'index.html',
-        background: 'src/background/background.ts'
+        background: 'src/background/index.ts'
       },
       output: {
         entryFileNames: (chunkInfo) => {

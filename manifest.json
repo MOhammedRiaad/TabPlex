@@ -19,7 +19,8 @@
     "tabGroups",
     "history",
     "sessions",
-    "storage"
+    "storage",
+    "notifications"
   ],
   "host_permissions": [
     "<all_urls>"

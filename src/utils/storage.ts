@@ -51,7 +51,8 @@ export async function getBoard(id: string): Promise<Board | undefined> {
 
 export async function addBoard(board: Board): Promise<void> {
   const database = await initDB();
-  await database.add(BOARDS_STORE, board);
+  // Use put instead of add to handle existing items gracefully
+  await database.put(BOARDS_STORE, board);
 }
 
 export async function updateBoard(board: Board): Promise<void> {
@@ -76,7 +77,8 @@ export async function getFolder(id: string): Promise<Folder | undefined> {
 
 export async function addFolder(folder: Folder): Promise<void> {
   const database = await initDB();
-  await database.add(FOLDERS_STORE, folder);
+  // Use put instead of add to handle existing items gracefully
+  await database.put(FOLDERS_STORE, folder);
 }
 
 export async function updateFolder(folder: Folder): Promise<void> {
@@ -101,7 +103,8 @@ export async function getTab(id: string): Promise<Tab | undefined> {
 
 export async function addTab(tab: Tab): Promise<void> {
   const database = await initDB();
-  await database.add(TABS_STORE, tab);
+  // Use put instead of add to handle existing items gracefully
+  await database.put(TABS_STORE, tab);
 }
 
 export async function updateTab(tab: Tab): Promise<void> {
@@ -126,7 +129,8 @@ export async function getTask(id: string): Promise<Task | undefined> {
 
 export async function addTask(task: Task): Promise<void> {
   const database = await initDB();
-  await database.add(TASKS_STORE, task);
+  // Use put instead of add to handle existing items gracefully
+  await database.put(TASKS_STORE, task);
 }
 
 export async function updateTask(task: Task): Promise<void> {
@@ -151,7 +155,8 @@ export async function getNote(id: string): Promise<Note | undefined> {
 
 export async function addNote(note: Note): Promise<void> {
   const database = await initDB();
-  await database.add(NOTES_STORE, note);
+  // Use put instead of add to handle existing items gracefully
+  await database.put(NOTES_STORE, note);
 }
 
 export async function updateNote(note: Note): Promise<void> {
@@ -176,7 +181,8 @@ export async function getSession(id: string): Promise<Session | undefined> {
 
 export async function addSession(session: Session): Promise<void> {
   const database = await initDB();
-  await database.add(SESSIONS_STORE, session);
+  // Use put instead of add to handle existing items gracefully
+  await database.put(SESSIONS_STORE, session);
 }
 
 export async function updateSession(session: Session): Promise<void> {

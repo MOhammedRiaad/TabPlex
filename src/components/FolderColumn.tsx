@@ -17,6 +17,8 @@ const FolderColumn: React.FC<FolderColumnProps> = ({ folder, tabs }) => {
   const [editName, setEditName] = useState(folder.name);
   
   const updateFolder = useBoardStore(state => state.updateFolder);
+  const deleteFolder = useBoardStore(state => state.deleteFolder);
+  const folders = useBoardStore(state => state.folders);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -31,6 +33,64 @@ const FolderColumn: React.FC<FolderColumnProps> = ({ folder, tabs }) => {
   const handleCancel = () => {
     setEditName(folder.name);
     setIsEditing(false);
+  };
+  
+  const handleDeleteFolder = () => {
+    // Find tabs in this folder
+    const tabsInFolder = tabs.filter(tab => tab.folderId === folder.id);
+    
+    if (tabsInFolder.length > 0) {
+      // Folder has tabs - ask user if they want to move or delete
+      const userChoice = window.confirm(
+        `This folder contains ${tabsInFolder.length} tab(s).\n\n` +
+        `Do you want to delete the folder and all its tabs?\n` +
+        `Click 'OK' to delete folder and tabs, 'Cancel' to move tabs to another folder.`
+      );
+      
+      if (userChoice) {
+        // User wants to delete folder and all tabs
+        deleteFolder(folder.id, false, '');
+      } else {
+        // User wants to move tabs to another folder
+        const otherFolders = folders.filter(f => f.id !== folder.id);
+        if (otherFolders.length > 0) {
+          const targetFolderNames = otherFolders.map(f => f.name).join(', ');
+          const targetFolderId = prompt(
+            `Select a folder to move the ${tabsInFolder.length} tab(s) to:\n\n` +
+            `Available folders: ${targetFolderNames}\n\n` +
+            `Enter the folder name or ID to move tabs there:`
+          );
+          
+          if (targetFolderId) {
+            const targetFolder = otherFolders.find(f => 
+              f.name === targetFolderId || f.id === targetFolderId
+            );
+            
+            if (targetFolder) {
+              deleteFolder(folder.id, true, targetFolder.id);
+            } else {
+              alert('Invalid folder selected. Folder deletion cancelled.');
+            }
+          }
+        } else {
+          // No other folders exist, ask again
+          const finalChoice = window.confirm(
+            `No other folders exist. Do you want to delete the folder and all ${tabsInFolder.length} tab(s)?\n\n` +
+            `Click 'OK' to delete everything, 'Cancel' to keep the folder.`
+          );
+          
+          if (finalChoice) {
+            deleteFolder(folder.id, false, '');
+          }
+        }
+      }
+    } else {
+      // Folder is empty, just confirm deletion
+      const confirmEmpty = window.confirm(`Are you sure you want to delete the folder "${folder.name}"?`);
+      if (confirmEmpty) {
+        deleteFolder(folder.id);
+      }
+    }
   };
   
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -66,7 +126,16 @@ const FolderColumn: React.FC<FolderColumnProps> = ({ folder, tabs }) => {
         ) : (
           <div className="folder-display">
             <h3 onClick={handleEdit}>{folder.name}</h3>
-            <button onClick={handleEdit} className="edit-folder-btn">✏️</button>
+            <div className="folder-actions">
+              <button onClick={handleEdit} className="edit-folder-btn">✏️</button>
+              <button 
+                onClick={() => handleDeleteFolder()}
+                className="delete-folder-btn"
+                title="Delete folder"
+              >
+                🗑️
+              </button>
+            </div>
           </div>
         )}
       </div>

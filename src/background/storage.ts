@@ -103,7 +103,19 @@ async function getItemById<T>(key: string, id: string): Promise<T | undefined> {
 
 async function addItem<T>(key: string, item: T): Promise<void> {
   const items = await getAllItems<T>(key);
-  items.push(item);
+  const itemId = (item as any).id;
+  
+  // Check if item already exists
+  const existingIndex = items.findIndex(i => (i as any).id === itemId);
+  
+  if (existingIndex !== -1) {
+    // Update existing item instead of adding duplicate
+    items[existingIndex] = item;
+  } else {
+    // Add new item
+    items.push(item);
+  }
+  
   await chrome.storage.local.set({ [key]: items });
 }
 

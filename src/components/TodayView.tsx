@@ -4,6 +4,7 @@ import TaskCard from './TaskCard';
 import NoteCard from './NoteCard';
 import AddTaskForm from './AddTaskForm';
 import AddNoteForm from './AddNoteForm';
+import { useTaskNotifications } from '../hooks/useTaskNotifications';
 import './TodayView.css';
 
 // For now, we'll render plain text instead of markdown
@@ -12,6 +13,12 @@ import './TodayView.css';
 
 const TodayView: React.FC = () => {
   const { tasks, notes } = useBoardStore();
+  
+  // Enable task notifications
+  useTaskNotifications();
+  
+  // State to track if we're showing all tasks
+  const [showAllTasks, setShowAllTasks] = React.useState(false);
   
   // Filter tasks for today
   const today = new Date();
@@ -37,13 +44,16 @@ const TodayView: React.FC = () => {
     return taskDueDate.getTime() < today.getTime();
   });
   
-  // Combine all relevant tasks
+  // Combine all relevant tasks for today view
   const allTodayTasks = [...overdueTasks, ...todayTasks, ...noDueDateTasks];
   
+  // Use all tasks if showAllTasks is true, otherwise use today's tasks
+  const tasksToDisplay = showAllTasks ? tasks : allTodayTasks;
+  
   // Group tasks by status
-  const todoTasks = allTodayTasks.filter(task => task.status === 'todo');
-  const doingTasks = allTodayTasks.filter(task => task.status === 'doing');
-  const doneTasks = allTodayTasks.filter(task => task.status === 'done');
+  const todoTasks = tasksToDisplay.filter(task => task.status === 'todo');
+  const doingTasks = tasksToDisplay.filter(task => task.status === 'doing');
+  const doneTasks = tasksToDisplay.filter(task => task.status === 'done');
   
   // Filter notes for today
   const todayNotes = notes.filter(note => {
@@ -84,42 +94,58 @@ const TodayView: React.FC = () => {
       
       {/* Tasks Section */}
       <div className="tasks-container">
-        <div className="task-column">
-          <h3 className="column-header">
-            <span className="status-icon">📋</span> To Do
-            <span className="task-count">{todoTasks.length}</span>
+        <div className="tasks-header">
+          <h3 className="tasks-title">
+            <span className="status-icon">📋</span> Tasks
           </h3>
-          <div className="tasks-list">
-            {todoTasks.map(task => (
-              <TaskCard key={task.id} task={task} />
-            ))}
-            <AddTaskForm status="todo" />
+          <div className="tasks-controls">
+            <button 
+              className={`toggle-tasks-btn ${showAllTasks ? 'active' : ''}`}
+              onClick={() => setShowAllTasks(!showAllTasks)}
+            >
+              {showAllTasks ? 'Show Today Tasks' : 'Show All Tasks'}
+            </button>
           </div>
         </div>
         
-        <div className="task-column">
-          <h3 className="column-header">
-            <span className="status-icon">🔄</span> Doing
-            <span className="task-count">{doingTasks.length}</span>
-          </h3>
-          <div className="tasks-list">
-            {doingTasks.map(task => (
-              <TaskCard key={task.id} task={task} />
-            ))}
-            <AddTaskForm status="doing" />
+        <div className="tasks-columns">
+          <div className="task-column">
+            <h3 className="column-header">
+              <span className="status-icon">📋</span> To Do
+              <span className="task-count">{todoTasks.length}</span>
+            </h3>
+            <div className="tasks-list">
+              {todoTasks.map(task => (
+                <TaskCard key={task.id} task={task} />
+              ))}
+              <AddTaskForm status="todo" />
+            </div>
           </div>
-        </div>
-        
-        <div className="task-column">
-          <h3 className="column-header">
-            <span className="status-icon">✅</span> Done
-            <span className="task-count">{doneTasks.length}</span>
-          </h3>
-          <div className="tasks-list">
-            {doneTasks.map(task => (
-              <TaskCard key={task.id} task={task} />
-            ))}
-            <AddTaskForm status="done" />
+          
+          <div className="task-column">
+            <h3 className="column-header">
+              <span className="status-icon">🔄</span> Doing
+              <span className="task-count">{doingTasks.length}</span>
+            </h3>
+            <div className="tasks-list">
+              {doingTasks.map(task => (
+                <TaskCard key={task.id} task={task} />
+              ))}
+              <AddTaskForm status="doing" />
+            </div>
+          </div>
+          
+          <div className="task-column">
+            <h3 className="column-header">
+              <span className="status-icon">✅</span> Done
+              <span className="task-count">{doneTasks.length}</span>
+            </h3>
+            <div className="tasks-list">
+              {doneTasks.map(task => (
+                <TaskCard key={task.id} task={task} />
+              ))}
+              <AddTaskForm status="done" />
+            </div>
           </div>
         </div>
       </div>

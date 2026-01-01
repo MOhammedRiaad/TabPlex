@@ -37,7 +37,9 @@ export const useStorageSync = () => {
     notes,
     sessions,
     addBoard: addBoardToStore,
+    addBoardSilently: addBoardSilentlyToStore,
     addFolder: addFolderToStore,
+    addFolderSilently: addFolderSilentlyToStore,
     addTab: addTabToStore,
     addTask: addTaskToStore,
     addNote: addNoteToStore,
@@ -251,7 +253,8 @@ export const useStorageSync = () => {
       if (event.data && event.data.type) {
         switch (event.data.type) {
           case 'STORAGE_BOARD_ADDED':
-            addBoardToStore(event.data.payload);
+            // Use silent add to prevent infinite loops (doesn't send message back to background)
+            addBoardSilentlyToStore(event.data.payload);
             break;
           case 'STORAGE_BOARD_UPDATED':
             updateBoardInStore(event.data.payload.id, event.data.payload);
@@ -262,14 +265,19 @@ export const useStorageSync = () => {
             break;
 
           case 'STORAGE_FOLDER_ADDED':
-            addFolderToStore(event.data.payload);
+            // Use silent add to prevent infinite loops (doesn't send message back to background)
+            addFolderSilentlyToStore(event.data.payload);
             break;
           case 'STORAGE_FOLDER_UPDATED':
             updateFolderInStore(event.data.payload.id, event.data.payload);
             break;
 
           case 'STORAGE_TAB_ADDED':
-            addTabToStore(event.data.payload);
+            // Check if it already exists to prevent infinite loops
+            const tabState = useBoardStore.getState();
+            if (!tabState.tabs.some(t => t.id === event.data.payload.id)) {
+              addTabToStore(event.data.payload);
+            }
             break;
           case 'STORAGE_TAB_UPDATED':
             updateTabInStore(event.data.payload.id, event.data.payload);
@@ -279,21 +287,33 @@ export const useStorageSync = () => {
             break;
 
           case 'STORAGE_TASK_ADDED':
-            addTaskToStore(event.data.payload);
+            // Check if it already exists to prevent infinite loops
+            const taskState = useBoardStore.getState();
+            if (!taskState.tasks.some(t => t.id === event.data.payload.id)) {
+              addTaskToStore(event.data.payload);
+            }
             break;
           case 'STORAGE_TASK_UPDATED':
             updateTaskInStore(event.data.payload.id, event.data.payload);
             break;
 
           case 'STORAGE_NOTE_ADDED':
-            addNoteToStore(event.data.payload);
+            // Check if it already exists to prevent infinite loops
+            const noteState = useBoardStore.getState();
+            if (!noteState.notes.some(n => n.id === event.data.payload.id)) {
+              addNoteToStore(event.data.payload);
+            }
             break;
           case 'STORAGE_NOTE_UPDATED':
             updateNoteInStore(event.data.payload.id, event.data.payload);
             break;
 
           case 'STORAGE_SESSION_ADDED':
-            addSessionToStore(event.data.payload);
+            // Check if it already exists to prevent infinite loops
+            const sessionState = useBoardStore.getState();
+            if (!sessionState.sessions.some(s => s.id === event.data.payload.id)) {
+              addSessionToStore(event.data.payload);
+            }
             break;
           case 'STORAGE_SESSION_UPDATED':
             updateSessionInStore(event.data.payload.id, event.data.payload);
@@ -314,7 +334,11 @@ export const useStorageSync = () => {
           case 'STORAGE_SESSION_DELETED':
             deleteSessionSilentlyFromStore(event.data.payload.id);
             break;
-
+          
+          case 'STORAGE_DATA_IMPORTED':
+            // When data is imported, we need to refresh all data
+            window.location.reload();
+            break;
         }
       }
     };

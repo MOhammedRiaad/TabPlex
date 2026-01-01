@@ -51,3 +51,19 @@
   background-color: #3b82f6;
   color: white;
 }
+
+.export-import {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+  align-self: center;
+}
+
+.export-import .nav-btn {
+  background-color: #10b981;
+  color: white;
+}
+
+.export-import .nav-btn:hover {
+  background-color: #059669;
+}
