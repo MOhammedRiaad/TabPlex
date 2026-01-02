@@ -224,12 +224,12 @@
     border-radius: var(--radius-md);
 }
 
-.task-label {
+.timer-task-label {
     font-size: var(--font-xs);
     color: var(--color-text-muted);
 }
 
-.task-title {
+.timer-task-title {
     flex: 1;
     font-size: var(--font-sm);
     font-weight: 500;
@@ -239,20 +239,28 @@
     text-overflow: ellipsis;
 }
 
-.task-actions {
+.timer-task-actions {
     display: flex;
     gap: var(--spacing-xs);
+    flex-shrink: 0;
+    /* Enhance safety */
 }
 
 .complete-task-btn,
-.unlink-btn {
-    background: transparent;
-    border: none;
+.unlink-btn,
+.switch-task-btn {
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
     font-size: var(--font-sm);
     cursor: pointer;
-    padding: 2px;
+    padding: 6px;
     border-radius: var(--radius-sm);
-    transition: background-color var(--transition-fast);
+    transition: all var(--transition-fast);
+    color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
 }
 
 .complete-task-btn:hover {
@@ -261,6 +269,12 @@
 
 .unlink-btn:hover {
     background-color: rgba(239, 68, 68, 0.2);
+    color: var(--color-danger);
+}
+
+.switch-task-btn:hover {
+    background-color: var(--color-bg-hover);
+    color: var(--color-primary);
 }
 
 .link-task-btn {

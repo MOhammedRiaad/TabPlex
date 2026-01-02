@@ -191,11 +191,14 @@ const PomodoroTimer: React.FC = () => {
             <div className="linked-task-section">
                 {linkedTask ? (
                     <div className="linked-task">
-                        <span className="task-label">Working on:</span>
-                        <span className="task-title">{linkedTask.title}</span>
-                        <div className="task-actions">
+                        <span className="timer-task-label">Working on:</span>
+                        <span className="timer-task-title">{linkedTask.title}</span>
+                        <div className="timer-task-actions">
                             <button onClick={completeTask} className="complete-task-btn" title="Mark as done">
                                 ✅
+                            </button>
+                            <button onClick={() => setShowTaskPicker(!showTaskPicker)} className="switch-task-btn" title="Switch task">
+                                ⇄
                             </button>
                             <button onClick={unlinkTask} className="unlink-btn" title="Unlink task">
                                 ✕
