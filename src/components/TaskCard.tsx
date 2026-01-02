@@ -47,7 +47,9 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   };
 
   const handleDelete = () => {
-    deleteTask(task.id);
+    if (confirm('Are you sure you want to delete this task?')) {
+      deleteTask(task.id);
+    }
   };
 
   const toggleChecklistItem = (itemId: string) => {
