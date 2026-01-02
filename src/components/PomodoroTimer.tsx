@@ -21,6 +21,7 @@ interface TimerSettings {
 const PomodoroTimer: React.FC = () => {
     const {
         mode,
+        activeMode,
         timeLeft,
         isRunning,
         completedSessions,
@@ -35,6 +36,9 @@ const PomodoroTimer: React.FC = () => {
 
     const [showSettings, setShowSettings] = useState(false);
     const [showTaskPicker, setShowTaskPicker] = useState(false);
+
+    // Only show running state if the global timer is on AND we are looking at the active mode
+    const isCurrentModeRunning = isRunning && mode === activeMode;
 
     const { tasks, updateTask } = useBoardStore();
 
@@ -155,7 +159,7 @@ const PomodoroTimer: React.FC = () => {
 
             {/* Controls */}
             <div className="timer-controls">
-                {!isRunning ? (
+                {!isCurrentModeRunning ? (
                     <button className="control-btn start" onClick={startTimer}>
                         ▶️ Start
                     </button>

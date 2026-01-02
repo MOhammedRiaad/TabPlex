@@ -20,7 +20,9 @@ const TodayView: React.FC = () => {
   const [showTimer, setShowTimer] = useState(false);
 
   // Timer Store
-  const { timeLeft, isRunning, setIsRunning, resetTimer, settings } = useTimerStore();
+  const { timeLeft, isRunning, mode, activeMode, setIsRunning, resetTimer, settings } = useTimerStore();
+
+  const isCurrentModeRunning = isRunning && mode === activeMode;
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -81,15 +83,15 @@ const TodayView: React.FC = () => {
           </div>
         </div>
         <div className="header-actions">
-          {(!showTimer && (isRunning || timeLeft < (settings.workDuration * 60))) && (
+          {(!showTimer && (isCurrentModeRunning || timeLeft < (settings.workDuration * 60))) && (
             <div className="mini-timer">
-              <span className={`mini-time ${isRunning ? 'running' : 'paused'}`}>{formatTime(timeLeft)}</span>
+              <span className={`mini-time ${isCurrentModeRunning ? 'running' : 'paused'}`}>{formatTime(timeLeft)}</span>
               <button
                 className="mini-control-btn"
-                onClick={(e) => { e.stopPropagation(); isRunning ? setIsRunning(false) : setIsRunning(true); }}
-                title={isRunning ? "Pause" : "Resume"}
+                onClick={(e) => { e.stopPropagation(); isCurrentModeRunning ? setIsRunning(false) : setIsRunning(true); }}
+                title={isCurrentModeRunning ? "Pause" : "Resume"}
               >
-                {isRunning ? '⏸️' : '▶️'}
+                {isCurrentModeRunning ? '⏸️' : '▶️'}
               </button>
               <button
                 className="mini-control-btn"
