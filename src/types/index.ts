@@ -37,10 +37,18 @@ export interface Tab {
   pinned?: boolean;
 }
 
+export interface TaskChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
   description?: string;
+  checklist?: TaskChecklistItem[];
+  completedSessions?: number; // Track pomodoro sessions
   status: 'todo' | 'doing' | 'done';
   dueDate?: string;
   priority: 'low' | 'medium' | 'high';
@@ -100,6 +108,8 @@ export interface AnalyticsData {
   mostVisitedDomains: DomainStat[];
   taskCompletionRate: number;
   activityByDay: DayActivity[];
+  topFocusedTasks: { id: string; title: string; sessions: number; timeString: string; }[];
+  maxTaskSessions: number;
 }
 
 export interface DomainStat {

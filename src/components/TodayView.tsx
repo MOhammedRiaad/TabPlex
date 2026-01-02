@@ -6,6 +6,7 @@ import AddTaskForm from './AddTaskForm';
 import AddNoteForm from './AddNoteForm';
 import PomodoroTimer from './PomodoroTimer';
 import { useTaskNotifications } from '../hooks/useTaskNotifications';
+import { useTimerStore } from '../store/timerStore';
 import './TodayView.css';
 
 const TodayView: React.FC = () => {
@@ -17,6 +18,15 @@ const TodayView: React.FC = () => {
   // State to track if we're showing all tasks
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
+
+  // Timer Store
+  const { timeLeft, isRunning, setIsRunning, resetTimer, settings } = useTimerStore();
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   // Filter tasks for today
   const today = new Date();
@@ -71,6 +81,25 @@ const TodayView: React.FC = () => {
           </div>
         </div>
         <div className="header-actions">
+          {(!showTimer && (isRunning || timeLeft < (settings.workDuration * 60))) && (
+            <div className="mini-timer">
+              <span className={`mini-time ${isRunning ? 'running' : 'paused'}`}>{formatTime(timeLeft)}</span>
+              <button
+                className="mini-control-btn"
+                onClick={(e) => { e.stopPropagation(); isRunning ? setIsRunning(false) : setIsRunning(true); }}
+                title={isRunning ? "Pause" : "Resume"}
+              >
+                {isRunning ? '⏸️' : '▶️'}
+              </button>
+              <button
+                className="mini-control-btn"
+                onClick={(e) => { e.stopPropagation(); resetTimer(); }}
+                title="Reset"
+              >
+                🔄
+              </button>
+            </div>
+          )}
           <button
             className={`toggle-timer-btn ${showTimer ? 'active' : ''}`}
             onClick={() => setShowTimer(!showTimer)}

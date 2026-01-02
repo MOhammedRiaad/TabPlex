@@ -1,5 +1,6 @@
 // React is used for JSX compilation
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import TimerManager from './components/TimerManager';
 import BoardView from './components/BoardView';
 import HistoryView from './components/HistoryView';
 import SessionsView from './components/SessionsView';
@@ -127,6 +128,7 @@ function App() {
 
   return (
     <div className="app">
+      <TimerManager />
       <header className="app-header">
         <div className="header-left">
           <h1>TabBoard</h1>

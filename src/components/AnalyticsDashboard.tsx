@@ -83,6 +83,44 @@ const AnalyticsDashboard: React.FC = () => {
             });
         }
 
+
+        // Calculate Top Focused Tasks
+        const tasksWithSessions = tasks
+            .filter(t => t.completedSessions && t.completedSessions > 0)
+            .sort((a, b) => (b.completedSessions || 0) - (a.completedSessions || 0))
+            .slice(0, 5);
+
+        const topFocusedTasks = tasksWithSessions.map(t => {
+            const sessions = t.completedSessions || 0;
+            // Assuming default 25 min work duration for stored sessions if exact time not tracked per session on task
+            // Ideally we'd sum real duration, but for now we multiply by standard 25 mins or get from settings if possible. 
+            // We'll estimate 25 mins per session for now as specific session-task log isn't fully detailed in history yet.
+            const totalMinutes = sessions * 25;
+
+            // 8 hours = 480 minutes
+            const workDayMinutes = 480;
+
+            let timeString = '';
+            if (totalMinutes >= workDayMinutes) {
+                const days = (totalMinutes / workDayMinutes).toFixed(1);
+                timeString = `${days} days`;
+            } else if (totalMinutes >= 60) {
+                const hours = (totalMinutes / 60).toFixed(1);
+                timeString = `${hours} hrs`;
+            } else {
+                timeString = `${totalMinutes} mins`;
+            }
+
+            return {
+                id: t.id,
+                title: t.title,
+                sessions,
+                timeString
+            };
+        });
+
+        const maxTaskSessions = topFocusedTasks.length > 0 ? topFocusedTasks[0].sessions : 1;
+
         return {
             totalTabs: tabs.length,
             totalTasks: tasks.length,
@@ -94,6 +132,8 @@ const AnalyticsDashboard: React.FC = () => {
             mostVisitedDomains,
             taskCompletionRate,
             activityByDay,
+            topFocusedTasks,
+            maxTaskSessions
         };
     }, [tabs, tasks, notes, sessions, history]);
 
@@ -253,6 +293,33 @@ const AnalyticsDashboard: React.FC = () => {
                         ))
                     ) : (
                         <p className="no-data">No domain data available</p>
+                    )}
+                </div>
+            </div>
+
+            {/* Task Focus Metrics */}
+            <div className="analytics-section">
+                <h3>🍅 Task Focus Metrics</h3>
+                <div className="domains-list">
+                    {analytics.topFocusedTasks.length > 0 ? (
+                        analytics.topFocusedTasks.map((task, index) => (
+                            <div key={task.id} className="domain-item">
+                                <span className="domain-rank">#{index + 1}</span>
+                                <span className="domain-name" title={task.title}>{task.title}</span>
+                                <div className="domain-bar-container">
+                                    <div
+                                        className="domain-bar"
+                                        style={{ width: `${(task.sessions / analytics.maxTaskSessions) * 100}%`, background: 'var(--color-warning)' }}
+                                    />
+                                </div>
+                                <div className="focus-stats" style={{ display: 'flex', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                                    <span>{task.sessions} sess.</span>
+                                    <span>{task.timeString}</span>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="no-data">No focus sessions recorded on tasks yet.</p>
                     )}
                 </div>
             </div>

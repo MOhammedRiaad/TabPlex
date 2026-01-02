@@ -209,13 +209,29 @@ npm run dev
 - **Drag & Drop**: Move items between folders by dragging the handle (⋮⋮)
 - **Folder Rename**: Click folder names to edit them
 
-## Future Enhancements
 
+## Phase 5: Focus & Persistence
+
+### 🍅 Pomodoro Timer
+- **Persistent Timer**: Timer state persists across page reloads and browser restarts
+- **Global Integration**: Timer runs globally regardless of the active view
+- **Mini Timer**: Compact timer controls available in the "Today" view header when the main panel is hidden
+- **Task Linking**: Link specific tasks to focus sessions for tracking
+- **Customizable Settings**: Adjust work/break durations, auto-start options, and sound notifications
+
+### 📊 Enhanced Analytics
+- **Task Focus Metrics**: Track number of focus sessions per task
+- **Time Estimation**: "Est. Time" calculation based on an **8-hour workday**
+- **Deep Insights**: Analyze which tasks consume the most focus time
+
+### 📝 Task Enhancements
+- **Rich Details**: Add descriptions to tasks
+- **Checklists**: Break down tasks into sub-items with progress tracking
+- **Linked Tabs**: Open tabs associated with tasks directly from the task card
+
+## Future Enhancements
 - AI-powered tab organization suggestions
 - Cross-browser synchronization
-- Advanced session analytics
 - Integration with productivity tools
 - Tags and labels for items
 - Pinned/favorites functionality
-- Rich markdown editor for notes
-- Pomodoro timer integration
