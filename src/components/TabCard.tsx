@@ -12,36 +12,36 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(tab.title);
   const [editUrl, setEditUrl] = useState(tab.url);
-  
+
   const updateTab = useBoardStore(state => state.updateTab);
   const deleteTab = useBoardStore(state => state.deleteTab);
-  
+
   const handleTabClick = () => {
     // Open the tab in a new browser tab
     window.open(tab.url, '_blank');
   };
-  
+
   const handleDelete = () => {
     if (window.confirm(`Are you sure you want to delete "${tab.title}"?`)) {
       deleteTab(tab.id);
     }
   };
-  
+
   const handleEdit = () => {
     setIsEditing(true);
   };
-  
+
   const handleSave = () => {
     updateTab(tab.id, { title: editTitle, url: editUrl });
     setIsEditing(false);
   };
-  
+
   const handleCancel = () => {
     setEditTitle(tab.title);
     setEditUrl(tab.url);
     setIsEditing(false);
   };
-  
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSave();
@@ -51,9 +51,9 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
   };
 
   if (isEditing) {
-    const { attributes, listeners, setNodeRef, transform, isDragging } = 
+    const { attributes, listeners, setNodeRef, transform, isDragging } =
       useDraggable({ id: tab.id });
-    
+
     const style: React.CSSProperties = transform ? {
       transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
       zIndex: isDragging ? 1000 : 'auto',
@@ -62,14 +62,14 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
       zIndex: isDragging ? 1000 : 'auto',
       position: isDragging ? 'relative' as const : 'static' as const,
     };
-    
+
     return (
-      <div 
+      <div
         ref={setNodeRef}
         style={style}
         className={`tab-card editing ${isDragging ? 'dragging' : ''}`}
       >
-        <div className="tab-header" {...listeners} {...attributes}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div className="drag-handle" {...listeners} {...attributes}>⋮⋮</div>
           <div className="tab-icon">
             {tab.favicon ? (
@@ -87,6 +87,7 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
             onKeyDown={handleKeyDown}
             autoFocus
             className="edit-title"
+            placeholder="Title"
           />
           <input
             type="text"
@@ -94,6 +95,7 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
             onChange={(e) => setEditUrl(e.target.value)}
             onKeyDown={handleKeyDown}
             className="edit-url"
+            placeholder="URL"
           />
           <div className="edit-actions">
             <button onClick={handleSave}>Save</button>
@@ -107,9 +109,9 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
     );
   }
 
-  const { attributes, listeners, setNodeRef, transform, isDragging } = 
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: tab.id });
-  
+
   const style: React.CSSProperties = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     zIndex: isDragging ? 1000 : 'auto',
@@ -118,34 +120,35 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
     zIndex: isDragging ? 1000 : 'auto',
     position: isDragging ? 'relative' as const : 'static' as const,
   };
-  
+
   return (
-    <div 
+    <div
       ref={setNodeRef}
       style={style}
       className={`tab-card ${isDragging ? 'dragging' : ''}`}
     >
-      <div className="tab-header" {...listeners} {...attributes}>
-        <div className="drag-handle" {...listeners} {...attributes}>⋮⋮</div>
-        <div className="tab-icon" onClick={handleTabClick}>
-          {tab.favicon ? (
-            <img src={tab.favicon} alt="" />
-          ) : (
-            <div className="default-icon" onClick={handleTabClick}>🌐</div>
-          )}
-        </div>
+      <div className="drag-handle" {...listeners} {...attributes}>⋮⋮</div>
+
+      <div className="tab-icon" onClick={handleTabClick}>
+        {tab.favicon ? (
+          <img src={tab.favicon} alt="" />
+        ) : (
+          <div className="default-icon" onClick={handleTabClick}>🌐</div>
+        )}
       </div>
-      <div className="tab-content">
-        <h4 className="tab-title" onClick={(e) => { e.stopPropagation(); handleTabClick(); }}>{tab.title}</h4>
-        <p className="tab-url" onClick={(e) => { e.stopPropagation(); handleTabClick(); }}>{tab.url}</p>
-        <div className="tab-actions">
-          <button className="edit-btn" onClick={(e) => { e.stopPropagation(); handleEdit(); }}>
-            ✏️
-          </button>
-          <button className="delete-btn" onClick={(e) => { e.stopPropagation(); handleDelete(); }}>
-            🗑️
-          </button>
-        </div>
+
+      <div className="tab-content" onClick={(e) => { e.stopPropagation(); handleTabClick(); }}>
+        <h4 className="tab-title">{tab.title}</h4>
+        <p className="tab-url">{tab.url}</p>
+      </div>
+
+      <div className="tab-actions">
+        <button className="edit-btn" onClick={(e) => { e.stopPropagation(); handleEdit(); }} title="Edit">
+          ✏️
+        </button>
+        <button className="delete-btn" onClick={(e) => { e.stopPropagation(); handleDelete(); }} title="Delete">
+          🗑️
+        </button>
       </div>
     </div>
   );
