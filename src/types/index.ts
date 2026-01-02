@@ -37,10 +37,17 @@ export interface Tab {
   pinned?: boolean;
 }
 
+export interface TaskChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
   description?: string;
+  checklist?: TaskChecklistItem[];
   status: 'todo' | 'doing' | 'done';
   dueDate?: string;
   priority: 'low' | 'medium' | 'high';

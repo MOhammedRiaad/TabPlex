@@ -2,7 +2,7 @@ import { openDB, IDBPDatabase } from 'idb';
 import { Board, Folder, Tab, Task, Note, Session } from '../types';
 
 const DB_NAME = 'TabBoardDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const BOARDS_STORE = 'boards';
 const FOLDERS_STORE = 'folders';
 const TABS_STORE = 'tabs';
