@@ -21,7 +21,8 @@ A Microsoft Edge extension to organize browser tabs, tasks, and work context in 
 - **🔍 Global Search** across tabs, tasks, notes, and sessions
 - **⌘ Command Palette** for quick actions (Ctrl+K)
 - **📊 Analytics Dashboard** with productivity insights
-- **🎨 Consistent theming** with CSS variables
+- **🎨 Canvas Drawing** with shapes, text, and freehand tools
+- **🖌️ Consistent theming** with CSS variables
 
 ## Installation
 
@@ -229,9 +230,42 @@ npm run dev
 - **Checklists**: Break down tasks into sub-items with progress tracking
 - **Linked Tabs**: Open tabs associated with tasks directly from the task card
 
+## Phase 6: Canvas Drawing Tool
+
+### 🎨 Canvas Drawing
+- **Full Drawing Suite**: Rectangle, Ellipse, Line, Pen, and Text tools
+- **Interactive Drawing**: Real-time preview while drawing shapes
+- **Selection & Editing**: Click to select, drag to move elements
+- **Multi-Select**: Ctrl+Click for multiple selection, drag-to-select box
+- **Layering**: Ctrl+] bring to front, Ctrl+[ send to back
+- **Styling**: Color pickers for stroke/fill, stroke width, opacity controls
+
+### ⌨️ Canvas Keyboard Shortcuts
+- **V**: Select tool
+- **R**: Rectangle tool
+- **E**: Ellipse tool
+- **L**: Line tool
+- **P**: Pen (freehand) tool
+- **T**: Text tool
+- **Ctrl+A**: Select all elements
+- **Ctrl+C / Ctrl+V**: Copy and paste elements
+- **Ctrl+Z / Ctrl+Y**: Undo and redo
+- **Ctrl+] / Ctrl+[**: Layer ordering
+- **Delete/Backspace**: Delete selected elements
+
+### 🔧 Canvas Features
+- **Zoom & Pan**: Ctrl+Scroll to zoom, Shift+Drag to pan
+- **Grid**: 10px subtle grid for alignment
+- **Export**: Download canvas as PNG image
+- **Auto-Save**: All drawings persist automatically
+- **Multiple Canvases**: Create and switch between canvases
+- **White Background**: Consistent canvas visibility in all themes
+
 ## Future Enhancements
 - AI-powered tab organization suggestions
 - Cross-browser synchronization
 - Integration with productivity tools
 - Tags and labels for items
 - Pinned/favorites functionality
+- Canvas shape resizing and rotation
+- Shape connectors for diagrams

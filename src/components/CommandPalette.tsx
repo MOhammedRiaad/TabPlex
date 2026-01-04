@@ -7,7 +7,7 @@ import './CommandPalette.css';
 interface CommandPaletteProps {
     isOpen: boolean;
     onClose: () => void;
-    onNavigate: (view: 'boards' | 'history' | 'sessions' | 'today' | 'analytics') => void;
+    onNavigate: (view: 'boards' | 'history' | 'sessions' | 'today' | 'analytics' | 'canvas') => void;
 }
 
 const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavigate }) => {
@@ -129,6 +129,87 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
             },
             category: 'action',
         },
+        // Canvas commands (Hints)
+        {
+            id: 'canvas-select',
+            name: 'Canvas: Select Tool',
+            shortcut: 'V',
+            icon: '↖️',
+            action: () => onNavigate('canvas'),
+            category: 'canvas',
+        },
+        {
+            id: 'canvas-rect',
+            name: 'Canvas: Rectangle Tool',
+            shortcut: 'R',
+            icon: '▭',
+            action: () => onNavigate('canvas'),
+            category: 'canvas',
+        },
+        {
+            id: 'canvas-ellipse',
+            name: 'Canvas: Ellipse Tool',
+            shortcut: 'E',
+            icon: '⬭',
+            action: () => onNavigate('canvas'),
+            category: 'canvas',
+        },
+        {
+            id: 'canvas-line',
+            name: 'Canvas: Line Tool',
+            shortcut: 'L',
+            icon: '⟋',
+            action: () => onNavigate('canvas'),
+            category: 'canvas',
+        },
+        {
+            id: 'canvas-pen',
+            name: 'Canvas: Pen Tool',
+            shortcut: 'P',
+            icon: '✎',
+            action: () => onNavigate('canvas'),
+            category: 'canvas',
+        },
+        {
+            id: 'canvas-text',
+            name: 'Canvas: Text Tool',
+            shortcut: 'T',
+            icon: 'T',
+            action: () => onNavigate('canvas'),
+            category: 'canvas',
+        },
+        {
+            id: 'canvas-select-all',
+            name: 'Canvas: Select All',
+            shortcut: 'Ctrl+A',
+            icon: '✅',
+            action: () => onNavigate('canvas'),
+            category: 'canvas',
+        },
+        {
+            id: 'canvas-delete',
+            name: 'Canvas: Delete Selected',
+            shortcut: 'Del',
+            icon: '🗑️',
+            action: () => onNavigate('canvas'),
+            category: 'canvas',
+        },
+        {
+            id: 'canvas-front',
+            name: 'Canvas: Bring to Front',
+            shortcut: 'Ctrl+]',
+            icon: '⬆️',
+            action: () => onNavigate('canvas'),
+            category: 'canvas',
+        },
+        {
+            id: 'canvas-back',
+            name: 'Canvas: Send to Back',
+            shortcut: 'Ctrl+[',
+            icon: '⬇️',
+            action: () => onNavigate('canvas'),
+            category: 'canvas',
+        },
     ], [onNavigate, addTask, addNote, addFolder, boards]);
 
     // Filter commands based on query
@@ -214,6 +295,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
         creation: '➕ Create',
         action: '⚡ Actions',
         settings: '⚙️ Settings',
+        canvas: '🎨 Canvas Shortcuts',
     };
 
     let flatIndex = 0;

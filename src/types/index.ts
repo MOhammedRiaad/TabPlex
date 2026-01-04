@@ -142,5 +142,5 @@ export interface Command {
   shortcut?: string;
   icon?: string;
   action: () => void;
-  category: 'navigation' | 'creation' | 'action' | 'settings';
+  category: 'navigation' | 'creation' | 'action' | 'settings' | 'canvas';
 }

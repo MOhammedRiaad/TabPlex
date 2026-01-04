@@ -6,6 +6,7 @@ import HistoryView from './components/HistoryView';
 import SessionsView from './components/SessionsView';
 import TodayView from './components/TodayView';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import CanvasView from './components/CanvasView';
 import ThemeToggle from './components/ThemeToggle';
 import SearchBar from './components/SearchBar';
 import CommandPalette from './components/CommandPalette';
@@ -18,13 +19,23 @@ import './App.css';
 import './components/HistoryView.css';
 import './components/SessionsView.css';
 
-type ViewType = 'boards' | 'history' | 'sessions' | 'today' | 'analytics';
+type ViewType = 'boards' | 'history' | 'sessions' | 'today' | 'analytics' | 'canvas';
 
 function App() {
   useStorageSync(); // Initialize storage sync
   useTheme(); // Initialize theme
 
-  const [activeView, setActiveView] = useState<ViewType>('today');
+  // Persist active view in localStorage
+  const [activeView, setActiveView] = useState<ViewType>(() => {
+    const saved = localStorage.getItem('tabboard-active-view');
+    return (saved as ViewType) || 'today';
+  });
+
+  // Save view to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('tabboard-active-view', activeView);
+  }, [activeView]);
+
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -120,6 +131,8 @@ function App() {
         return <SessionsView />;
       case 'analytics':
         return <AnalyticsDashboard />;
+      case 'canvas':
+        return <CanvasView />;
       case 'today':
       default:
         return <TodayView />;
@@ -187,6 +200,13 @@ function App() {
             aria-current={activeView === 'analytics' ? 'page' : undefined}
           >
             📊 Analytics
+          </button>
+          <button
+            className={activeView === 'canvas' ? 'nav-btn active' : 'nav-btn'}
+            onClick={() => setActiveView('canvas')}
+            aria-current={activeView === 'canvas' ? 'page' : undefined}
+          >
+            🎨 Canvas
           </button>
         </div>
 
