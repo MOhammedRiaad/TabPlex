@@ -1,12 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { DndContext, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
 import { useBoardStore } from '../../store/boardStore';
+import TabCard from './components/TabCard';
 import FolderColumn from './components/FolderColumn';
 import AddFolderForm from './components/AddFolderForm';
 import './BoardView.css';
 
 const BoardView: React.FC = () => {
-    const { boards, folders, tabs, moveTab, addBoard } = useBoardStore();
+    const { boards, folders, tabs, moveTab, reorderTab, addBoard } = useBoardStore();
     const hasCheckedForDefaultBoard = useRef(false);
 
     // Create a default board if none exists
@@ -57,31 +58,56 @@ const BoardView: React.FC = () => {
 
     const boardFolders = folders.filter(folder => folder.boardId === currentBoard.id);
 
+    const [activeId, setActiveId] = React.useState<string | null>(null);
+
+    const handleDragStart = (event: DragStartEvent) => {
+        if (event.active) {
+            setActiveId(event.active.id as string);
+        }
+    };
+
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
 
         if (over && active.id !== over.id) {
-            // Check if the drop target is a folder
-            const targetFolder = folders.find(f => f.id === over.id);
+            const activeTab = tabs.find(t => t.id === active.id);
+            const overTab = tabs.find(t => t.id === over.id);
+            const overFolder = folders.find(f => f.id === over.id);
 
-            if (targetFolder) {
-                // Move tab to the target folder
-                moveTab(active.id as string, targetFolder.id);
-
-                // Notify background script
-                chrome.runtime.sendMessage({
-                    type: 'MOVE_TAB',
-                    payload: {
-                        tabId: active.id,
-                        newFolderId: targetFolder.id,
-                    },
-                });
+            if (activeTab) {
+                if (overTab) {
+                    // Dropped on another tab
+                    if (activeTab.folderId === overTab.folderId) {
+                        // Same folder - reorder
+                        const folderTabs = tabs.filter(t => t.folderId === activeTab.folderId);
+                        const newIndex = folderTabs.findIndex(t => t.id === over.id);
+                        if (newIndex !== -1) {
+                            reorderTab(active.id as string, newIndex, activeTab.folderId);
+                        }
+                    } else {
+                        // Different folder - move to that folder
+                        // Note: For simple move, we just set the folderId.
+                        // To insert at specific position would require moveTab to support index or a separate call.
+                        // Users asked for sorting "under the same folder", so basic move is fine here for now.
+                        moveTab(active.id as string, overTab.folderId);
+                    }
+                } else if (overFolder) {
+                    // Dropped on a folder (empty area)
+                    moveTab(active.id as string, overFolder.id);
+                }
             }
+
+            // Sync with background if needed (store handles it mostly, but moveTab syncs. reorderTab needs to sync too?
+            // reorderTab in store doesn't seem to sync to background/storage explicitly in my implementation earlier?
+            // Wait, I didn't add persistence to reorderTab in the slice! I need to fix that.)
         }
+        setActiveId(null);
     };
 
+    const activeTab = activeId ? tabs.find(t => t.id === activeId) : null;
+
     return (
-        <DndContext onDragEnd={handleDragEnd}>
+        <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="board-view">
                 <div className="board-header">
                     <h2>{currentBoard?.name || 'Default Board'}</h2>
@@ -96,6 +122,7 @@ const BoardView: React.FC = () => {
                     ))}
                     <AddFolderForm boardId={currentBoard?.id} />
                 </div>
+                <DragOverlay>{activeTab ? <TabCard tab={activeTab} isOverlay /> : null}</DragOverlay>
             </div>
         </DndContext>
     );

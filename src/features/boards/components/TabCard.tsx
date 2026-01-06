@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { useDraggable } from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Tab } from '../../../types';
 import { useBoardStore } from '../../../store/boardStore';
 import './TabCard.css';
 
 interface TabCardProps {
     tab: Tab;
+    isOverlay?: boolean;
 }
 
-const TabCard: React.FC<TabCardProps> = ({ tab }) => {
+const TabCard: React.FC<TabCardProps> = ({ tab, isOverlay }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(tab.title);
     const [editUrl, setEditUrl] = useState(tab.url);
+    const [faviconError, setFaviconError] = useState(false);
 
     const updateTab = useBoardStore(state => state.updateTab);
     const deleteTab = useBoardStore(state => state.deleteTab);
@@ -50,28 +53,39 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
         }
     };
 
+    // Only use sortable hook if not an overlay
+    const sortable = useSortable({
+        id: tab.id,
+        disabled: isOverlay || isEditing,
+        data: {
+            type: 'Tab',
+            tab,
+        },
+    });
+
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = isOverlay
+        ? { attributes: {}, listeners: {}, setNodeRef: null, transform: null, transition: null, isDragging: false }
+        : sortable;
+
+    // Style for the draggable element (placeholder when dragging)
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition: transition || undefined,
+        opacity: isDragging ? 0.3 : 1, // Dim the original item when dragging
+        cursor: isOverlay ? 'grabbing' : 'default',
+    };
+
     if (isEditing) {
-        const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: tab.id });
-
-        const style: React.CSSProperties = transform
-            ? {
-                  transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-                  zIndex: isDragging ? 1000 : 'auto',
-                  position: isDragging ? ('relative' as const) : ('static' as const),
-              }
-            : {
-                  zIndex: isDragging ? 1000 : 'auto',
-                  position: isDragging ? ('relative' as const) : ('static' as const),
-              };
-
         return (
-            <div ref={setNodeRef} style={style} className={`tab-card editing ${isDragging ? 'dragging' : ''}`}>
+            <div className="tab-card editing">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div className="drag-handle" {...listeners} {...attributes}>
-                        ⋮⋮
-                    </div>
+                    <div className="drag-handle">⋮⋮</div>
                     <div className="tab-icon">
-                        {tab.favicon ? <img src={tab.favicon} alt="" /> : <div className="default-icon">🌐</div>}
+                        {tab.favicon && !faviconError ? (
+                            <img src={tab.favicon} alt="" onError={() => setFaviconError(true)} />
+                        ) : (
+                            <div className="default-icon">🌐</div>
+                        )}
                     </div>
                 </div>
                 <div className="tab-edit">
@@ -110,28 +124,19 @@ const TabCard: React.FC<TabCardProps> = ({ tab }) => {
         );
     }
 
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: tab.id });
-
-    const style: React.CSSProperties = transform
-        ? {
-              transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-              zIndex: isDragging ? 1000 : 'auto',
-              position: isDragging ? ('relative' as const) : ('static' as const),
-          }
-        : {
-              zIndex: isDragging ? 1000 : 'auto',
-              position: isDragging ? ('relative' as const) : ('static' as const),
-          };
-
     return (
-        <div ref={setNodeRef} style={style} className={`tab-card ${isDragging ? 'dragging' : ''}`}>
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`tab-card ${isOverlay ? 'dragging overlay' : ''} ${isDragging ? 'dragging-placeholder' : ''}`}
+        >
             <div className="drag-handle" {...listeners} {...attributes}>
                 ⋮⋮
             </div>
 
             <div className="tab-icon" onClick={handleTabClick}>
-                {tab.favicon ? (
-                    <img src={tab.favicon} alt="" />
+                {tab.favicon && !faviconError ? (
+                    <img src={tab.favicon} alt="" onError={() => setFaviconError(true)} />
                 ) : (
                     <div className="default-icon" onClick={handleTabClick}>
                         🌐

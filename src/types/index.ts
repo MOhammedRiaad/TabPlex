@@ -35,6 +35,7 @@ export interface Tab {
     createdAt: string;
     tags?: string[];
     pinned?: boolean;
+    order?: number;
 }
 
 export interface TaskChecklistItem {

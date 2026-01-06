@@ -16,6 +16,10 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
     const [checklist, setChecklist] = useState(task.checklist || []);
     const [newChecklistItem, setNewChecklistItem] = useState('');
 
+    // Animation states
+    const [isAnimatingCard, setIsAnimatingCard] = useState(false);
+    const [isAnimatingIcon, setIsAnimatingIcon] = useState(false);
+
     const updateTask = useBoardStore(state => state.updateTask);
     const deleteTask = useBoardStore(state => state.deleteTask);
     const tabs = useBoardStore(state => state.tabs); // Get tabs to resolve linked names
@@ -23,7 +27,23 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
     const linkedTabs = task.tabIds?.map(id => tabs.find(t => t.id === id)).filter(Boolean) || [];
 
     const handleStatusChange = (newStatus: 'todo' | 'doing' | 'done') => {
-        updateTask(task.id, { status: newStatus });
+        if (newStatus === 'done' && task.status !== 'done') {
+            setIsAnimatingCard(true);
+
+            // Wait for jump apex/landing (500ms)
+            setTimeout(() => {
+                setIsAnimatingCard(false);
+                setIsAnimatingIcon(true);
+            }, 500);
+
+            // Wait for icon pop before moving column (total 1s + small buffer)
+            setTimeout(() => {
+                updateTask(task.id, { status: newStatus });
+                setIsAnimatingIcon(false);
+            }, 1000);
+        } else {
+            updateTask(task.id, { status: newStatus });
+        }
     };
 
     const handleSave = () => {
@@ -177,13 +197,16 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
     }
 
     return (
-        <div className="task-card">
+        <div
+            className={`task-card ${isAnimatingCard ? 'animate-card-jump' : ''}`}
+            style={
+                {
+                    '--priority-color': getPriorityColor(),
+                } as React.CSSProperties
+            }
+        >
             <div className="task-header">
-                <div
-                    className="priority-indicator"
-                    style={{ backgroundColor: getPriorityColor() }}
-                    title={`Priority: ${task.priority}`}
-                />
+                <h3 className="task-title">{task.title}</h3>
                 <div className="task-actions">
                     <button className="edit-btn" onClick={() => setIsEditing(true)} title="Edit task">
                         ✏️
@@ -193,8 +216,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                     </button>
                 </div>
             </div>
-
-            <h3 className="task-title">{task.title}</h3>
 
             {task.description && <p className="task-description">{task.description}</p>}
 
@@ -252,7 +273,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                         🔄
                     </button>
                     <button
-                        className={`status-btn ${task.status === 'done' ? 'active' : ''}`}
+                        className={`status-btn ${task.status === 'done' ? 'active' : ''} ${isAnimatingIcon ? 'animate-success-pop' : ''}`}
                         onClick={() => handleStatusChange('done')}
                         title="Done"
                     >

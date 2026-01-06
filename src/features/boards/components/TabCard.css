@@ -1,28 +1,94 @@
+/* ============================================
+   ANIMATION KEYFRAMES
+   ============================================ */
+
+@keyframes slideInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    60% {
+        transform: scale(1.02);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes dragGlow {
+    0%,
+    100% {
+        box-shadow:
+            0 8px 25px rgba(0, 0, 0, 0.15),
+            0 0 0 2px rgba(59, 130, 246, 0.3);
+    }
+
+    50% {
+        box-shadow:
+            0 12px 30px rgba(0, 0, 0, 0.2),
+            0 0 0 3px rgba(59, 130, 246, 0.5);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .tab-card,
+    .tab-card * {
+        animation: none !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ============================================
+   TAB CARD STYLES
+   ============================================ */
+
 .tab-card {
     display: flex;
-    align-items: center; /* Vertical center alignment */
+    align-items: center;
     gap: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-md); /* Reduced vertical padding */
+    padding: var(--spacing-sm) var(--spacing-md);
     background-color: var(--color-bg-primary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     cursor: default;
-    transition: all var(--transition-fast);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    min-height: 48px; /* Consistent height */
+    min-height: 48px;
+    animation: slideInUp 0.3s ease-out backwards;
+    animation-delay: calc(var(--card-index, 0) * 0.04s);
 }
 
 .tab-card:hover {
     background-color: var(--color-bg-secondary);
     border-color: var(--color-border-focus);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
+    transform: translateY(-3px) scale(1.01);
+    box-shadow:
+        0 6px 20px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(59, 130, 246, 0.1);
 }
 
 .tab-card.dragging {
-    opacity: 0.9;
+    opacity: 1;
     z-index: 1000 !important;
-    box-shadow: var(--shadow-lg);
+    transform: rotate(2deg) scale(1.02);
+    animation: dragGlow 1s ease-in-out infinite;
     border-color: var(--color-primary);
     background-color: var(--color-bg-secondary);
 }
@@ -36,7 +102,8 @@
     cursor: grab;
     padding: var(--spacing-xs);
     border-radius: var(--radius-sm);
-    opacity: 0; /* Hidden by default for cleaner look */
+    opacity: 0;
+    /* Hidden by default for cleaner look */
     transition: opacity var(--transition-fast);
     font-size: 14px;
 }
@@ -80,12 +147,14 @@
 /* Content Area */
 .tab-content {
     flex: 1;
-    min-width: 0; /* Important for truncation */
+    min-width: 0;
+    /* Important for truncation */
     display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 2px;
-    padding-right: var(--spacing-xs); /* Separation from actions */
+    padding-right: var(--spacing-xs);
+    /* Separation from actions */
 }
 
 .tab-title {
@@ -101,7 +170,8 @@
 
 .tab-url {
     margin: 0;
-    font-size: 11px; /* Slightly smaller */
+    font-size: 11px;
+    /* Slightly smaller */
     color: var(--color-text-muted);
     white-space: nowrap;
     overflow: hidden;
@@ -114,10 +184,12 @@
     display: flex;
     align-items: center;
     gap: 2px;
-    opacity: 0; /* Hidden until hover */
+    opacity: 0;
+    /* Hidden until hover */
     transform: translateX(10px);
     transition: all var(--transition-fast);
-    flex-shrink: 0; /* Don't squash */
+    flex-shrink: 0;
+    /* Don't squash */
 }
 
 .tab-card:hover .tab-actions {
@@ -153,7 +225,8 @@
 
 /* Editing State */
 .tab-card.editing {
-    display: block; /* Switch back to block for form layout */
+    display: block;
+    /* Switch back to block for form layout */
     padding: var(--spacing-md);
     border-color: var(--color-primary);
     box-shadow: 0 0 0 1px var(--color-primary, #3b82f6);
@@ -168,7 +241,8 @@
 
 .tab-card.editing .tab-header,
 .tab-card.editing .tab-content {
-    display: none; /* Hide standard view elements while editing */
+    display: none;
+    /* Hide standard view elements while editing */
 }
 
 /* But we might need the icon visible, let's adjust the component structure slightly if needed, 
@@ -177,11 +251,13 @@
 
 /* Adjustments for the existing component structure compatibility */
 .tab-card.editing .tab-header {
-    display: flex; /* Keep header visible */
+    display: flex;
+    /* Keep header visible */
 }
 
 .tab-card.editing .tab-content {
-    display: none; /* Hide normal content text */
+    display: none;
+    /* Hide normal content text */
 }
 
 .edit-title,
@@ -243,7 +319,8 @@
 
 .edit-actions .delete-btn {
     /* Delete in edit mode */
-    margin-left: auto; /* Push to left? or stick with group */
+    margin-left: auto;
+    /* Push to left? or stick with group */
     width: auto;
     height: auto;
     padding: 6px 12px;

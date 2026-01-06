@@ -76,7 +76,15 @@ export const useStorageSync = () => {
             // Populate store with loaded data
             storedBoards.forEach(board => addBoardToStore(board));
             storedFolders.forEach(folder => addFolderToStore(folder));
-            storedTabs.forEach(tab => addTabToStore(tab));
+
+            // Sort tabs by order, handling undefined order by placing at end or keeping relative
+            const sortedTabs = storedTabs.sort((a, b) => {
+                const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+                const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+                return orderA - orderB;
+            });
+            sortedTabs.forEach(tab => addTabToStore(tab));
+
             storedTasks.forEach(task => addTaskToStore(task));
             storedNotes.forEach(note => addNoteToStore(note));
             storedSessions.forEach(session => addSessionToStore(session));

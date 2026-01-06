@@ -1,27 +1,29 @@
-import { addTab as addTabToDB, deleteTab as deleteTabFromDB } from '../../../utils/storage';
+import { addTab as addTabToDB, deleteTab as deleteTabFromDB, updateTab as updateTabInDB } from '../../../utils/storage';
 import { TabSlice, BoardStoreCreator } from './types';
 
 export const createTabSlice: BoardStoreCreator<TabSlice> = set => ({
     tabs: [],
 
     addTab: tab => {
-        const newTab = {
-            ...tab,
-            createdAt: new Date().toISOString(),
-        };
+        set(state => {
+            const tabsInFolder = state.tabs.filter(t => t.folderId === tab.folderId);
+            const newTab = {
+                ...tab,
+                createdAt: new Date().toISOString(),
+                order: tabsInFolder.length,
+            };
 
-        set(state => ({
-            tabs: [...state.tabs, newTab],
-        }));
+            addTabToDB(newTab).catch(console.error);
 
-        addTabToDB(newTab).catch(console.error);
+            chrome.runtime
+                .sendMessage({
+                    type: 'ADD_TAB',
+                    payload: newTab,
+                })
+                .catch(console.error);
 
-        chrome.runtime
-            .sendMessage({
-                type: 'ADD_TAB',
-                payload: newTab,
-            })
-            .catch(console.error);
+            return { tabs: [...state.tabs, newTab] };
+        });
     },
 
     updateTab: (id, updates) =>
@@ -53,7 +55,48 @@ export const createTabSlice: BoardStoreCreator<TabSlice> = set => ({
     },
 
     moveTab: (tabId, newFolderId) =>
-        set(state => ({
-            tabs: state.tabs.map(tab => (tab.id === tabId ? { ...tab, folderId: newFolderId } : tab)),
-        })),
+        set(state => {
+            const newState = {
+                tabs: state.tabs.map(tab => (tab.id === tabId ? { ...tab, folderId: newFolderId } : tab)),
+            };
+            // Also need to persist this change
+            const updatedTab = newState.tabs.find(t => t.id === tabId);
+            if (updatedTab) {
+                updateTabInDB(updatedTab).catch(console.error);
+            }
+            return newState;
+        }),
+
+    reorderTab: (tabId, newIndex, folderId) =>
+        set(state => {
+            const folderTabs = state.tabs
+                .filter(t => t.folderId === folderId)
+                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+            const otherTabs = state.tabs.filter(t => t.folderId !== folderId);
+            const tabToMove = folderTabs.find(t => t.id === tabId);
+
+            if (!tabToMove) return state;
+
+            const oldIndex = folderTabs.indexOf(tabToMove);
+            if (oldIndex === -1) return state;
+
+            // Remove from old position
+            folderTabs.splice(oldIndex, 1);
+            // Insert at new position
+            folderTabs.splice(newIndex, 0, tabToMove);
+
+            // Update order field for all tabs in folder
+            const updatedFolderTabs = folderTabs.map((tab, index) => {
+                const updatedTab = { ...tab, order: index };
+                // Persist only if changed
+                if (tab.order !== index) {
+                    updateTabInDB(updatedTab).catch(console.error);
+                }
+                return updatedTab;
+            });
+
+            return {
+                tabs: [...otherTabs, ...updatedFolderTabs],
+            };
+        }),
 });

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Folder, Tab } from '../../../types';
 import { useBoardStore } from '../../../store/boardStore';
 import TabCard from './TabCard';
@@ -146,9 +147,11 @@ const FolderColumn: React.FC<FolderColumnProps> = ({ folder, tabs }) => {
                 )}
             </div>
             <div className="tabs-container">
-                {tabs.map(tab => (
-                    <TabCard key={tab.id} tab={tab} />
-                ))}
+                <SortableContext items={tabs.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                    {tabs.map(tab => (
+                        <TabCard key={tab.id} tab={tab} />
+                    ))}
+                </SortableContext>
                 <AddTabForm folderId={folder.id} />
             </div>
         </div>
