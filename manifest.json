@@ -1,35 +1,26 @@
 {
-  "manifest_version": 3,
-  "name": "TabBoard",
-  "version": "1.0.0",
-  "description": "Organize browser tabs, tasks, and work context in a Trello-like workspace with AI-assisted intelligence",
-  "icons": {
-    "16": "assets/icon16.png",
-    "32": "assets/icon32.png",
-    "48": "assets/icon48.png",
-    "128": "assets/icon128.png"
-  },
-  "background": {
-    "service_worker": "src/background/background.js"
-  },
-  "action": {},
+    "manifest_version": 3,
+    "name": "TabBoard",
+    "version": "1.0.0",
+    "description": "Organize browser tabs, tasks, and work context in a Trello-like workspace with AI-assisted intelligence",
+    "icons": {
+        "16": "assets/icon16.png",
+        "32": "assets/icon32.png",
+        "48": "assets/icon48.png",
+        "128": "assets/icon128.png"
+    },
+    "background": {
+        "service_worker": "src/background/background.js"
+    },
+    "action": {},
 
-  "permissions": [
-    "tabs",
-    "tabGroups",
-    "history",
-    "sessions",
-    "storage",
-    "notifications"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
-  "commands": {
-    "_execute_action": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+T"
-      }
+    "permissions": ["tabs", "tabGroups", "history", "sessions", "storage", "notifications"],
+    "host_permissions": ["<all_urls>"],
+    "commands": {
+        "_execute_action": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+T"
+            }
+        }
     }
-  }
 }

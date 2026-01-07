@@ -1,0 +1,74 @@
+.alignment-toolbar {
+    position: absolute;
+    top: 190px;
+    /* Positioned below the main toolbar which is usually at top */
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-bg-secondary);
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 6px 12px;
+    display: flex;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    align-items: center;
+    /* Glassmorphism for premium feel if user likes that, sticking to clean white for now */
+}
+
+/* Dark mode support if applicable */
+@media (prefers-color-scheme: dark) {
+    .alignment-toolbar {
+        background: #2d2d2d;
+        border-color: #404040;
+    }
+}
+
+.alignment-group {
+    display: flex;
+    gap: 4px;
+}
+
+.alignment-toolbar button {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.alignment-toolbar button:hover {
+    background: #f0f0f0;
+    color: #333;
+    transform: translateY(-1px);
+}
+
+@media (prefers-color-scheme: dark) {
+    .alignment-toolbar button {
+        color: #aaa;
+    }
+
+    .alignment-toolbar button:hover {
+        background: #404040;
+        color: #fff;
+    }
+}
+
+.alignment-divider {
+    width: 1px;
+    height: 20px;
+    background: #e0e0e0;
+    margin: 0 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .alignment-divider {
+        background: #404040;
+    }
+}

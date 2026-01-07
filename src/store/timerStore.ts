@@ -1,10 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-
 type TimerMode = 'work' | 'shortBreak' | 'longBreak';
 
-interface TimerSettings {
+export interface TimerSettings {
     workDuration: number;
     shortBreakDuration: number;
     longBreakDuration: number;
@@ -62,10 +61,10 @@ export const useTimerStore = create<TimerState>()(
             remainingTime: {
                 work: 25 * 60,
                 shortBreak: 5 * 60,
-                longBreak: 15 * 60
+                longBreak: 15 * 60,
             },
 
-            setMode: (newMode) => {
+            setMode: newMode => {
                 const state = get();
                 const { activeMode, isRunning, endTime } = state;
 
@@ -99,14 +98,14 @@ export const useTimerStore = create<TimerState>()(
                     mode: newMode,
                     timeLeft: nextTime,
                     remainingTime: updatedRemaining,
-                    // Do NOT touch isRunning or endTime. 
+                    // Do NOT touch isRunning or endTime.
                     // If isRunning was true, it stays true (background).
                 });
             },
 
-            setTimeLeft: (timeLeft) => set({ timeLeft }),
+            setTimeLeft: timeLeft => set({ timeLeft }),
 
-            setIsRunning: (isRunning) => {
+            setIsRunning: isRunning => {
                 const state = get();
                 if (isRunning) {
                     const now = Date.now();
@@ -125,23 +124,24 @@ export const useTimerStore = create<TimerState>()(
                     set({
                         isRunning: true,
                         activeMode: state.mode,
-                        endTime: now + (state.timeLeft * 1000)
+                        endTime: now + state.timeLeft * 1000,
                     });
                 } else {
                     set({ isRunning: false, endTime: null });
-                    // activeMode can remain as "last active" or be cleared? 
+                    // activeMode can remain as "last active" or be cleared?
                     // Better to not clear it so we know which one was paused?
                     // But for "single timer" logic, pausing just means no timer running.
                 }
             },
 
-            setLinkedTaskId: (id) => set({ linkedTaskId: id }),
+            setLinkedTaskId: id => set({ linkedTaskId: id }),
 
-            updateSettings: (newSettings) => set((state) => ({
-                settings: { ...state.settings, ...newSettings }
-            })),
+            updateSettings: newSettings =>
+                set(state => ({
+                    settings: { ...state.settings, ...newSettings },
+                })),
 
-            setCompletedSessions: (count) => set({ completedSessions: count }),
+            setCompletedSessions: count => set({ completedSessions: count }),
 
             resetTimer: () => {
                 const { mode, settings, remainingTime } = get();
@@ -157,7 +157,7 @@ export const useTimerStore = create<TimerState>()(
                     isRunning: false,
                     endTime: null,
                     activeMode: null, // Reset clears active status
-                    remainingTime: updatedRemaining
+                    remainingTime: updatedRemaining,
                 });
             },
 
@@ -177,7 +177,7 @@ export const useTimerStore = create<TimerState>()(
                         }
                     }
                 }
-            }
+            },
         }),
         {
             name: 'pomodoro-storage',

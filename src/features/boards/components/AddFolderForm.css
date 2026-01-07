@@ -1,0 +1,81 @@
+.add-folder-btn {
+    width: 280px;
+    padding: 1rem;
+    border: 2px dashed #d1d5db;
+    border-radius: 0.5rem;
+    background-color: transparent;
+    color: #6b7280;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.add-folder-btn:hover {
+    border-color: #9ca3af;
+    color: #374151;
+    background-color: #f9fafb;
+}
+
+.add-folder-form {
+    width: 280px;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+
+.add-folder-form form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.add-folder-form input[type='text'] {
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+}
+
+.color-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.color-picker input[type='color'] {
+    width: 3rem;
+    height: 2rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.form-actions button {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.form-actions button[type='submit'] {
+    background-color: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.form-actions button[type='submit']:hover {
+    background-color: #2563eb;
+}
+
+.form-actions button[type='button'] {
+    background-color: white;
+    color: #374151;
+}

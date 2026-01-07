@@ -1,0 +1,110 @@
+.context-menu {
+    position: fixed;
+    background: #ffffff;
+    border: 1px solid var(--color-border, #d1d5db);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 4px;
+    min-width: 220px;
+    z-index: 10000;
+    animation: contextMenuFadeIn 0.15s ease-out;
+}
+
+@keyframes contextMenuFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #1f2937;
+    text-align: left;
+    transition: background-color 0.15s ease;
+}
+
+.context-menu-item:hover:not(:disabled) {
+    background-color: var(--color-hover);
+}
+
+.context-menu-item:active:not(:disabled) {
+    background-color: var(--color-active);
+}
+
+.context-menu-item:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.context-menu-item.danger:hover:not(:disabled) {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.context-menu-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.context-menu-label {
+    flex: 1;
+}
+
+.context-menu-shortcut {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+.context-menu-separator {
+    height: 1px;
+    background-color: var(--color-border);
+    margin: 4px 0;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .context-menu {
+        background: #1f2937;
+        border-color: #374151;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    }
+
+    .context-menu-item {
+        color: #f3f4f6;
+    }
+
+    .context-menu-item:hover:not(:disabled) {
+        background-color: #374151;
+    }
+
+    .context-menu-item:active:not(:disabled) {
+        background-color: #4b5563;
+    }
+
+    .context-menu-shortcut {
+        color: #9ca3af;
+    }
+
+    .context-menu-separator {
+        background-color: #374151;
+    }
+}

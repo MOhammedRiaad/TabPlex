@@ -1,4 +1,4 @@
-import { CanvasElement } from '../types/canvas';
+import { CanvasElement } from '../features/canvas/types/canvas';
 
 export interface HistoryAction {
     type: 'add' | 'update' | 'delete';

@@ -1,0 +1,150 @@
+/* Canvas Toolbar */
+.canvas-toolbar {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    padding: 8px 16px;
+    border-radius: 12px;
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.05),
+        0 10px 15px -3px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
+    z-index: 50;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.canvas-toolbar:hover {
+    padding: 8px 20px;
+    box-shadow:
+        0 10px 25px -5px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.canvas-toolbar-left,
+.canvas-toolbar-center,
+.canvas-toolbar-right {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+.tool-group {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    align-items: center;
+}
+
+.separator {
+    width: 1px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.1);
+    margin: 0 4px;
+}
+
+.tool-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    color: #4b5563;
+}
+
+.tool-btn:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+}
+
+.tool-btn.active {
+    background: #eff6ff;
+    color: #3b82f6;
+    box-shadow: inset 0 0 0 1px #bfdbfe;
+}
+
+.tool-btn:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.tool-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Canvas Selector */
+.canvas-selector {
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: transparent;
+    font-size: 14px;
+    color: #374151;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+    width: auto;
+    text-align: left;
+}
+
+.canvas-selector:hover {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
+.canvas-selector:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .canvas-toolbar {
+        background: rgba(31, 41, 55, 0.95);
+        box-shadow:
+            0 4px 6px -1px rgba(0, 0, 0, 0.2),
+            0 10px 15px -3px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .tool-btn {
+        color: #d1d5db;
+    }
+
+    .tool-btn:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .tool-btn.active {
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+        box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.3);
+    }
+
+    .separator {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .canvas-selector {
+        border-color: rgba(255, 255, 255, 0.1);
+        color: #d1d5db;
+    }
+
+    .canvas-selector:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+}

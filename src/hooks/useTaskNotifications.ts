@@ -122,7 +122,7 @@ export const useTaskNotifications = () => {
 
         return () => {
             if (checkIntervalRef.current) {
-                clearInterval(checkIntervalRef.current);
+                window.clearInterval(checkIntervalRef.current);
             }
         };
     }, [tasks]);

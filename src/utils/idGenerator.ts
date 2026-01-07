@@ -3,11 +3,12 @@
  * Falls back to timestamp-based ID if crypto is not available
  */
 export const generateId = (prefix?: string): string => {
-  const uuid = typeof crypto !== 'undefined' && crypto.randomUUID 
-    ? crypto.randomUUID() 
-    : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-  
-  return prefix ? `${prefix}_${uuid}` : uuid;
+    const uuid =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
+    return prefix ? `${prefix}_${uuid}` : uuid;
 };
 
 /**

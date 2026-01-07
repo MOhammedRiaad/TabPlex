@@ -1,271 +1,365 @@
-# TabBoard Extension
+# TabBoard - Smart Browser Tab & Task Manager
 
-A Microsoft Edge extension to organize browser tabs, tasks, and work context in a Trello-like workspace with AI-assisted intelligence.
+A powerful Chrome extension to organize browser tabs, tasks, and work context in a visual workspace with productivity-focused features.
 
-## Features
+## 🎯 Target Users
 
-- Organize tabs into boards and folders
-- Drag and drop tabs between folders
-- Local-only storage with no cloud sync
-- Full screen tab interface for easy access
-- Task management with Today view
-- Note-taking functionality
-- Browser history integration
-- Session inference
-- Edit and delete functionality for all items
-- Delete folders with smart tab management (move or delete tabs)
-- Keyboard shortcuts for enhanced productivity
-- Export/Import functionality for data backup and transfer
-- Toggle to show all tasks regardless of due date on Today view
-- **🌙 Dark Mode** with system theme detection
-- **🔍 Global Search** across tabs, tasks, notes, and sessions
-- **⌘ Command Palette** for quick actions (Ctrl+K)
-- **📊 Analytics Dashboard** with productivity insights
-- **🎨 Canvas Drawing** with shapes, text, and freehand tools
-- **🖌️ Consistent theming** with CSS variables
+**TabBoard is designed for:**
 
-## Installation
+- **Knowledge Workers** who juggle multiple projects and need to organize research, documentation, and tasks
+- **Developers & Designers** who work with many tabs and need to track progress across features
+- **Students & Researchers** managing multiple topics, papers, and study materials
+- **Project Managers** coordinating tasks, notes, and resources across different initiatives
+- **Anyone** who wants to reduce tab clutter and improve focus with structured workspace management
 
-1. Open Microsoft Edge
-2. Navigate to `edge://extensions`
-3. Enable "Developer mode" in the top right corner
-4. Click "Load unpacked"
-5. Select the `dist` folder in this project directory
+**Perfect for users who:**
 
-## Development
+- Regularly have 20+ tabs open
+- Work on multiple projects simultaneously
+- Need to track tasks alongside related web resources
+- Want visual organization similar to Trello or Kanban boards
+- Value privacy with local-only data storage
 
-To build the extension:
+## ✨ Features
 
-```bash
-npm install
-npm run build
-```
+### 📋 Core Organization
 
-To run in development mode:
+- **Board & Folder System**: Organize tabs into visual boards with customizable folders
+- **Drag & Drop**: Intuitive drag-and-drop interface for moving tabs between folders
+- **Smart Tab Management**: Automatically capture and organize browser tabs
+- **Local-First Storage**: All data stored locally with no cloud dependency
 
-```bash
-npm run dev
-```
+### ✅ Task Management
 
-## Architecture
+- **Today View**: Consolidated dashboard for today's tasks and notes
+- **Kanban-Style Workflow**: To Do, Doing, Done columns for visual progress tracking
+- **Rich Task Details**: Add descriptions, checklists, due dates, and priority levels
+- **Task-Tab Linking**: Associate web resources with specific tasks
 
-- **Frontend**: React 19 with TypeScript
-- **State Management**: Zustand
-- **Storage**: IndexedDB via idb for structured data, chrome.storage.local for settings
-- **Drag & Drop**: DndKit
-- **Build Tool**: Vite
-- **Theming**: CSS Custom Properties (Variables)
-- **Animations**: Framer Motion
+### 📝 Note-Taking
 
-## Phase 1 Completed
+- **Markdown Support**: Rich text formatting with markdown editor
+- **Context-Aware Notes**: Link notes to specific boards, folders, or tabs
+- **Quick Capture**: Fast note creation from any view
 
-- Extension shell
-- Full screen tab interface
-- Manual boards/folders
-- Tab dragging between folders
-- Local data persistence
+### 🍅 Focus & Productivity
 
-## Phase 2 Completed
+- **Pomodoro Timer**: Built-in focus timer with customizable work/break intervals
+- **Task Focus Tracking**: Track focus sessions per task
+- **Session Management**: Automatic session inference based on browsing patterns
+- **Browser History Integration**: Import and organize browser history
 
-### Tasks & Notes
-- **Today View**: Comprehensive dashboard showing today's tasks and notes
-- **Task Management**: Create, edit, and delete tasks with status tracking (To Do, Doing, Done)
-- **Note Taking**: Create, edit, and delete notes with rich text support
-- **Grid Layout**: Responsive grid layout for notes to prevent page overflow
-- **Edit Functionality**: Full edit capabilities for tasks and notes
-- **Delete Functionality**: Safe delete with confirmation dialogs
+### 📊 Analytics & Insights
 
-## Phase 3: Productivity Enhancements
-
-### Folder Deletion with Smart Tab Management
-- **Delete Folders**: Now supports deleting folders with intuitive user interface
-- **Empty Folders**: Simple confirmation for deleting empty folders
-- **Folders with Tabs**: Smart handling when folders contain tabs:
-  - Option to delete folder and all contained tabs
-  - Option to move tabs to another folder before deletion
-  - Dialog-based selection of target folder for moving tabs
-- **Data Consistency**: Proper synchronization between IndexedDB and chrome.storage.local
-
-### Keyboard Shortcuts
-- **Navigation Shortcuts**:
-  - `Ctrl/Cmd + Shift + B`: Switch to Boards view
-  - `Ctrl/Cmd + Shift + H`: Switch to History view
-  - `Ctrl/Cmd + Shift + S`: Switch to Sessions view
-  - `Ctrl/Cmd + Shift + T`: Switch to Today view
-- **Creation Shortcuts**:
-  - `Ctrl/Cmd + Shift + A`: Add a new tab to the current context
-  - `Ctrl/Cmd + Shift + N`: Add a new note
-  - `Ctrl/Cmd + Shift + K`: Add a new task
-  - `Ctrl/Cmd + Shift + F`: Add a new folder
-- **Export Shortcut**:
-  - `Ctrl/Cmd + Shift + E`: Export all data
-- **Command Palette**:
-  - `Ctrl/Cmd + K`: Open command palette
-
-### Export/Import Functionality
-- **Data Export**: Export all your boards, tabs, tasks, notes, sessions, and history with one click
-- **Data Import**: Import data from a JSON file to restore your workspace
-- **Complete Backup**: Data includes all metadata and relationships
-- **One-Click Operations**: Simple export/import buttons in the main navigation
-
-### Today View Enhancements
-- **Show All Tasks**: Toggle to view all tasks regardless of due date
-- **Intuitive Controls**: Easy-to-use button to switch between today's tasks and all tasks
-- **Maintained Layout**: Consistent three-column layout (To Do, Doing, Done) in both views
-- **Dynamic Counts**: Task counts update based on the selected view
-
-### History & Sessions
-- **Browser History Integration**: Import and organize browser history items
-- **History to Folders**: Add history items directly to existing folders
-- **Session Inference**: Automatic session detection based on tab usage patterns
-- **Session Management**: View and manage inferred sessions
-
-### Enhanced UI/UX
-- **Card Design**: Improved tab card layout with separate drag handles
-- **Drag Handle**: Dedicated drag handle in tab headers to prevent event conflicts
-- **Folder Editing**: Editable folder names with inline editing
-- **Responsive Grid**: Notes displayed in responsive grid layout with scrolling
-- **Visual Feedback**: Enhanced visual feedback during drag operations
-
-### Data Persistence
-- **Dual Storage**: Both IndexedDB and chrome.storage.local for data persistence
-- **Bidirectional Sync**: Proper synchronization between UI and background storage
-- **Deletion Handling**: Proper deletion from both storage systems
-- **State Consistency**: Maintained state consistency across storage systems
-
-### Bug Fixes
-- **Drag Conflicts**: Fixed event conflicts between drag, edit, and link opening
-- **Z-Index Issues**: Fixed z-index problems during drag operations
-- **Infinite Loops**: Fixed infinite loops in deletion synchronization
-- **Storage Sync**: Fixed bidirectional state sync between storage systems
-
-## Phase 4: Comprehensive Improvements
-
-### 🌙 Dark Mode Support
-- **System Theme Detection**: Automatically matches your OS theme preference
-- **Manual Toggle**: Switch between Light, Dark, and System modes
-- **Persistent Preference**: Theme choice is saved in localStorage
-- **Smooth Transitions**: CSS transitions for seamless theme switching
-- **Full Coverage**: All components styled for both light and dark themes
-
-### 🔍 Global Search
-- **Universal Search**: Search across tabs, tasks, notes, folders, and sessions
-- **Real-time Results**: Instant search results as you type
-- **Keyboard Navigation**: Use arrow keys and Enter to navigate results
-- **Result Categories**: Results grouped by type with icons
-- **Quick Access**: Search bar prominently placed in the header
-
-### ⌘ Command Palette
-- **Quick Actions**: Access all features via `Ctrl/Cmd + K`
-- **Fuzzy Search**: Find commands by typing partial names
-- **Keyboard Navigation**: Full keyboard support for power users
-- **Categorized Commands**: Commands grouped by Navigation, Creation, and Actions
-- **Shortcut Hints**: Shows keyboard shortcuts for each command
-
-### 📊 Analytics Dashboard
-- **Summary Cards**: Total tabs, tasks, notes, and sessions at a glance
-- **Task Progress**: Visual progress bar showing completion rate
-- **Weekly Activity**: Bar chart showing activity trends over 7 days
-- **Top Domains**: Most visited domains with percentage breakdown
-- **Session Statistics**: Average session duration and insights
-
-### 🎨 Code Quality Improvements
-- **CSS Variables**: Comprehensive design tokens for colors, spacing, and typography
-- **Unique ID Generation**: Using `crypto.randomUUID()` for collision-free IDs
-- **Improved Types**: Extended TypeScript interfaces with tags, pinned, and analytics types
-- **Accessibility**: ARIA labels and keyboard navigation throughout
-- **Responsive Design**: Mobile-friendly layouts with proper breakpoints
-
-### New Files Added
-- `src/hooks/useTheme.ts` - Theme management hook
-- `src/utils/idGenerator.ts` - Unique ID generation utilities
-- `src/components/ThemeToggle.tsx` - Theme toggle component
-- `src/components/SearchBar.tsx` - Global search component
-- `src/components/CommandPalette.tsx` - Command palette component
-- `src/components/AnalyticsDashboard.tsx` - Analytics dashboard component
-
-## Usage
-
-### Main Interface
-1. **Today View**: See today's tasks and notes in a consolidated view
-2. **Boards View**: Organize tabs into folders using drag and drop
-3. **History View**: Browse browser history and add items to folders
-4. **Sessions View**: View and manage inferred work sessions
-5. **Analytics View**: View productivity statistics and insights
-
-### Quick Actions
-- **Command Palette**: Press `Ctrl/Cmd + K` for quick access to all actions
-- **Search**: Use the search bar to find anything across your workspace
-- **Theme Toggle**: Switch between light/dark modes from the header
-
-### Creating Items
-- **Tabs**: Automatically captured from browser activity or manually added
-- **Tasks**: Create using the "Add Task" forms in any view
-- **Notes**: Create using the "Add Note" button in Today view
-- **Folders**: Create new folders using the add button
-
-### Managing Items
-- **Edit**: Click edit buttons (✏️) to modify content
-- **Delete**: Click delete buttons (🗑️) with confirmation
-- **Drag & Drop**: Move items between folders by dragging the handle (⋮⋮)
-- **Folder Rename**: Click folder names to edit them
-
-
-## Phase 5: Focus & Persistence
-
-### 🍅 Pomodoro Timer
-- **Persistent Timer**: Timer state persists across page reloads and browser restarts
-- **Global Integration**: Timer runs globally regardless of the active view
-- **Mini Timer**: Compact timer controls available in the "Today" view header when the main panel is hidden
-- **Task Linking**: Link specific tasks to focus sessions for tracking
-- **Customizable Settings**: Adjust work/break durations, auto-start options, and sound notifications
-
-### 📊 Enhanced Analytics
-- **Task Focus Metrics**: Track number of focus sessions per task
-- **Time Estimation**: "Est. Time" calculation based on an **8-hour workday**
-- **Deep Insights**: Analyze which tasks consume the most focus time
-
-### 📝 Task Enhancements
-- **Rich Details**: Add descriptions to tasks
-- **Checklists**: Break down tasks into sub-items with progress tracking
-- **Linked Tabs**: Open tabs associated with tasks directly from the task card
-
-## Phase 6: Canvas Drawing Tool
+- **Productivity Dashboard**: Visual insights into your work patterns
+- **Weekly Activity Charts**: Track tabs opened, tasks completed, and sessions
+- **Domain Analytics**: See which websites you visit most
+- **Task Completion Metrics**: Monitor your productivity trends
 
 ### 🎨 Canvas Drawing
-- **Full Drawing Suite**: Rectangle, Ellipse, Line, Pen, and Text tools
-- **Interactive Drawing**: Real-time preview while drawing shapes
-- **Selection & Editing**: Click to select, drag to move elements
-- **Multi-Select**: Ctrl+Click for multiple selection, drag-to-select box
-- **Layering**: Ctrl+] bring to front, Ctrl+[ send to back
-- **Styling**: Color pickers for stroke/fill, stroke width, opacity controls
 
-### ⌨️ Canvas Keyboard Shortcuts
-- **V**: Select tool
-- **R**: Rectangle tool
-- **E**: Ellipse tool
-- **L**: Line tool
-- **P**: Pen (freehand) tool
-- **T**: Text tool
-- **Ctrl+A**: Select all elements
-- **Ctrl+C / Ctrl+V**: Copy and paste elements
-- **Ctrl+Z / Ctrl+Y**: Undo and redo
-- **Ctrl+] / Ctrl+[**: Layer ordering
-- **Delete/Backspace**: Delete selected elements
+- **Visual Brainstorming**: Freehand drawing with pen tool
+- **Shape Tools**: Rectangles, ellipses, lines, and text
+- **Selection & Editing**: Multi-select, move, and layer management
+- **Export**: Save canvases as PNG images
 
-### 🔧 Canvas Features
-- **Zoom & Pan**: Ctrl+Scroll to zoom, Shift+Drag to pan
-- **Grid**: 10px subtle grid for alignment
-- **Export**: Download canvas as PNG image
-- **Auto-Save**: All drawings persist automatically
-- **Multiple Canvases**: Create and switch between canvases
-- **White Background**: Consistent canvas visibility in all themes
+### 🔍 Search & Navigation
 
-## Future Enhancements
-- AI-powered tab organization suggestions
-- Cross-browser synchronization
-- Integration with productivity tools
-- Tags and labels for items
-- Pinned/favorites functionality
-- Canvas shape resizing and rotation
-- Shape connectors for diagrams
+- **Global Search**: Find anything across tabs, tasks, notes, and sessions
+- **Command Palette** (`Ctrl/Cmd + K`): Quick access to all features
+- **Keyboard Shortcuts**: Power-user navigation and creation shortcuts
+
+### 🌙 Customization
+
+- **Dark Mode**: System theme detection with manual toggle
+- **Responsive Design**: Works seamlessly at any window size
+- **Export/Import**: Backup and transfer your data
+
+## 🏗️ Architecture
+
+### Technology Stack
+
+- **Frontend**: React 19 with TypeScript
+- **State Management**: Zustand with modular slice pattern
+- **Storage**:
+    - IndexedDB (via `idb`) for structured data
+    - `chrome.storage.local` for settings and background sync
+- **Drag & Drop**: DndKit
+- **Build Tool**: Vite 7
+- **Styling**: CSS Custom Properties (Design Tokens)
+- **Type Safety**: Strict TypeScript with ESLint
+
+### Project Structure
+
+```
+src/
+├── features/              # Feature-based organization
+│   ├── analytics/        # Analytics dashboard components
+│   ├── boards/           # Board and folder management
+│   ├── canvas/           # Drawing canvas with tools
+│   ├── history/          # Browser history integration
+│   ├── navigation/       # App header and navigation
+│   ├── notes/            # Note-taking components
+│   ├── sessions/         # Session management & timer
+│   ├── tasks/            # Task management
+│   ├── today/            # Today view dashboard
+│   └── ui/               # Shared UI components
+├── store/                # Zustand state management
+│   ├── slices/board/     # Modular state slices
+│   │   ├── boardSlice.ts
+│   │   ├── tabSlice.ts
+│   │   ├── taskSlice.ts
+│   │   ├── noteSlice.ts
+│   │   ├── sessionSlice.ts
+│   │   └── historySlice.ts
+│   ├── boardStore.ts     # Combined board store
+│   ├── timerStore.ts     # Timer state
+│   └── uiStore.ts        # UI state (theme, search, etc.)
+├── background/           # Chrome extension background services
+│   ├── index.ts          # Main entry point
+│   ├── background-init.ts
+│   ├── message-handler.ts
+│   ├── storage.ts
+│   └── *-service.ts      # Modular service handlers
+├── hooks/                # Custom React hooks
+├── utils/                # Utility functions
+└── types/                # TypeScript type definitions
+```
+
+### Design Patterns
+
+- **Feature-Based Architecture**: Components organized by feature domain for better maintainability
+- **Slice Pattern**: Zustand store split into focused slices (boards, tabs, tasks, notes, sessions, history)
+- **Tool Strategy Pattern**: Canvas tools implement a common interface for extensibility
+- **Service Layer**: Background services handle Chrome API interactions and data persistence
+- **Type-Safe Messaging**: Strongly-typed message passing between UI and background script
+
+### State Management
+
+The application uses Zustand with a modular slice architecture:
+
+- **Board Store**: Combines multiple slices for comprehensive state management
+    - `boardSlice`: Board and folder operations
+    - `tabSlice`: Tab management and movement
+    - `taskSlice`: Task CRUD operations
+    - `noteSlice`: Note management
+    - `sessionSlice`: Session tracking
+    - `historySlice`: Browser history integration
+- **Timer Store**: Persistent Pomodoro timer state
+- **UI Store**: Global UI state (theme, search, command palette)
+
+## 🚀 Installation
+
+### For Users (Chrome Web Store)
+
+_Coming soon - Extension will be published to Chrome Web Store_
+
+### For Developers
+
+1. **Clone the repository**
+
+    ```bash
+    git clone <repository-url>
+    cd Browser\ Tabs
+    ```
+
+2. **Install dependencies**
+
+    ```bash
+    npm install
+    ```
+
+3. **Build the extension**
+
+    ```bash
+    npm run build
+    ```
+
+4. **Load in Chrome**
+    - Open Chrome and navigate to `chrome://extensions`
+    - Enable "Developer mode" (toggle in top right)
+    - Click "Load unpacked"
+    - Select the `dist` folder from the project directory
+
+## 💻 Development
+
+### Available Scripts
+
+```bash
+npm run dev          # Development mode with hot reload
+npm run build        # Production build
+npm run lint         # Run ESLint
+npm run preview      # Preview production build
+```
+
+### Development Workflow
+
+1. Run `npm run dev` to start development server
+2. Make changes to source files
+3. Reload extension in Chrome to see changes
+4. Run `npm run lint` to check for issues
+5. Run `npm run build` before committing
+
+## 📖 Usage Guide
+
+### Getting Started
+
+1. **Create Your First Board**: Click "Add Board" to create a workspace
+2. **Add Folders**: Organize your tabs into folders by topic or project
+3. **Capture Tabs**: Manually add current tabs or let TabBoard auto-capture
+4. **Create Tasks**: Use the Today view to manage your daily tasks
+5. **Track Focus**: Use the Pomodoro timer to track focus sessions
+
+### Keyboard Shortcuts
+
+#### Navigation
+
+- `Ctrl/Cmd + Shift + B` - Boards view
+- `Ctrl/Cmd + Shift + H` - History view
+- `Ctrl/Cmd + Shift + S` - Sessions view
+- `Ctrl/Cmd + Shift + T` - Today view
+- `Ctrl/Cmd + Shift + A` - Analytics view
+- `Ctrl/Cmd + Shift + C` - Canvas view
+
+#### Actions
+
+- `Ctrl/Cmd + K` - Command palette
+- `Ctrl/Cmd + Shift + N` - New note
+- `Ctrl/Cmd + Shift + K` - New task
+- `Ctrl/Cmd + Shift + F` - New folder
+- `Ctrl/Cmd + Shift + E` - Export data
+
+#### Canvas (when active)
+
+- `V` - Select tool
+- `R` - Rectangle
+- `E` - Ellipse
+- `L` - Line
+- `P` - Pen (freehand)
+- `T` - Text
+- `Ctrl/Cmd + A` - Select all
+- `Ctrl/Cmd + Z/Y` - Undo/Redo
+- `Delete` - Delete selected
+
+### Data Management
+
+**Export Your Data**
+
+- Click the export button in the navigation bar
+- Save the JSON file to your preferred location
+- Use for backup or transferring to another browser
+
+**Import Data**
+
+- Click the import button
+- Select your previously exported JSON file
+- All data will be restored
+
+## 🔒 Privacy Policy
+
+### Data Collection & Storage
+
+**TabBoard is privacy-first and collects NO personal data.**
+
+#### What We Store (Locally Only)
+
+- **Tabs**: URLs, titles, and favicons of tabs you organize
+- **Tasks**: Task descriptions, due dates, and completion status
+- **Notes**: Note content you create
+- **Sessions**: Browsing session metadata (timestamps, tab associations)
+- **History**: Browser history items you explicitly import
+- **Settings**: Your preferences (theme, timer settings)
+- **Canvas Data**: Drawings you create
+
+#### Where Data is Stored
+
+- **100% Local**: All data stored in your browser using IndexedDB and chrome.storage.local
+- **No Cloud Sync**: We do not transmit, upload, or sync any data to external servers
+- **No Analytics**: We do not collect usage statistics or telemetry
+- **No Third-Party Services**: No data shared with any third parties
+
+#### Permissions Explained
+
+TabBoard requests the following Chrome permissions:
+
+- **`tabs`**: To read tab information (URL, title) for organization
+- **`tabGroups`**: To integrate with Chrome's native tab groups
+- **`history`**: To allow you to import and organize browser history (only when you explicitly request it)
+- **`storage`**: To save your boards, tasks, and notes locally
+- **`notifications`**: To send task reminders and timer notifications
+- **`<all_urls>`**: To capture favicons and tab metadata from any website you visit
+
+**Important**: These permissions are used solely for the extension's functionality. We never transmit your data anywhere.
+
+#### Your Data Rights
+
+- **Full Control**: You own all your data
+- **Export Anytime**: Export all data as JSON
+- **Delete Anytime**: Uninstalling the extension removes all local data
+- **No Account Required**: No registration, login, or personal information needed
+
+#### Updates to Privacy Policy
+
+Any changes to this privacy policy will be communicated through extension updates. Continued use after updates constitutes acceptance of changes.
+
+**Last Updated**: January 2026
+
+## 🛠️ Technical Details
+
+### Browser Compatibility
+
+- Chrome 88+ (Manifest V3)
+- Microsoft Edge 88+
+- Other Chromium-based browsers with Manifest V3 support
+
+### Storage Limits
+
+- IndexedDB: Typically 50-100MB+ (browser-dependent)
+- chrome.storage.local: 10MB limit (adequate for most users)
+
+### Performance
+
+- Optimized React rendering with granular selectors
+- Lazy loading for large datasets
+- Efficient drag-and-drop with DndKit
+- Minimal background script resource usage
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these guidelines:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Code Standards
+
+- Follow TypeScript strict mode
+- Use ESLint configuration (0 warnings policy)
+- Write meaningful commit messages
+- Add types for all new code
+- Test in both light and dark modes
+
+## 📝 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- Built with React, TypeScript, and Zustand
+- Icons from emoji set
+- Inspired by Trello, Notion, and productivity tools
+
+## 📧 Support
+
+For issues, feature requests, or questions:
+
+- Open an issue on GitHub
+- Check existing issues for solutions
+- Review the documentation
+
+---
+
+**Made with ❤️ for productivity enthusiasts**
