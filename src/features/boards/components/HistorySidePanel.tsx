@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useBoardStore } from '../../../store/boardStore';
 import HistoryList from '../../history/components/HistoryList';
+import { HistoryItem } from '../../../types';
 import './HistorySidePanel.css';
 
 interface HistorySidePanelProps {
@@ -20,7 +21,7 @@ const HistorySidePanel: React.FC<HistorySidePanelProps> = ({ isOpen, onClose }) 
         }
     }, [isOpen, fetchHistory]);
 
-    const addToFolder = (historyItem: any) => {
+    const addToFolder = (historyItem: HistoryItem) => {
         if (!selectedFolderId) {
             alert('Please select a folder first');
             return;

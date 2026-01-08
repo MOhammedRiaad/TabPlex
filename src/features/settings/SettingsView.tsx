@@ -16,7 +16,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
     // Local state for tldraw settings
     const [canvasMode, setCanvasMode] = useState(localStorage.getItem('tabboard_canvas_mode') || 'custom');
     const [tldrawMode, setTldrawMode] = useState(localStorage.getItem('tabboard_tldraw_mode') || 'offline');
-    const [tldrawPersistence, setTldrawPersistence] = useState(localStorage.getItem('tabboard_tldraw_persistence') || 'indexeddb');
+    const [tldrawPersistence, setTldrawPersistence] = useState(
+        localStorage.getItem('tabboard_tldraw_persistence') || 'indexeddb'
+    );
     const [tldrawRoom, setTldrawRoom] = useState(localStorage.getItem('tabboard_tldraw_room') || '');
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -143,7 +145,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                             <div className="setting-info">
                                 <h4>Theme</h4>
                                 <p>Choose your preferred color theme</p>
-                                <p className="setting-status">Current: {theme === 'system' ? `System (${resolvedTheme})` : theme}</p>
+                                <p className="setting-status">
+                                    Current: {theme === 'system' ? `System (${resolvedTheme})` : theme}
+                                </p>
                             </div>
                             <div className="setting-control">
                                 <ThemeToggle />
@@ -159,7 +163,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                                 <select
                                     className="setting-select"
                                     value={canvasMode}
-                                    onChange={(e) => handleCanvasModeChange(e.target.value)}
+                                    onChange={e => handleCanvasModeChange(e.target.value)}
                                 >
                                     <option value="custom">Custom Canvas (Lightweight)</option>
                                     <option value="tldraw">tldraw (Professional)</option>
@@ -178,7 +182,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                                         <select
                                             className="setting-select"
                                             value={tldrawMode}
-                                            onChange={(e) => handleTldrawModeChange(e.target.value)}
+                                            onChange={e => handleTldrawModeChange(e.target.value)}
                                         >
                                             <option value="offline">Offline (Local Only)</option>
                                             <option value="online">Online (Collaborative)</option>
@@ -195,7 +199,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                                         <select
                                             className="setting-select"
                                             value={tldrawPersistence}
-                                            onChange={(e) => handleTldrawPersistenceChange(e.target.value)}
+                                            onChange={e => handleTldrawPersistenceChange(e.target.value)}
                                         >
                                             <option value="indexeddb">IndexedDB (Recommended)</option>
                                             <option value="localstorage">LocalStorage</option>
@@ -216,18 +220,29 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                                                 className="setting-input"
                                                 placeholder="my-project-room"
                                                 value={tldrawRoom}
-                                                onChange={(e) => handleTldrawRoomChange(e.target.value)}
+                                                onChange={e => handleTldrawRoomChange(e.target.value)}
                                             />
                                         </div>
                                     </div>
                                 )}
 
                                 {/* Save/Reset Buttons */}
-                                <div className="setting-item" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '1rem' }}>
+                                <div
+                                    className="setting-item"
+                                    style={{
+                                        borderTop: '1px solid var(--color-border)',
+                                        paddingTop: '1rem',
+                                        marginTop: '1rem',
+                                    }}
+                                >
                                     <div className="setting-info">
                                         <h4>Canvas Configuration</h4>
                                         <p>Save or reset your canvas settings</p>
-                                        {hasUnsavedChanges && <p className="setting-status" style={{ color: 'var(--color-warning)' }}>⚠️ You have unsaved changes</p>}
+                                        {hasUnsavedChanges && (
+                                            <p className="setting-status" style={{ color: 'var(--color-warning)' }}>
+                                                ⚠️ You have unsaved changes
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="setting-control" style={{ gap: '0.5rem', display: 'flex' }}>
                                         <button
@@ -262,7 +277,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                             <div className="setting-info">
                                 <h4>TabBoard</h4>
                                 <p>Version 1.0.0</p>
-                                <p>A powerful browser extension for organizing your tabs, tasks, and browsing sessions</p>
+                                <p>
+                                    A powerful browser extension for organizing your tabs, tasks, and browsing sessions
+                                </p>
                             </div>
                         </div>
                     </div>

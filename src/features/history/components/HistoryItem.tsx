@@ -40,14 +40,14 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
     };
 
     return (
-        <div
-            ref={setNodeRef}
-            style={style}
-            {...listeners}
-            {...attributes}
-            className="history-item"
-        >
-            <a href={item.url} target="_blank" rel="noopener noreferrer" className="history-link" onClick={(e) => isDragging && e.preventDefault()}>
+        <div ref={setNodeRef} style={style} {...listeners} {...attributes} className="history-item">
+            <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="history-link"
+                onClick={e => isDragging && e.preventDefault()}
+            >
                 <div className="history-content">
                     {item.favicon && (
                         <img
@@ -70,7 +70,7 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
                     </div>
                 </div>
             </a>
-            <div className="history-actions" onPointerDown={(e) => e.stopPropagation()}>
+            <div className="history-actions" onPointerDown={e => e.stopPropagation()}>
                 {isAdded ? (
                     <div className="added-indicator">
                         <span className="added-text">✓ Added to folder</span>

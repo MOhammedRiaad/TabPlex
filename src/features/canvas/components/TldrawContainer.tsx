@@ -28,15 +28,17 @@ const TldrawContainer: React.FC = () => {
     // For IndexedDB and LocalStorage persistence, tldraw automatically handles it
     // when you provide a persistenceKey prop
     return (
-        <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100%',
-            height: '100%'
-        }}>
+        <div
+            style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                width: '100%',
+                height: '100%',
+            }}
+        >
             <style>{`
                 /* Hide tldraw watermark/license message */
                 .tlui-license__watermark,
@@ -48,10 +50,7 @@ const TldrawContainer: React.FC = () => {
                     visibility: hidden !important;
                 }
             `}</style>
-            <Tldraw
-                persistenceKey={persistenceMode !== 'memory' ? persistenceKey : undefined}
-                autoFocus
-            />
+            <Tldraw persistenceKey={persistenceMode !== 'memory' ? persistenceKey : undefined} autoFocus />
         </div>
     );
 };

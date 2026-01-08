@@ -102,7 +102,7 @@
     transition: right 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.history-side-panel.open+.history-toggle-wrapper,
+.history-side-panel.open + .history-toggle-wrapper,
 .history-toggle-wrapper.open {
     right: 350px;
     /* Moves with the panel */

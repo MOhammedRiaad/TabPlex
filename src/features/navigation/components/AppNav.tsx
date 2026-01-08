@@ -2,9 +2,7 @@ import React from 'react';
 import { useUIStore, useUIActions } from '../../ui/store/uiStore';
 import { useShallow } from 'zustand/react/shallow';
 
-interface AppNavProps { }
-
-const AppNav: React.FC<AppNavProps> = () => {
+const AppNav: React.FC = () => {
     const activeView = useUIStore(useShallow(state => state.activeView));
     const { setActiveView } = useUIActions();
 

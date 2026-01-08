@@ -33,7 +33,6 @@
     margin: 0;
 }
 
-
 .board-header h2 {
     margin: 0;
     font-size: 1.25rem;
@@ -52,7 +51,7 @@
     -webkit-overflow-scrolling: touch;
 }
 
-.folders-container>* {
+.folders-container > * {
     scroll-snap-align: start;
 }
 

@@ -1,5 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
+import {
+    DndContext,
+    DragEndEvent,
+    DragStartEvent,
+    DragOverlay,
+    useSensor,
+    useSensors,
+    PointerSensor,
+} from '@dnd-kit/core';
 import { useBoardStore } from '../../store/boardStore';
 import TabCard from './components/TabCard';
 import FolderColumn from './components/FolderColumn';
@@ -18,12 +26,12 @@ const BoardView: React.FC = () => {
         boards.length > 0
             ? boards[0]
             : {
-                id: 'default_board',
-                name: 'My Board',
-                color: '#3b82f6',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            };
+                  id: 'default_board',
+                  name: 'My Board',
+                  color: '#3b82f6',
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+              };
 
     useEffect(() => {
         // Check if default_board already exists in the boards array
@@ -178,7 +186,7 @@ const BoardView: React.FC = () => {
                     <button
                         className="history-toggle-btn"
                         onClick={() => setIsHistoryPanelOpen(!isHistoryPanelOpen)}
-                        title={isHistoryPanelOpen ? "Close History" : "Open History"}
+                        title={isHistoryPanelOpen ? 'Close History' : 'Open History'}
                     >
                         <span>Load History</span>
                     </button>
