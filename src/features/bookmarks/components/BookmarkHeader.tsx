@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Bookmark } from '../../../types';
+import { SortConfig } from '../utils/sortUtils';
 import BookmarkModal from './BookmarkModal';
+import BookmarkSortControls from './BookmarkSortControls';
 import '../BookmarkView.css';
 
 interface BookmarkHeaderProps {
@@ -13,6 +15,8 @@ interface BookmarkHeaderProps {
     hasFolders?: boolean;
     folders?: Bookmark[];
     onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
+    sortConfig: SortConfig;
+    onSortChange: (config: SortConfig) => void;
 }
 
 const BookmarkHeader: React.FC<BookmarkHeaderProps> = ({
@@ -25,6 +29,8 @@ const BookmarkHeader: React.FC<BookmarkHeaderProps> = ({
     hasFolders,
     folders = [],
     onShowToast,
+    sortConfig,
+    onSortChange,
 }) => {
     const [showBookmarkModal, setShowBookmarkModal] = useState(false);
     const [showFolderModal, setShowFolderModal] = useState(false);
@@ -58,6 +64,7 @@ const BookmarkHeader: React.FC<BookmarkHeaderProps> = ({
                         Press Ctrl+F to focus search, or start typing to search
                     </span>
                 </div>
+                <BookmarkSortControls sortConfig={sortConfig} onSortChange={onSortChange} />
                 <div className="bookmark-actions">
                     <button
                         onClick={() => setShowBookmarkModal(true)}

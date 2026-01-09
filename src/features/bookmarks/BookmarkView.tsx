@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useBoardStore } from '../../store/boardStore';
 import { Bookmark } from '../../types';
+import { sortBookmarks, loadSortConfig, saveSortConfig, SortConfig } from './utils/sortUtils';
 import './BookmarkView.css';
 import BookmarkHeader from './components/BookmarkHeader';
 import BookmarkTree from './components/BookmarkTree';
@@ -26,6 +27,7 @@ const BookmarkView: React.FC = () => {
     const [isSearching, setIsSearching] = useState(false);
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    const [sortConfig, setSortConfig] = useState<SortConfig>(() => loadSortConfig());
 
     useEffect(() => {
         // Load bookmarks when the component mounts
@@ -168,6 +170,20 @@ const BookmarkView: React.FC = () => {
         });
     };
 
+    // Handle sort configuration changes
+    const handleSortChange = useCallback((config: SortConfig) => {
+        setSortConfig(config);
+        saveSortConfig(config);
+    }, []);
+
+    // Apply sorting to bookmarks
+    const sortedBookmarkTree = useMemo(() => {
+        if (sortConfig.criteria === 'default') {
+            return bookmarkTree;
+        }
+        return sortBookmarks(bookmarkTree, sortConfig);
+    }, [bookmarkTree, sortConfig]);
+
     const expandAllFolders = useCallback(() => {
         const getAllFolderIds = (bookmarks: Bookmark[]): string[] => {
             const folderIds: string[] = [];
@@ -182,17 +198,27 @@ const BookmarkView: React.FC = () => {
             traverse(bookmarks);
             return folderIds;
         };
-        const allFolderIds = getAllFolderIds(bookmarkTree);
+        const allFolderIds = getAllFolderIds(sortedBookmarkTree);
         setExpandedFolders(new Set(allFolderIds));
-    }, [bookmarkTree]);
+    }, [sortedBookmarkTree]);
 
     const collapseAllFolders = useCallback(() => {
         setExpandedFolders(new Set());
     }, []);
 
+    const sortedSearchResults = useMemo(() => {
+        if (!searchQuery.trim() || searchResults.length === 0) {
+            return [];
+        }
+        if (sortConfig.criteria === 'default') {
+            return searchResults;
+        }
+        return sortBookmarks(searchResults, sortConfig);
+    }, [searchResults, sortConfig, searchQuery]);
+
     // For search results, we need to handle them differently since they're flat
     // For bookmark tree, we pass the tree structure
-    const displayData = searchQuery.trim() ? searchResults : bookmarkTree;
+    const displayData = searchQuery.trim() ? sortedSearchResults : sortedBookmarkTree;
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -225,6 +251,8 @@ const BookmarkView: React.FC = () => {
                 hasFolders={bookmarkTree.length > 0}
                 folders={bookmarkTree}
                 onShowToast={showToast}
+                sortConfig={sortConfig}
+                onSortChange={handleSortChange}
             />
 
             {error && <div className="bookmark-error">Error: {error}</div>}
@@ -260,11 +288,11 @@ const BookmarkView: React.FC = () => {
                         }
                     }}
                     onShowToast={showToast}
-                    folders={bookmarkTree}
+                    folders={sortedBookmarkTree}
                 />
             )}
 
-            {searchQuery.trim() && searchResults.length === 0 && !isSearching && (
+            {searchQuery.trim() && sortedSearchResults.length === 0 && !isSearching && (
                 <div className="bookmark-empty" role="status" aria-live="polite">
                     <div className="bookmark-empty-text">
                         No bookmarks found matching &quot;<strong>{searchQuery}</strong>&quot;
@@ -273,7 +301,7 @@ const BookmarkView: React.FC = () => {
                 </div>
             )}
 
-            {!searchQuery.trim() && bookmarkTree.length === 0 && !isLoading && (
+            {!searchQuery.trim() && sortedBookmarkTree.length === 0 && !isLoading && (
                 <div className="bookmark-empty" role="status" aria-live="polite">
                     <div className="bookmark-empty-text">No bookmarks yet</div>
                     <div className="bookmark-empty-hint">
