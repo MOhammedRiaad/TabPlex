@@ -1,15 +1,18 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import SearchBar from '../../ui/components/SearchBar';
 import ThemeToggle from '../../ui/components/ThemeToggle';
 import { SearchResult } from '../../../types';
 import { useUIActions } from '../../ui/store/uiStore';
+import { ROUTES } from '../../../routes';
 
 interface AppHeaderProps {
     onSearchResultClick: (result: SearchResult) => void;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({ onSearchResultClick }) => {
-    const { toggleCommandPalette, setActiveView } = useUIActions();
+    const navigate = useNavigate();
+    const { toggleCommandPalette } = useUIActions();
 
     return (
         <header className="app-header">
@@ -25,7 +28,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onSearchResultClick }) => {
                 <ThemeToggle />
                 <button
                     className="settings-trigger"
-                    onClick={() => setActiveView('settings')}
+                    onClick={() => navigate(ROUTES.SETTINGS)}
                     title="Settings"
                     aria-label="Open settings"
                 >

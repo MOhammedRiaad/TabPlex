@@ -2,6 +2,37 @@ import { create } from 'zustand';
 
 export type ViewType = 'boards' | 'history' | 'sessions' | 'today' | 'analytics' | 'canvas' | 'bookmarks' | 'settings';
 
+// Helper to get initial view from URL hash or localStorage
+const getInitialView = (): ViewType => {
+    // Check URL hash first (for browser back/forward support)
+    if (typeof window !== 'undefined') {
+        const hash = window.location.hash;
+        if (hash) {
+            const path = hash.replace('#', '');
+            switch (path) {
+                case '/today':
+                    return 'today';
+                case '/boards':
+                    return 'boards';
+                case '/history':
+                    return 'history';
+                case '/sessions':
+                    return 'sessions';
+                case '/analytics':
+                    return 'analytics';
+                case '/canvas':
+                    return 'canvas';
+                case '/bookmarks':
+                    return 'bookmarks';
+                case '/settings':
+                    return 'settings';
+            }
+        }
+    }
+    // Fallback to localStorage
+    return (localStorage.getItem('tabboard-active-view') as ViewType) || 'today';
+};
+
 interface UIState {
     activeView: ViewType;
     isCommandPaletteOpen: boolean;
@@ -13,7 +44,7 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>(set => ({
-    activeView: (localStorage.getItem('tabboard-active-view') as ViewType) || 'today',
+    activeView: getInitialView(),
     isCommandPaletteOpen: false,
     actions: {
         setActiveView: view => {
