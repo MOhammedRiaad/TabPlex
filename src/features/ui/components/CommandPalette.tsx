@@ -7,7 +7,9 @@ import './CommandPalette.css';
 interface CommandPaletteProps {
     isOpen: boolean;
     onClose: () => void;
-    onNavigate: (view: 'boards' | 'history' | 'sessions' | 'today' | 'analytics' | 'canvas') => void;
+    onNavigate: (
+        view: 'boards' | 'history' | 'sessions' | 'today' | 'analytics' | 'canvas' | 'bookmarks' | 'settings'
+    ) => void;
 }
 
 const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavigate }) => {
@@ -58,6 +60,27 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                 name: 'Go to Analytics',
                 icon: '📊',
                 action: () => onNavigate('analytics'),
+                category: 'navigation',
+            },
+            {
+                id: 'nav-canvas',
+                name: 'Go to Canvas',
+                icon: '🎨',
+                action: () => onNavigate('canvas'),
+                category: 'navigation',
+            },
+            {
+                id: 'nav-bookmarks',
+                name: 'Go to Bookmarks',
+                icon: '🔖',
+                action: () => onNavigate('bookmarks'),
+                category: 'navigation',
+            },
+            {
+                id: 'nav-settings',
+                name: 'Go to Settings',
+                icon: '⚙️',
+                action: () => onNavigate('settings'),
                 category: 'navigation',
             },
             // Creation commands
