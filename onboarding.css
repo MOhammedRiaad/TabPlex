@@ -234,7 +234,9 @@ kbd {
 .onboarding-footer {
     text-align: center;
     padding-top: 30px;
+    padding-bottom: 20px;
     border-top: 2px solid var(--border-color);
+    margin-top: 20px;
 }
 
 .btn-primary {
@@ -291,5 +293,15 @@ kbd {
     .quick-start,
     .keyboard-shortcuts {
         padding: 16px;
+    }
+
+    .onboarding-footer {
+        padding-top: 20px;
+        padding-bottom: 16px;
+    }
+
+    .btn-primary {
+        width: 100%;
+        padding: 12px 24px;
     }
 }

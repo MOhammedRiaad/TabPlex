@@ -266,6 +266,31 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                     </div>
                 </section>
 
+                {/* Help & Support Section */}
+                <section className="settings-section">
+                    <h3 className="section-title">
+                        <span className="section-icon">❓</span>
+                        Help & Support
+                    </h3>
+                    <div className="section-content">
+                        <div className="setting-item">
+                            <div className="setting-info">
+                                <h4>Show Onboarding</h4>
+                                <p>View the welcome guide and learn about TabBoard features</p>
+                            </div>
+                            <button
+                                className="setting-action-btn primary"
+                                onClick={() => {
+                                    const onboardingUrl = chrome.runtime.getURL('onboarding.html');
+                                    chrome.tabs.create({ url: onboardingUrl });
+                                }}
+                            >
+                                🎓 Open Guide
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
                 {/* About Section */}
                 <section className="settings-section">
                     <h3 className="section-title">
