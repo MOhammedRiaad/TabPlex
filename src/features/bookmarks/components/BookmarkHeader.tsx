@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Bookmark } from '../../../types';
+import BookmarkModal from './BookmarkModal';
 import '../BookmarkView.css';
 
 interface BookmarkHeaderProps {
@@ -6,32 +8,35 @@ interface BookmarkHeaderProps {
     onCreateBookmark: (title: string, url: string, parentId?: string) => void;
     onCreateFolder: (title: string, parentId?: string) => void;
     searchQuery: string;
+    onExpandAll?: () => void;
+    onCollapseAll?: () => void;
+    hasFolders?: boolean;
+    folders?: Bookmark[];
+    onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-const BookmarkHeader: React.FC<BookmarkHeaderProps> = ({ onSearch, onCreateBookmark, onCreateFolder, searchQuery }) => {
-    const [showAddForm, setShowAddForm] = useState(false);
-    const [showFolderForm, setShowFolderForm] = useState(false);
-    const [bookmarkTitle, setBookmarkTitle] = useState('');
-    const [bookmarkUrl, setBookmarkUrl] = useState('');
-    const [folderTitle, setFolderTitle] = useState('');
+const BookmarkHeader: React.FC<BookmarkHeaderProps> = ({
+    onSearch,
+    onCreateBookmark,
+    onCreateFolder,
+    searchQuery,
+    onExpandAll,
+    onCollapseAll,
+    hasFolders,
+    folders = [],
+    onShowToast,
+}) => {
+    const [showBookmarkModal, setShowBookmarkModal] = useState(false);
+    const [showFolderModal, setShowFolderModal] = useState(false);
 
-    const handleCreateBookmark = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (bookmarkTitle.trim() && bookmarkUrl.trim()) {
-            onCreateBookmark(bookmarkTitle.trim(), bookmarkUrl.trim());
-            setBookmarkTitle('');
-            setBookmarkUrl('');
-            setShowAddForm(false);
+    const handleBookmarkSubmit = (data: { title: string; url?: string; parentId?: string }) => {
+        if (data.url) {
+            onCreateBookmark(data.title, data.url, data.parentId);
         }
     };
 
-    const handleCreateFolder = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (folderTitle.trim()) {
-            onCreateFolder(folderTitle.trim());
-            setFolderTitle('');
-            setShowFolderForm(false);
-        }
+    const handleFolderSubmit = (data: { title: string; url?: string; parentId?: string }) => {
+        onCreateFolder(data.title, data.parentId);
     };
 
     return (
@@ -41,86 +46,80 @@ const BookmarkHeader: React.FC<BookmarkHeaderProps> = ({ onSearch, onCreateBookm
                 <div className="bookmark-search">
                     <input
                         type="text"
-                        placeholder="Search bookmarks..."
+                        placeholder="Search bookmarks... (Ctrl+F)"
                         value={searchQuery}
                         onChange={e => onSearch(e.target.value)}
                         className="bookmark-search-input"
+                        autoComplete="off"
+                        aria-label="Search bookmarks"
+                        aria-describedby="search-hint"
                     />
+                    <span id="search-hint" className="sr-only">
+                        Press Ctrl+F to focus search, or start typing to search
+                    </span>
                 </div>
                 <div className="bookmark-actions">
-                    <button onClick={() => setShowAddForm(!showAddForm)} className="bookmark-btn">
+                    <button
+                        onClick={() => setShowBookmarkModal(true)}
+                        className="bookmark-btn bookmark-btn-primary"
+                        title="Add a new bookmark"
+                        aria-label="Add bookmark"
+                    >
                         ➕ Add Bookmark
                     </button>
-                    <button onClick={() => setShowFolderForm(!showFolderForm)} className="bookmark-btn">
-                        📁 Add Folder
+                    <button
+                        onClick={() => setShowFolderModal(true)}
+                        className="bookmark-btn"
+                        title="Create a new folder"
+                        aria-label="Create folder"
+                    >
+                        📁 New Folder
                     </button>
+                    {hasFolders && (
+                        <>
+                            <div className="bookmark-actions-divider"></div>
+                            <button
+                                onClick={onExpandAll}
+                                className="bookmark-btn bookmark-btn-icon"
+                                title="Expand all folders"
+                                aria-label="Expand all folders"
+                            >
+                                ⬇️
+                            </button>
+                            <button
+                                onClick={onCollapseAll}
+                                className="bookmark-btn bookmark-btn-icon"
+                                title="Collapse all folders"
+                                aria-label="Collapse all folders"
+                            >
+                                ⬆️
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
-            {showAddForm && (
-                <form onSubmit={handleCreateBookmark} className="bookmark-form">
-                    <input
-                        type="text"
-                        placeholder="Bookmark title"
-                        value={bookmarkTitle}
-                        onChange={e => setBookmarkTitle(e.target.value)}
-                        className="bookmark-input"
-                        required
-                    />
-                    <input
-                        type="url"
-                        placeholder="URL (e.g., https://example.com)"
-                        value={bookmarkUrl}
-                        onChange={e => setBookmarkUrl(e.target.value)}
-                        className="bookmark-input"
-                        required
-                    />
-                    <div className="bookmark-form-actions">
-                        <button type="submit" className="bookmark-btn bookmark-btn-primary">
-                            Create
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setShowAddForm(false);
-                                setBookmarkTitle('');
-                                setBookmarkUrl('');
-                            }}
-                            className="bookmark-btn"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </form>
-            )}
+            {/* Create Bookmark Modal */}
+            <BookmarkModal
+                isOpen={showBookmarkModal}
+                onClose={() => setShowBookmarkModal(false)}
+                mode="create"
+                isFolder={false}
+                folders={folders}
+                onSubmit={handleBookmarkSubmit}
+                onShowToast={onShowToast}
+            />
 
-            {showFolderForm && (
-                <form onSubmit={handleCreateFolder} className="bookmark-form">
-                    <input
-                        type="text"
-                        placeholder="Folder name"
-                        value={folderTitle}
-                        onChange={e => setFolderTitle(e.target.value)}
-                        className="bookmark-input"
-                        required
-                    />
-                    <div className="bookmark-form-actions">
-                        <button type="submit" className="bookmark-btn bookmark-btn-primary">
-                            Create
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setShowFolderForm(false);
-                                setFolderTitle('');
-                            }}
-                            className="bookmark-btn"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </form>
-            )}
+            {/* Create Folder Modal */}
+            <BookmarkModal
+                isOpen={showFolderModal}
+                onClose={() => setShowFolderModal(false)}
+                mode="create"
+                isFolder={true}
+                folders={folders}
+                onSubmit={handleFolderSubmit}
+                onShowToast={onShowToast}
+            />
         </div>
     );
 };

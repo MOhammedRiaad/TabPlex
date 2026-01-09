@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bookmark } from '../../../types';
+import { formatDate } from '../utils/dateUtils';
+import BookmarkModal from './BookmarkModal';
 import '../BookmarkView.css';
 
 interface BookmarkNodeProps {
@@ -13,6 +15,8 @@ interface BookmarkNodeProps {
     onDelete: (id: string, isFolder: boolean) => void;
     onMove: (id: string, destination: { parentId?: string; index?: number }) => void;
     onOpenBookmark: (url: string) => void;
+    onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
+    folders?: Bookmark[];
 }
 
 const BookmarkNode: React.FC<BookmarkNodeProps> = ({
@@ -26,31 +30,31 @@ const BookmarkNode: React.FC<BookmarkNodeProps> = ({
     onDelete,
     onMove: _onMove, // Reserved for future drag-and-drop functionality
     onOpenBookmark,
+    onShowToast,
+    folders = [],
 }) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const [editTitle, setEditTitle] = useState(bookmark.title);
-    const [editUrl, setEditUrl] = useState(bookmark.url || '');
-    const [showMenu, setShowMenu] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [faviconUrl, setFaviconUrl] = useState<string | null>(null);
 
-    const handleEdit = () => {
-        setIsEditing(true);
-        setShowMenu(false);
-    };
-
-    const handleSave = () => {
-        if (editTitle.trim()) {
-            onUpdate(bookmark.id, {
-                title: editTitle.trim(),
-                url: isFolder ? undefined : editUrl.trim(),
-            });
-            setIsEditing(false);
+    // Get favicon for bookmark
+    useEffect(() => {
+        if (!isFolder && bookmark.url) {
+            try {
+                const url = new URL(bookmark.url);
+                const favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=32`;
+                setFaviconUrl(favicon);
+            } catch {
+                // Invalid URL, use default
+                setFaviconUrl(null);
+            }
         }
-    };
+    }, [bookmark.url, isFolder]);
 
-    const handleCancel = () => {
-        setEditTitle(bookmark.title);
-        setEditUrl(bookmark.url || '');
-        setIsEditing(false);
+    const handleEditSubmit = (data: { title: string; url?: string; parentId?: string }) => {
+        onUpdate(bookmark.id, {
+            title: data.title,
+            url: data.url,
+        });
     };
 
     const handleClick = () => {
@@ -61,105 +65,175 @@ const BookmarkNode: React.FC<BookmarkNodeProps> = ({
         }
     };
 
+    // Keyboard navigation support
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+        } else if (e.key === 'Delete' && !isFolder) {
+            e.preventDefault();
+            onDelete(bookmark.id, isFolder);
+        }
+    };
+
+    const handleCopyUrl = async () => {
+        if (bookmark.url) {
+            try {
+                await navigator.clipboard.writeText(bookmark.url);
+                onShowToast?.('URL copied to clipboard!', 'success');
+            } catch (error) {
+                console.error('Failed to copy URL:', error);
+                onShowToast?.('Failed to copy URL', 'error');
+            }
+        }
+    };
+
+    // Format dates for display in DD-MM-YYYY format
+    const addedDate = bookmark.dateAdded ? formatDate(bookmark.dateAdded) : null;
+    const modifiedDate = bookmark.dateGroupModified ? formatDate(bookmark.dateGroupModified) : null;
+
     return (
-        <div
-            className={`bookmark-node ${isFolder ? 'bookmark-folder' : 'bookmark-item'}`}
-            style={{ paddingLeft: `${level * 10}px` }}
-        >
-            <div className="bookmark-node-content">
-                {isEditing ? (
-                    <div className="bookmark-edit-form">
-                        <input
-                            type="text"
-                            value={editTitle}
-                            onChange={e => setEditTitle(e.target.value)}
-                            className="bookmark-edit-input"
-                            placeholder="Title"
-                            autoFocus
-                        />
-                        {!isFolder && (
-                            <input
-                                type="url"
-                                value={editUrl}
-                                onChange={e => setEditUrl(e.target.value)}
-                                className="bookmark-edit-input"
-                                placeholder="URL"
-                            />
+        <>
+            <div
+                className={`bookmark-node ${isFolder ? 'bookmark-folder' : 'bookmark-item'}`}
+                style={{ paddingLeft: `${level * 12}px` }}
+                tabIndex={0}
+                role="button"
+                aria-label={isFolder ? `Folder: ${bookmark.title}` : `Bookmark: ${bookmark.title}`}
+                aria-expanded={isFolder ? isExpanded : undefined}
+                onKeyDown={handleKeyDown}
+            >
+                <div className="bookmark-node-content">
+                    <div className="bookmark-node-main" onClick={handleClick}>
+                        {isFolder ? (
+                            <span className="bookmark-icon bookmark-folder-icon" aria-hidden="true">
+                                {isExpanded ? '📂' : '📁'}
+                            </span>
+                        ) : (
+                            <span className="bookmark-icon bookmark-favicon" aria-hidden="true">
+                                {faviconUrl ? (
+                                    <img
+                                        src={faviconUrl}
+                                        alt=""
+                                        className="bookmark-favicon-img"
+                                        onError={() => setFaviconUrl(null)}
+                                    />
+                                ) : (
+                                    <span className="bookmark-default-icon">🔖</span>
+                                )}
+                            </span>
                         )}
-                        <div className="bookmark-edit-actions">
-                            <button onClick={handleSave} className="bookmark-btn-small bookmark-btn-primary">
-                                Save
-                            </button>
-                            <button onClick={handleCancel} className="bookmark-btn-small">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        <div className="bookmark-node-main" onClick={handleClick}>
-                            {isFolder ? (
-                                <span className="bookmark-icon">{isExpanded ? '📂' : '📁'}</span>
-                            ) : (
-                                <span className="bookmark-icon">🔖</span>
-                            )}
-                            <div className="bookmark-node-info">
-                                <span className="bookmark-title">{bookmark.title}</span>
-                                {!isFolder && bookmark.url && (
-                                    <span className="bookmark-url" title={bookmark.url}>
-                                        {bookmark.url.length > 50
-                                            ? `${bookmark.url.substring(0, 50)}...`
-                                            : bookmark.url}
-                                    </span>
+                        <div className="bookmark-node-info">
+                            <div className="bookmark-node-title-row">
+                                <span className="bookmark-title" title={bookmark.title}>
+                                    {bookmark.title}
+                                </span>
+                                {hasChildren && (
+                                    <span className="bookmark-children-count">{bookmark.children?.length || 0}</span>
                                 )}
                             </div>
-                            {hasChildren && (
-                                <span className="bookmark-children-count">({bookmark.children?.length || 0})</span>
+                            {!isFolder && bookmark.url && (
+                                <span className="bookmark-url" title={bookmark.url}>
+                                    {(() => {
+                                        try {
+                                            const url = new URL(bookmark.url);
+                                            return url.hostname.replace('www.', '');
+                                        } catch {
+                                            return bookmark.url.length > 50
+                                                ? `${bookmark.url.substring(0, 50)}...`
+                                                : bookmark.url;
+                                        }
+                                    })()}
+                                </span>
                             )}
-                        </div>
-                        <div className="bookmark-node-actions">
-                            <button
-                                onClick={e => {
-                                    e.stopPropagation();
-                                    setShowMenu(!showMenu);
-                                }}
-                                className="bookmark-menu-btn"
-                                title="More options"
-                            >
-                                ⋮
-                            </button>
-                            {showMenu && (
-                                <div className="bookmark-menu">
-                                    <button onClick={handleEdit} className="bookmark-menu-item">
-                                        ✏️ Edit
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            onDelete(bookmark.id, isFolder);
-                                            setShowMenu(false);
-                                        }}
-                                        className="bookmark-menu-item bookmark-menu-item-danger"
-                                    >
-                                        🗑️ Delete
-                                    </button>
-                                    {bookmark.url && (
-                                        <button
-                                            onClick={() => {
-                                                onOpenBookmark(bookmark.url!);
-                                                setShowMenu(false);
-                                            }}
-                                            className="bookmark-menu-item"
-                                        >
-                                            🔗 Open
-                                        </button>
+                            {/* Date information */}
+                            {(addedDate || modifiedDate) && (
+                                <div className="bookmark-node-meta">
+                                    {addedDate && (
+                                        <span className="bookmark-date" title={`Added on ${addedDate}`}>
+                                            {addedDate}
+                                        </span>
+                                    )}
+                                    {modifiedDate && modifiedDate !== addedDate && (
+                                        <span className="bookmark-date" title={`Modified on ${modifiedDate}`}>
+                                            Modified: {modifiedDate}
+                                        </span>
                                     )}
                                 </div>
                             )}
                         </div>
-                    </>
-                )}
+                    </div>
+                    <div className="bookmark-node-actions">
+                        <div className="bookmark-quick-actions">
+                            {bookmark.url && (
+                                <button
+                                    onClick={e => {
+                                        e.stopPropagation();
+                                        onOpenBookmark(bookmark.url!);
+                                    }}
+                                    className="bookmark-action-btn"
+                                    title="Open in new tab (Enter)"
+                                    aria-label="Open bookmark in new tab"
+                                    type="button"
+                                >
+                                    🔗
+                                </button>
+                            )}
+                            <button
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    setShowEditModal(true);
+                                }}
+                                className="bookmark-action-btn"
+                                title="Edit bookmark"
+                                aria-label="Edit bookmark"
+                                type="button"
+                            >
+                                ✏️
+                            </button>
+                            {bookmark.url && (
+                                <button
+                                    onClick={e => {
+                                        e.stopPropagation();
+                                        handleCopyUrl();
+                                    }}
+                                    className="bookmark-action-btn"
+                                    title="Copy URL to clipboard"
+                                    aria-label="Copy URL to clipboard"
+                                    type="button"
+                                >
+                                    📋
+                                </button>
+                            )}
+                            <button
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    onDelete(bookmark.id, isFolder);
+                                }}
+                                className="bookmark-action-btn bookmark-action-btn-danger"
+                                title={`Delete ${isFolder ? 'folder' : 'bookmark'}`}
+                                aria-label={`Delete ${isFolder ? 'folder' : 'bookmark'}`}
+                                type="button"
+                            >
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+
+            {/* Edit Modal */}
+            <BookmarkModal
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                mode="edit"
+                bookmark={bookmark}
+                isFolder={isFolder}
+                folders={folders}
+                onSubmit={handleEditSubmit}
+                onShowToast={onShowToast}
+            />
+        </>
     );
 };
 

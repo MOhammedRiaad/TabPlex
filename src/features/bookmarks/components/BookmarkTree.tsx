@@ -11,6 +11,8 @@ interface BookmarkTreeProps {
     onDelete: (id: string, isFolder: boolean) => void;
     onMove: (id: string, destination: { parentId?: string; index?: number }) => void;
     onOpenBookmark: (url: string) => void;
+    onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
+    folders?: Bookmark[];
     level?: number;
     parentId?: string;
 }
@@ -23,6 +25,8 @@ const BookmarkTree: React.FC<BookmarkTreeProps> = ({
     onDelete,
     onMove,
     onOpenBookmark,
+    onShowToast,
+    folders = [],
     level = 0,
     parentId,
 }) => {
@@ -93,6 +97,8 @@ const BookmarkTree: React.FC<BookmarkTreeProps> = ({
                             onDelete={onDelete}
                             onMove={onMove}
                             onOpenBookmark={onOpenBookmark}
+                            onShowToast={onShowToast}
+                            folders={folders}
                         />
                         {isFolder && isExpanded && hasChildren && (
                             <BookmarkTree
@@ -103,6 +109,8 @@ const BookmarkTree: React.FC<BookmarkTreeProps> = ({
                                 onDelete={onDelete}
                                 onMove={onMove}
                                 onOpenBookmark={onOpenBookmark}
+                                onShowToast={onShowToast}
+                                folders={folders}
                                 level={level + 1}
                                 parentId={bookmark.id}
                             />
