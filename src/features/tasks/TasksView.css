@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    overflow: hidden;
+    overflow: auto;
 }
 
 /* Back Button */
@@ -247,7 +247,7 @@
 /* Tasks Content */
 .tasks-view-content {
     flex: 1;
-    overflow-y: auto;
+    /* overflow-y: auto; */
     padding-right: var(--spacing-sm);
 }
 
