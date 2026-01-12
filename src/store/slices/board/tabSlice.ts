@@ -27,9 +27,18 @@ export const createTabSlice: BoardStoreCreator<TabSlice> = set => ({
     },
 
     updateTab: (id, updates) =>
-        set(state => ({
-            tabs: state.tabs.map(tab => (tab.id === id ? { ...tab, ...updates } : tab)),
-        })),
+        set(state => {
+            const updatedTabs = state.tabs.map(tab => {
+                if (tab.id === id) {
+                    const updatedTab = { ...tab, ...updates };
+                    // Persist to IndexedDB
+                    updateTabInDB(updatedTab).catch(console.error);
+                    return updatedTab;
+                }
+                return tab;
+            });
+            return { tabs: updatedTabs };
+        }),
 
     deleteTab: id => {
         set(state => ({

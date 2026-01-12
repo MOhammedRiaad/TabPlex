@@ -1,4 +1,8 @@
-import { addNote as addNoteToDB, deleteNote as deleteNoteFromDB } from '../../../utils/storage';
+import {
+    addNote as addNoteToDB,
+    deleteNote as deleteNoteFromDB,
+    updateNote as updateNoteInDB,
+} from '../../../utils/storage';
 import { NoteSlice, BoardStoreCreator } from './types';
 
 export const createNoteSlice: BoardStoreCreator<NoteSlice> = set => ({
@@ -26,11 +30,18 @@ export const createNoteSlice: BoardStoreCreator<NoteSlice> = set => ({
     },
 
     updateNote: (id, updates) =>
-        set(state => ({
-            notes: state.notes.map(note =>
-                note.id === id ? { ...note, ...updates, updatedAt: new Date().toISOString() } : note
-            ),
-        })),
+        set(state => {
+            const updatedNotes = state.notes.map(note => {
+                if (note.id === id) {
+                    const updatedNote = { ...note, ...updates, updatedAt: new Date().toISOString() };
+                    // Persist to IndexedDB
+                    updateNoteInDB(updatedNote).catch(console.error);
+                    return updatedNote;
+                }
+                return note;
+            });
+            return { notes: updatedNotes };
+        }),
 
     deleteNote: id => {
         set(state => ({

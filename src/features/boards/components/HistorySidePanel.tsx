@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useBoardStore } from '../../../store/boardStore';
 import HistoryList from '../../history/components/HistoryList';
 import { HistoryItem } from '../../../types';
+import { createTabFromHistoryItem } from '../../../utils/tabUtils';
 import './HistorySidePanel.css';
 
 interface HistorySidePanelProps {
@@ -27,18 +28,8 @@ const HistorySidePanel: React.FC<HistorySidePanelProps> = ({ isOpen, onClose }) 
             return;
         }
 
-        const tabToAdd = {
-            id: `tab_${Date.now()}_${historyItem.id}`,
-            title: historyItem.title,
-            url: historyItem.url,
-            favicon: historyItem.favicon,
-            folderId: selectedFolderId,
-            tabId: null,
-            lastAccessed: new Date().toISOString(),
-            status: 'closed' as const,
-            createdAt: new Date().toISOString(),
-        };
-
+        // Use shared utility to create tab from history item
+        const tabToAdd = createTabFromHistoryItem(historyItem, selectedFolderId);
         addTab(tabToAdd);
 
         setAddedToFolder(prev => ({

@@ -1,94 +1,19 @@
 // Storage functions for background service worker
 // Using chrome.storage.local instead of IndexedDB for background script
 
+// Import shared types from the main types module
+// This ensures type consistency between frontend and background
+import { Board, Folder, FolderRule, Tab, Task, Note, Session, HistoryItem } from '../types';
+
+// Re-export for backwards compatibility with other background modules
+export type { Board, Folder, FolderRule, Tab, Task, Note, Session, HistoryItem };
+
 const BOARDS_KEY = 'tabboard_boards';
 const FOLDERS_KEY = 'tabboard_folders';
 const TABS_KEY = 'tabboard_tabs';
 const TASKS_KEY = 'tabboard_tasks';
 const NOTES_KEY = 'tabboard_notes';
 const SESSIONS_KEY = 'tabboard_sessions';
-
-// Tab interface (duplicate from types for background script)
-interface Tab {
-    id: string;
-    title: string;
-    url: string;
-    favicon?: string;
-    folderId: string;
-    tabId: number | null;
-    lastAccessed: string;
-    status: 'open' | 'suspended' | 'closed';
-    createdAt: string;
-}
-
-interface Folder {
-    id: string;
-    name: string;
-    boardId: string;
-    color: string;
-    order: number;
-    createdAt: string;
-    rules?: FolderRule[];
-}
-
-interface FolderRule {
-    id: string;
-    condition: string;
-    value: string;
-    action: string;
-}
-
-interface Board {
-    id: string;
-    name: string;
-    color?: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
-interface Task {
-    id: string;
-    title: string;
-    status: 'todo' | 'doing' | 'done';
-    dueDate?: string;
-    priority: 'low' | 'medium' | 'high';
-    boardId?: string;
-    folderId?: string;
-    tabIds?: string[];
-    createdAt: string;
-    updatedAt: string;
-}
-
-interface Note {
-    id: string;
-    content: string;
-    boardId?: string;
-    folderId?: string;
-    tabId?: string;
-    createdAt: string;
-    updatedAt: string;
-    format: 'markdown' | 'text';
-}
-
-interface Session {
-    id: string;
-    name: string;
-    tabIds: string[];
-    startTime: string;
-    endTime?: string;
-    summary?: string;
-    createdAt: string;
-}
-
-interface HistoryItem {
-    id: string;
-    url: string;
-    title: string;
-    lastVisitTime?: number;
-    visitCount?: number;
-    typedCount?: number;
-    favicon?: string;
-}
 
 // Generic storage functions
 async function getAllItems<T>(key: string): Promise<T[]> {

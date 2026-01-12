@@ -15,6 +15,7 @@ import BoardHeader from './components/BoardHeader';
 import BoardList from './components/BoardList';
 import BoardToast from './components/BoardToast';
 import { HistoryItem } from '../../types';
+import { createTabFromHistoryItem } from '../../utils/tabUtils';
 import './BoardView.css';
 
 const BoardView: React.FC = () => {
@@ -265,16 +266,8 @@ const BoardView: React.FC = () => {
                 const finalFolderId = targetFolderId || folderIdFromTab;
 
                 if (finalFolderId) {
-                    const tabToAdd = {
-                        id: `tab_${Date.now()}_${historyItem.id}`,
-                        title: historyItem.title,
-                        url: historyItem.url,
-                        favicon: historyItem.favicon,
-                        folderId: finalFolderId,
-                        tabId: null,
-                        lastAccessed: new Date().toISOString(),
-                        status: 'closed' as const,
-                    };
+                    // Use shared utility to create tab from history item
+                    const tabToAdd = createTabFromHistoryItem(historyItem, finalFolderId);
                     addTab(tabToAdd);
                     showToast('History item added to folder!', 'success');
                 }

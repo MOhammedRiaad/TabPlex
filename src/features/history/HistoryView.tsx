@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useBoardStore } from '../../store/boardStore';
 import { HistoryItem } from '../../types';
+import { createTabFromHistoryItem } from '../../utils/tabUtils';
 import './HistoryView.css';
 import HistoryHeader from './components/HistoryHeader';
 import HistoryList from './components/HistoryList';
@@ -36,19 +37,8 @@ const HistoryView: React.FC = () => {
             return;
         }
 
-        // Create a tab object from the history item
-        const tabToAdd = {
-            id: `tab_${Date.now()}_${historyItem.id}`,
-            title: historyItem.title,
-            url: historyItem.url,
-            favicon: historyItem.favicon,
-            folderId: selectedFolderId,
-            tabId: null,
-            lastAccessed: new Date().toISOString(),
-            status: 'closed' as const, // Since it's from history
-            createdAt: new Date().toISOString(),
-        };
-
+        // Use shared utility to create tab from history item
+        const tabToAdd = createTabFromHistoryItem(historyItem, selectedFolderId);
         addTab(tabToAdd);
 
         // Mark this history item as added to a folder
