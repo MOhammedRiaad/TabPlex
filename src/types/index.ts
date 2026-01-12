@@ -58,12 +58,14 @@ export interface Task {
     tabIds?: string[];
     createdAt: string;
     updatedAt: string;
+    completedAt?: string; // When task was marked as done
     tags?: string[];
     pinned?: boolean;
 }
 
 export interface Note {
     id: string;
+    title: string; // Added for better organization and search
     content: string;
     boardId?: string;
     folderId?: string;

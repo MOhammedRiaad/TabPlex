@@ -20,6 +20,7 @@ const AddNoteForm: React.FC<AddNoteFormProps> = ({ folderId, boardId }) => {
         if (content.trim()) {
             addNote({
                 id: generateNoteId(),
+                title: content.trim().split('\n')[0].substring(0, 50) || 'Untitled Note',
                 content: content.trim(),
                 folderId,
                 boardId,

@@ -1,4 +1,8 @@
-import { addTask as addTaskToDB, deleteTask as deleteTaskFromDB } from '../../../utils/storage';
+import {
+    addTask as addTaskToDB,
+    deleteTask as deleteTaskFromDB,
+    updateTask as updateTaskInDB,
+} from '../../../utils/storage';
 import { TaskSlice, BoardStoreCreator } from './types';
 
 export const createTaskSlice: BoardStoreCreator<TaskSlice> = set => ({
@@ -26,11 +30,36 @@ export const createTaskSlice: BoardStoreCreator<TaskSlice> = set => ({
     },
 
     updateTask: (id, updates) =>
-        set(state => ({
-            tasks: state.tasks.map(task =>
-                task.id === id ? { ...task, ...updates, updatedAt: new Date().toISOString() } : task
-            ),
-        })),
+        set(state => {
+            const now = new Date().toISOString();
+            const updatedTasks = state.tasks.map(task => {
+                if (task.id !== id) return task;
+
+                // Determine completedAt value
+                let completedAt = task.completedAt;
+                if (updates.status === 'done' && task.status !== 'done') {
+                    // Task is being marked as done - set completedAt
+                    completedAt = now;
+                } else if (updates.status && updates.status !== 'done') {
+                    // Task is being unmarked from done - clear completedAt
+                    completedAt = undefined;
+                }
+
+                const updatedTask = {
+                    ...task,
+                    ...updates,
+                    updatedAt: now,
+                    completedAt,
+                };
+
+                // Persist to IndexedDB
+                updateTaskInDB(updatedTask).catch(console.error);
+
+                return updatedTask;
+            });
+
+            return { tasks: updatedTasks };
+        }),
 
     deleteTask: id => {
         set(state => ({

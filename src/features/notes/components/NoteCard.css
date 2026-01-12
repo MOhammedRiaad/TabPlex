@@ -26,6 +26,14 @@
     flex: 1;
 }
 
+.note-title {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: var(--font-base);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    line-height: 1.4;
+}
+
 .note-content {
     flex: 1;
     margin-bottom: var(--spacing-sm);

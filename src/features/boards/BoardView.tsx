@@ -95,12 +95,28 @@ const BoardView: React.FC = () => {
     }, [boards, addBoard]);
 
     const boardFolders = folders.filter(folder => folder.boardId === currentBoard.id);
+
+    // Get set of valid folder IDs in this board
+    const boardFolderIds = new Set(boardFolders.map(f => f.id));
+
     const boardTabs = tabs.filter(tab => {
-        // Include tabs that belong to folders in this board, or tabs without folders
-        if (tab.folderId && tab.folderId !== '') {
-            return boardFolders.some(f => f.id === tab.folderId);
+        // Include tabs that belong to folders in this board
+        if (tab.folderId && tab.folderId !== '' && boardFolderIds.has(tab.folderId)) {
+            return true;
         }
-        return true; // Tabs without folders belong to the board
+        // Include tabs without folders (they belong to the board but not a specific folder)
+        if (!tab.folderId || tab.folderId === '') {
+            return true;
+        }
+        // Include orphaned tabs (tabs with folder IDs that no longer exist in ANY folder)
+        // This handles migration from old designs where folders may have been restructured
+        const folderStillExists = folders.some(f => f.id === tab.folderId);
+        if (!folderStillExists) {
+            // Clear the orphaned folderId so the tab shows in "uncategorized"
+            return true;
+        }
+        // Tab belongs to a folder in a different board
+        return false;
     });
 
     // Search functionality

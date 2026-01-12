@@ -13,8 +13,17 @@
         "service_worker": "src/background/background.js"
     },
     "action": {},
-
-    "permissions": ["tabs", "tabGroups", "history", "sessions", "storage", "notifications", "bookmarks"],
+    "permissions": [
+        "tabs",
+        "tabGroups",
+        "history",
+        "sessions",
+        "storage",
+        "notifications",
+        "bookmarks",
+        "identity",
+        "identity.email"
+    ],
     "host_permissions": ["<all_urls>"],
     "commands": {
         "_execute_action": {

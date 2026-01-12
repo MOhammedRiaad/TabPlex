@@ -63,52 +63,56 @@ export const useTaskNotifications = () => {
                 return taskDueDate.getTime() <= today.getTime();
             });
 
-            // Send notifications for due tasks
-            dueTasks.forEach((task: Task) => {
-                const taskDueDate = new Date(task.dueDate!);
-                taskDueDate.setHours(0, 0, 0, 0);
-                const isOverdue = taskDueDate.getTime() < today.getTime();
+            // Send notifications for due tasks with delays between each
+            dueTasks.forEach((task: Task, index: number) => {
+                // Add a 2-second delay between each notification
+                setTimeout(() => {
+                    const taskDueDate = new Date(task.dueDate!);
+                    taskDueDate.setHours(0, 0, 0, 0);
+                    const isOverdue = taskDueDate.getTime() < today.getTime();
 
-                const title = isOverdue ? `⚠️ Overdue Task: ${task.title}` : `📅 Task Due Today: ${task.title}`;
+                    const title = isOverdue ? `⚠️ Overdue Task: ${task.title}` : `📅 Task Due Today: ${task.title}`;
 
-                const body = isOverdue
-                    ? `This task was due on ${taskDueDate.toLocaleDateString()}`
-                    : `Don't forget to complete this task today!`;
+                    const body = isOverdue
+                        ? `This task was due on ${taskDueDate.toLocaleDateString()}`
+                        : `Don't forget to complete this task today!`;
 
-                try {
-                    // Get extension icon URL
-                    const iconUrl = chrome?.runtime?.getURL
-                        ? chrome.runtime.getURL('assets/icon128.png')
-                        : '/assets/icon128.png';
+                    try {
+                        // Get extension icon URL
+                        const iconUrl = chrome?.runtime?.getURL
+                            ? chrome.runtime.getURL('assets/icon128.png')
+                            : '/assets/icon128.png';
 
-                    const notification = new Notification(title, {
-                        body: body,
-                        icon: iconUrl,
-                        badge: chrome?.runtime?.getURL
-                            ? chrome.runtime.getURL('assets/icon32.png')
-                            : '/assets/icon32.png',
-                        tag: `task-${task.id}`, // Prevent duplicate notifications
-                        requireInteraction: task.priority === 'high', // Keep high priority notifications visible
-                    });
+                        const notification = new Notification(title, {
+                            body: body,
+                            icon: iconUrl,
+                            badge: chrome?.runtime?.getURL
+                                ? chrome.runtime.getURL('assets/icon32.png')
+                                : '/assets/icon32.png',
+                            tag: `task-${task.id}`, // Prevent duplicate notifications
+                            requireInteraction: task.priority === 'high', // Keep high priority notifications visible
+                        });
 
-                    // Mark as notified
-                    notifiedTasksRef.current.add(task.id);
+                        // Mark as notified
+                        notifiedTasksRef.current.add(task.id);
 
-                    // Auto-close notification after 5 seconds (unless high priority)
-                    if (task.priority !== 'high') {
-                        setTimeout(() => {
+                        // Auto-close notification after 10 seconds (unless high priority)
+                        // Increased from 5 to 10 seconds for better user visibility
+                        if (task.priority !== 'high') {
+                            setTimeout(() => {
+                                notification.close();
+                            }, 10000);
+                        }
+
+                        // Handle notification click
+                        notification.onclick = () => {
+                            window.focus();
                             notification.close();
-                        }, 5000);
+                        };
+                    } catch (error) {
+                        console.error('Error showing notification:', error);
                     }
-
-                    // Handle notification click
-                    notification.onclick = () => {
-                        window.focus();
-                        notification.close();
-                    };
-                } catch (error) {
-                    console.error('Error showing notification:', error);
-                }
+                }, index * 2000); // 2 second delay between each notification
             });
         };
 

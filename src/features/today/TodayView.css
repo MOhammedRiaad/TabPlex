@@ -2,139 +2,178 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    background: var(--color-bg-primary);
 }
 
 .today-header {
-    padding: var(--spacing-md) 0;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    background: var(--color-bg-primary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
     border-bottom: 1px solid var(--color-border);
-    margin-bottom: var(--spacing-md);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 }
 
 .header-content h2 {
-    margin: 0 0 var(--spacing-xs) 0;
+    margin: 0;
     font-size: var(--font-2xl);
-    font-weight: 600;
+    font-weight: 700;
     color: var(--color-text-primary);
+    line-height: 1.2;
+}
+
+.greeting {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-text-secondary) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
 }
 
 .today-date {
     font-size: var(--font-sm);
     color: var(--color-text-secondary);
+    margin-top: var(--spacing-xs);
 }
 
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+.today-content-wrapper {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    max-width: 1600px;
+    margin: 0 auto;
+    width: 100%;
+    flex: 1;
 }
 
-.mini-timer {
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: var(--spacing-xl);
+    align-items: start;
+}
+
+.dashboard-column {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    background-color: var(--color-bg-secondary);
-    padding: 4px 8px;
-    border-radius: var(--radius-md);
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.dashboard-card {
+    background: var(--color-bg-secondary);
+    border-radius: 16px;
     border: 1px solid var(--color-border);
-    animation: fadeIn 0.3s ease;
+    overflow: hidden;
+    height: 100%;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
-.mini-time {
-    font-family: monospace;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--color-text-primary);
-    min-width: 45px;
-    text-align: center;
+.dashboard-card:hover {
+    border-color: var(--color-primary-muted);
 }
 
-.mini-time.running {
-    color: var(--color-primary);
+/* Specific Card Styles */
+
+/* Tasks Card */
+.tasks-card {
+    padding: var(--spacing-lg);
+    background: linear-gradient(180deg, var(--color-bg-secondary) 0%, rgba(var(--color-bg-base-rgb), 0.5) 100%);
+    min-height: 480px;
 }
 
-.mini-control-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 12px;
-    padding: 2px;
-    border-radius: var(--radius-sm);
+/* Notes Card */
+.notes-card {
+    padding: var(--spacing-lg);
+}
+
+/* Timer Card */
+.timer-card {
+    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
+    border-color: rgba(6, 182, 212, 0.15);
+}
+
+.timer-card:hover {
+    border-color: rgba(6, 182, 212, 0.3);
+    box-shadow: 0 4px 20px -5px rgba(6, 182, 212, 0.1);
+}
+
+/* Quote Card */
+.quote-card {
+    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(124, 58, 237, 0.02) 100%);
+    border-color: rgba(139, 92, 246, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 120px;
 }
 
-.mini-control-btn:hover {
-    background-color: var(--color-bg-tertiary);
+.quote-card:hover {
+    border-color: rgba(139, 92, 246, 0.3);
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-5px);
+/* Quick Links is handled by its own component CSS */
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr 320px;
+        gap: var(--spacing-lg);
+    }
+}
+
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
     }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    .side-column {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+
+    .timer-card {
+        grid-column: span 1;
     }
 }
 
-.toggle-timer-btn {
-    display: flex;
-    align-items: center;
-    padding: var(--spacing-sm) var(--spacing-md);
-    background-color: var(--color-bg-secondary);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    font-size: var(--font-sm);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    color: var(--color-text-primary);
+@media (max-width: 768px) {
+    .today-header {
+        padding: var(--spacing-md);
+    }
+
+    .today-content-wrapper {
+        padding: var(--spacing-md);
+    }
+
+    .side-column {
+        grid-template-columns: 1fr;
+    }
 }
 
-.toggle-timer-btn:hover {
-    background-color: var(--color-bg-hover);
+/* Revert/fix any global styles that might interfere */
+/* Ensure scrollbars are nice */
+.today-view::-webkit-scrollbar {
+    width: 8px;
 }
 
-.toggle-timer-btn.active {
-    background-color: var(--color-primary);
-    color: var(--color-text-inverse);
-    border-color: var(--color-primary);
+.today-view::-webkit-scrollbar-track {
+    background: transparent;
 }
 
-/* Content Layout */
-.today-content {
-    display: flex;
-    flex: 1;
-    gap: var(--spacing-lg);
-    overflow: hidden;
-    /* Prevent double scrollbars */
+.today-view::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: 4px;
 }
 
-.main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    padding-right: var(--spacing-sm);
-}
-
-.today-sidebar {
-    width: 380px;
-    flex-shrink: 0;
-    overflow-y: auto;
-    padding-left: var(--spacing-sm);
-    border-left: 1px solid var(--color-border);
-}
-
-.sticky-timer {
-    position: sticky;
-    top: 0;
-}
+/* ============================================
+   TRELLO-STYLE TASK COLUMNS
+   ============================================ */
 
 /* Tasks Container */
 .tasks-container {
@@ -173,35 +212,130 @@
 .tasks-controls {
     display: flex;
     gap: var(--spacing-sm);
+    align-items: center;
 }
 
-.toggle-tasks-btn {
-    background-color: var(--color-bg-tertiary);
-    border: 1px solid var(--color-border);
+/* View More Button - Modern Board Style */
+.view-more-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border: 1.5px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.view-more-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-bg-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.view-more-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1);
+}
+
+/* Toggle All Tasks Button - Modern Board Style */
+.toggle-all-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border: 1.5px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.toggle-all-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-bg-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.toggle-all-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1);
+}
+
+.toggle-all-btn.active {
+    background: linear-gradient(135deg, var(--color-primary) 0%, #2563eb 100%);
+    color: white;
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.toggle-all-btn.active:hover {
+    background: linear-gradient(135deg, #2563eb 0%, var(--color-primary) 100%);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+/* Filter Controls */
+.tasks-filters {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background-color: var(--color-bg-secondary);
     border-radius: var(--radius-md);
-    padding: var(--spacing-xs) var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--color-border);
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.filter-group label {
     font-size: var(--font-sm);
     color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.filter-select {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-sm);
+    color: var(--color-text-primary);
     cursor: pointer;
     transition: all var(--transition-fast);
 }
 
-.toggle-tasks-btn:hover {
-    background-color: var(--color-bg-hover);
-}
-
-.toggle-tasks-btn.active {
-    background-color: var(--color-primary);
-    color: var(--color-text-inverse);
+.filter-select:hover {
     border-color: var(--color-primary);
 }
 
+.filter-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Task Column - Trello Style */
 .task-column {
     min-width: 300px;
     width: 300px;
-    /* Fixed width mostly */
     flex: 1;
-    /* Allow growing */
     display: flex;
     flex-direction: column;
     background-color: var(--color-bg-secondary);
@@ -291,31 +425,16 @@
     grid-column: 1 / -1;
 }
 
-/* Responsive design */
+.no-tasks {
+    margin: 0;
+    font-style: italic;
+    color: var(--color-text-muted);
+    text-align: center;
+    padding: var(--spacing-md);
+}
+
+/* Responsive for Trello columns */
 @media (max-width: 1024px) {
-    .today-content {
-        flex-direction: column;
-        overflow-y: auto;
-    }
-
-    .main-content {
-        overflow-y: visible;
-    }
-
-    .today-sidebar {
-        width: 100%;
-        border-left: none;
-        border-top: 1px solid var(--color-border);
-        padding-left: 0;
-        padding-top: var(--spacing-md);
-        order: -1;
-        /* Put timer on top on mobile */
-    }
-
-    .pomodoro-timer {
-        max-width: 100%;
-    }
-
     .tasks-columns {
         flex-direction: column;
     }
@@ -324,4 +443,8 @@
         min-width: 100%;
         width: 100%;
     }
+}
+
+.notes-list .view-more-btn {
+    width: 100%;
 }

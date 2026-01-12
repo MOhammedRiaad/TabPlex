@@ -34,6 +34,23 @@ chrome.runtime.onMessage.addListener(
         // Handle different message types
 
         switch (message.type) {
+            case 'GET_USER_INFO':
+                // Get Chrome user profile info
+                console.log('Getting user info...');
+                chrome.identity.getProfileUserInfo(
+                    { accountStatus: 'ANY' as chrome.identity.AccountStatus },
+                    userInfo => {
+                        console.log('User info received:', userInfo);
+                        console.log('Last error:', chrome.runtime.lastError);
+                        if (chrome.runtime.lastError) {
+                            safeSendResponse(_sendResponse, { error: chrome.runtime.lastError.message });
+                        } else {
+                            safeSendResponse(_sendResponse, { email: userInfo?.email || '' });
+                        }
+                    }
+                );
+                return true;
+
             case 'MOVE_TAB':
                 // Handle tab movement between folders
                 let moveTabResponseSent = false;

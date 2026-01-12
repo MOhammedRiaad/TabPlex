@@ -9,6 +9,9 @@ import CanvasContainer from './features/canvas/components/CanvasContainer';
 import TldrawContainer from './features/canvas/components/TldrawContainer';
 import SettingsView from './features/settings/SettingsView';
 import BookmarkView from './features/bookmarks/BookmarkView';
+import NotesView from './features/notes/NotesView';
+import TasksView from './features/tasks/TasksView';
+import PomodoroView from './features/pomodoro/PomodoroView';
 import { ViewType } from './features/ui/store/uiStore';
 
 export const ROUTES = {
@@ -19,6 +22,9 @@ export const ROUTES = {
     ANALYTICS: '/analytics',
     CANVAS: '/canvas',
     BOOKMARKS: '/bookmarks',
+    NOTES: '/notes',
+    TASKS: '/tasks',
+    POMODORO: '/pomodoro',
     SETTINGS: '/settings',
 } as const;
 
@@ -33,6 +39,9 @@ export const ROUTE_METADATA: Record<RoutePath, { title: string; description?: st
     [ROUTES.ANALYTICS]: { title: 'Analytics', description: 'View your productivity insights' },
     [ROUTES.CANVAS]: { title: 'Canvas', description: 'Draw and organize visually' },
     [ROUTES.BOOKMARKS]: { title: 'Bookmarks', description: 'Manage your bookmarks' },
+    [ROUTES.NOTES]: { title: 'Notes', description: 'All your notes' },
+    [ROUTES.TASKS]: { title: 'Tasks', description: 'All your tasks' },
+    [ROUTES.POMODORO]: { title: 'Pomodoro', description: 'Focus timer' },
     [ROUTES.SETTINGS]: { title: 'Settings', description: 'Configure TabBoard' },
 };
 
@@ -53,6 +62,12 @@ export const viewToPath = (view: ViewType): RoutePath => {
             return ROUTES.CANVAS;
         case 'bookmarks':
             return ROUTES.BOOKMARKS;
+        case 'notes':
+            return ROUTES.NOTES;
+        case 'tasks':
+            return ROUTES.TASKS;
+        case 'pomodoro':
+            return ROUTES.POMODORO;
         case 'settings':
             return ROUTES.SETTINGS;
     }
@@ -78,13 +93,18 @@ export const pathToView = (path: string): ViewType => {
             return 'canvas';
         case ROUTES.BOOKMARKS:
             return 'bookmarks';
+        case ROUTES.NOTES:
+            return 'notes';
+        case ROUTES.TASKS:
+            return 'tasks';
+        case ROUTES.POMODORO:
+            return 'pomodoro';
         case ROUTES.SETTINGS:
             return 'settings';
         case '/':
         case '':
-            return 'today'; // Default route
+            return 'today';
         default:
-            // Invalid route, default to today
             return 'today';
     }
 };
@@ -148,6 +168,9 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({ onExport, onImportClick, o
                 <Route path={ROUTES.ANALYTICS} element={<AnalyticsDashboard />} />
                 <Route path={ROUTES.CANVAS} element={canvasComponent} />
                 <Route path={ROUTES.BOOKMARKS} element={<BookmarkView />} />
+                <Route path={ROUTES.NOTES} element={<NotesView />} />
+                <Route path={ROUTES.TASKS} element={<TasksView />} />
+                <Route path={ROUTES.POMODORO} element={<PomodoroView />} />
                 <Route path={ROUTES.SETTINGS} element={settingsComponent} />
                 {/* Root redirect */}
                 <Route path="/" element={<Navigate to={ROUTES.TODAY} replace />} />

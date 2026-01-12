@@ -169,7 +169,7 @@
     animation-delay: calc(var(--card-index, 0) * 0.05s);
     /* Curved left border */
     border-left: 6px solid var(--priority-color, var(--color-border));
-    overflow: hidden;
+    /* overflow: hidden; */
     /* Ensure border respects radius */
 }
 
