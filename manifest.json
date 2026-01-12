@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "TabBoard",
+    "name": "TabPlex",
     "version": "1.0.0",
     "description": "Organize browser tabs, tasks, and work context in a Trello-like workspace with AI-assisted intelligence",
     "icons": {

@@ -1,4 +1,19 @@
 import { Board, Folder, Tab, Task, Note, Session, HistoryItem } from '../types';
+import {
+    getAllBoards,
+    getAllFolders,
+    getAllTabs,
+    getAllTasks,
+    getAllNotes,
+    getAllSessions,
+    addBoard,
+    addFolder,
+    addTab,
+    addTask,
+    addNote,
+    addSession,
+    clearAllData,
+} from './storage';
 
 export interface ExportData {
     version: string;
@@ -16,10 +31,21 @@ export interface ExportData {
 
 export const exportData = async (): Promise<string> => {
     try {
-        // Get all data from the store
-        const { boards, folders, tabs, tasks, notes, sessions, history } = await chrome.runtime.sendMessage({
-            type: 'EXPORT_ALL_DATA',
-        });
+        // Get all data directly from IndexedDB
+        const [boards, folders, tabs, tasks, notes, sessions] = await Promise.all([
+            getAllBoards(),
+            getAllFolders(),
+            getAllTabs(),
+            getAllTasks(),
+            getAllNotes(),
+            getAllSessions(),
+        ]);
+
+        // History is not currently stored in IndexedDB in the same way, but we can return empty or implement if needed
+        // For now, consistent with previous behavior if history was in local storage, but frontend uses IDB.
+        // If history is supposed to be exported, we need a getAllHistory in storage.ts.
+        // Checking storage.ts, there is no getAllHistory. So we'll pass empty array or skip.
+        const history: HistoryItem[] = [];
 
         const exportData: ExportData = {
             version: '1.0.0',
@@ -50,11 +76,24 @@ export const importData = async (jsonData: string): Promise<void> => {
             throw new Error(`Unsupported export version: ${parsedData.version}`);
         }
 
-        // Send data to background for import
-        await chrome.runtime.sendMessage({
-            type: 'IMPORT_ALL_DATA',
-            payload: parsedData.data,
-        });
+        // Clear existing data in IndexedDB
+        await clearAllData();
+
+        const { boards, folders, tabs, tasks, notes, sessions } = parsedData.data;
+
+        // Import data into IndexedDB
+        await Promise.all([
+            ...boards.map(b => addBoard(b)),
+            ...folders.map(f => addFolder(f)),
+            ...tabs.map(t => addTab(t)),
+            ...tasks.map(t => addTask(t)),
+            ...notes.map(n => addNote(n)),
+            ...sessions.map(s => addSession(s)),
+        ]);
+
+        // Notify background/other tabs if needed?
+        // Since we are writing to IDB, and useStorageSync reads from IDB on mount, a reload is sufficient.
+        // App.tsx handles the reload.
     } catch (error) {
         console.error('Error importing data:', error);
         throw error;
@@ -70,7 +109,7 @@ export const downloadExportFile = async (): Promise<void> => {
         // Create a temporary link and trigger download
         const link = document.createElement('a');
         link.href = url;
-        link.download = `tabboard-export-${new Date().toISOString().split('T')[0]}.json`;
+        link.download = `tabplex-export-${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

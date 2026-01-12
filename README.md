@@ -1,10 +1,10 @@
-# TabBoard - Smart Browser Tab & Task Manager
+# TabPlex - Smart Browser Tab & Task Manager
 
 A powerful Chrome extension to organize browser tabs, tasks, and work context in a visual workspace with productivity-focused features.
 
 ## 🎯 Target Users
 
-**TabBoard is designed for:**
+**TabPlex is designed for:**
 
 - **Knowledge Workers** who juggle multiple projects and need to organize research, documentation, and tasks
 - **Developers & Designers** who work with many tabs and need to track progress across features
@@ -31,7 +31,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 
 ### ✅ Task Management
 
-- **Today View**: Consolidated dashboard for today's tasks and notes
+- **Today View**: Consolidated dashboard with personalized greetings, daily focus, and tasks
 - **Kanban-Style Workflow**: To Do, Doing, Done columns for visual progress tracking
 - **Rich Task Details**: Add descriptions, checklists, due dates, and priority levels
 - **Task-Tab Linking**: Associate web resources with specific tasks
@@ -58,10 +58,16 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 
 ### 🎨 Canvas Drawing
 
-- **Visual Brainstorming**: Freehand drawing with pen tool
-- **Shape Tools**: Rectangles, ellipses, lines, and text
-- **Selection & Editing**: Multi-select, move, and layer management
-- **Export**: Save canvases as PNG images
+- **Visual Brainstorming**: Integrated **tldraw** canvas for advanced diagramming and wireframing
+- **Shape Tools**: Rectangles, ellipses, lines, text, arrows, and sticky notes
+- **Selection & Editing**: Multi-select, move, grouping, and layer management
+- **Export**: Save canvases as PNG images or maintain them within your workspace
+
+### 🔖 Bookmarks
+
+- **Manager**: View, search, and organize your Chrome bookmarks
+- **Tree View**: Navigate your bookmark hierarchy easily
+- **Quick Actions**: Open, edit, or delete bookmarks directly from the dashboard
 
 ### 🔍 Search & Navigation
 
@@ -206,7 +212,7 @@ npm run preview      # Preview production build
 
 1. **Create Your First Board**: Click "Add Board" to create a workspace
 2. **Add Folders**: Organize your tabs into folders by topic or project
-3. **Capture Tabs**: Manually add current tabs or let TabBoard auto-capture
+3. **Capture Tabs**: Manually add current tabs or let TabPlex auto-capture
 4. **Create Tasks**: Use the Today view to manage your daily tasks
 5. **Track Focus**: Use the Pomodoro timer to track focus sessions
 
@@ -259,7 +265,7 @@ npm run preview      # Preview production build
 
 ### Data Collection & Storage
 
-**TabBoard is privacy-first and collects NO personal data.**
+**TabPlex is privacy-first and collects NO personal data.**
 
 #### What We Store (Locally Only)
 
@@ -280,7 +286,7 @@ npm run preview      # Preview production build
 
 #### Permissions Explained
 
-TabBoard requests the following Chrome permissions:
+TabPlex requests the following Chrome permissions:
 
 - **`tabs`**: To read tab information (URL, title) for organization
 - **`tabGroups`**: To integrate with Chrome's native tab groups
@@ -288,6 +294,9 @@ TabBoard requests the following Chrome permissions:
 - **`storage`**: To save your boards, tasks, and notes locally
 - **`notifications`**: To send task reminders and timer notifications
 - **`<all_urls>`**: To capture favicons and tab metadata from any website you visit
+- **`sessions`**: To restore recently closed tabs and windows
+- **`bookmarks`**: To manage and organize your browser bookmarks (read/write access)
+- **`identity`**: To personalize your experience (e.g., "Good Morning, [Name]")
 
 **Important**: These permissions are used solely for the extension's functionality. We never transmit your data anywhere.
 

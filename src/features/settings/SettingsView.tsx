@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useTheme } from '../../hooks/useTheme';
+import { clearAllData } from '../../utils/storage';
 import ThemeToggle from '../ui/components/ThemeToggle';
 import Toast from '../bookmarks/components/Toast';
 import './SettingsView.css';
@@ -28,14 +29,21 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
         setToast({ message, type });
     }, []);
 
-    const handleClearData = () => {
+    const handleClearData = async () => {
+        // Made function async
         if (window.confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
-            localStorage.clear();
-            if (typeof chrome !== 'undefined' && chrome.storage) {
-                chrome.storage.local.clear();
+            try {
+                localStorage.clear();
+                if (typeof chrome !== 'undefined' && chrome.storage) {
+                    await chrome.storage.local.clear(); // Await chrome storage clear
+                }
+                await clearAllData(); // Call clearAllData
+                showToast('All data cleared. Reloading...', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } catch (error) {
+                console.error('Error clearing data:', error);
+                showToast('Failed to clear data', 'error');
             }
-            showToast('All data cleared. Reloading...', 'success');
-            setTimeout(() => window.location.reload(), 1500);
         }
     };
 

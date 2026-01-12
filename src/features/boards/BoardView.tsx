@@ -22,6 +22,7 @@ const BoardView: React.FC = () => {
         boards,
         folders,
         tabs,
+        sessions, // Get sessions from store
         addBoard,
         addFolder,
         addTab,
@@ -64,18 +65,12 @@ const BoardView: React.FC = () => {
         // Check if default_board already exists in the boards array
         const defaultBoardExists = boards.some(board => board.id === 'default_board');
 
-        // Only create default board if:
-        // 1. We haven't checked yet in this mount
-        // 2. No boards exist at all
-        // 3. The default board doesn't already exist
+        // Only create default board if logic matches
         if (!hasCheckedForDefaultBoard.current) {
             if (boards.length === 0 && !defaultBoardExists) {
-                // Wait a bit for data to load from IndexedDB before creating default board
                 const timeoutId = setTimeout(() => {
-                    // Double-check that boards are still empty and default doesn't exist
                     const currentBoards = useBoardStore.getState().boards;
                     const stillNoDefault = !currentBoards.some(board => board.id === 'default_board');
-
                     if (currentBoards.length === 0 && stillNoDefault) {
                         addBoard({
                             id: 'default_board',
@@ -84,11 +79,9 @@ const BoardView: React.FC = () => {
                         });
                     }
                     hasCheckedForDefaultBoard.current = true;
-                }, 500); // Wait 500ms for data to load
-
+                }, 500);
                 return () => clearTimeout(timeoutId);
             } else {
-                // Boards exist or default board already exists, mark as checked
                 hasCheckedForDefaultBoard.current = true;
             }
         }
@@ -99,11 +92,26 @@ const BoardView: React.FC = () => {
     // Get set of valid folder IDs in this board
     const boardFolderIds = new Set(boardFolders.map(f => f.id));
 
+    // Get set of all tab IDs that are part of sessions
+    const sessionTabIds = useMemo(() => {
+        const ids = new Set<string>();
+        sessions.forEach(session => {
+            session.tabIds.forEach(id => ids.add(id));
+        });
+        return ids;
+    }, [sessions]);
+
     const boardTabs = tabs.filter(tab => {
         // Include tabs that belong to folders in this board
         if (tab.folderId && tab.folderId !== '' && boardFolderIds.has(tab.folderId)) {
             return true;
         }
+
+        // Check if tab belongs to a session
+        if (sessionTabIds.has(tab.id)) {
+            return false;
+        }
+
         // Include tabs without folders (they belong to the board but not a specific folder)
         if (!tab.folderId || tab.folderId === '') {
             return true;

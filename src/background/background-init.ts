@@ -2,7 +2,7 @@ import { getAllFolders, addFolder } from './storage';
 
 // Initialize the extension when installed
 chrome.runtime.onInstalled.addListener(async details => {
-    console.log('TabBoard extension installed', details);
+    console.log('TabPlex extension installed', details);
 
     // On first install, open the onboarding page
     if (details.reason === 'install') {
@@ -26,13 +26,13 @@ chrome.runtime.onInstalled.addListener(async details => {
     }
 });
 
-// Open TabBoard in a new tab when the extension icon is clicked
+// Open TabPlex in a new tab when the extension icon is clicked
 chrome.action.onClicked.addListener(async _tab => {
     // Create or focus on a tab with the extension UI
     const url = chrome.runtime.getURL('index.html');
 
     try {
-        // Check if we already have a TabBoard tab open
+        // Check if we already have a TabPlex tab open
         const [existingTab] = await chrome.tabs.query({
             url: url,
             currentWindow: true,
