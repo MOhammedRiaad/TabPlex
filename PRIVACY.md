@@ -1,18 +1,18 @@
-# Privacy Policy for TabBoard
+# Privacy Policy for TabPlex
 
 **Last Updated**: January 2026
 
 ## Overview
 
-TabBoard is committed to protecting your privacy. This privacy policy explains how TabBoard handles your data.
+TabPlex is committed to protecting your privacy. This privacy policy explains how TabPlex handles your data.
 
 ## Data Collection
 
-**TabBoard collects NO personal data and transmits NO data to external servers.**
+**TabPlex collects NO personal data and transmits NO data to external servers.**
 
 ### What Data is Stored Locally
 
-TabBoard stores the following data **exclusively on your local device**:
+TabPlex stores the following data **exclusively on your local device**:
 
 1. **Tab Information**
     - URLs of tabs you organize
@@ -62,7 +62,7 @@ All data is stored using:
 
 ## Chrome Permissions Explained
 
-TabBoard requests the following permissions to function:
+TabPlex requests the following permissions to function:
 
 ### Required Permissions
 
@@ -78,7 +78,7 @@ TabBoard requests the following permissions to function:
 3. **`storage`**
     - **Purpose**: Save your boards, tasks, notes, and settings
     - **Usage**: All data stored locally in your browser
-    - **Data Access**: Everything you create in TabBoard
+    - **Data Access**: Everything you create in TabPlex
 
 4. **`history`**
     - **Purpose**: Allow you to import browser history
@@ -95,16 +95,31 @@ TabBoard requests the following permissions to function:
     - **Usage**: Display website icons in tab cards
     - **Data Access**: Favicon URLs only
 
+7. **`sessions`**
+    - **Purpose**: Restore recently closed tabs and windows
+    - **Usage**: Used in the "Sessions" view to show recent browsing history
+    - **Data Access**: Recently closed tab URLs and titles
+
+8. **`bookmarks`**
+    - **Purpose**: Manage and organize your browser bookmarks
+    - **Usage**: View, search, and organize bookmarks within the Bookmarks Manager
+    - **Data Access**: Read and write access to your browser bookmarks
+
+9. **`identity`** & **`identity.email`**
+    - **Purpose**: Personalize your experience
+    - **Usage**: Display your name in the "Today" dashboard (e.g., "Good Morning, [Name]")
+    - **Data Access**: Your email address and profile name (stored locally, never shared)
+
 ### How Permissions Are Used
 
-- **No Background Tracking**: TabBoard does not monitor your browsing
+- **No Background Tracking**: TabPlex does not monitor your browsing
 - **Explicit Actions Only**: Data is only captured when you explicitly add tabs or import history
 - **No Analytics**: We do not track how you use the extension
 - **No Telemetry**: No usage statistics are collected
 
 ## Data Sharing
 
-**TabBoard does NOT share any data with third parties.**
+**TabPlex does NOT share any data with third parties.**
 
 - ❌ No data sent to external servers
 - ❌ No analytics or tracking services
@@ -144,7 +159,7 @@ TabBoard requests the following permissions to function:
 
 ### Data Deletion
 
-To completely remove all TabBoard data:
+To completely remove all TabPlex data:
 
 1. **Option 1**: Uninstall the extension from Chrome
 2. **Option 2**: Clear browser data for the extension
@@ -152,7 +167,7 @@ To completely remove all TabBoard data:
 
 ## Children's Privacy
 
-TabBoard does not knowingly collect data from children under 13. Since we collect no personal data and all data is stored locally, the extension is safe for all ages when used appropriately.
+TabPlex does not knowingly collect data from children under 13. Since we collect no personal data and all data is stored locally, the extension is safe for all ages when used appropriately.
 
 ## Changes to Privacy Policy
 
@@ -194,7 +209,7 @@ For privacy-related questions or concerns:
 
 ### Chrome Web Store Policies
 
-TabBoard complies with:
+TabPlex complies with:
 
 - Chrome Web Store Developer Program Policies
 - User Data Privacy requirements
@@ -219,7 +234,7 @@ TabBoard complies with:
 
 ## Transparency Commitment
 
-TabBoard is committed to transparency:
+TabPlex is committed to transparency:
 
 - **Open Source**: Code available for review
 - **No Hidden Features**: All functionality documented
@@ -228,6 +243,6 @@ TabBoard is committed to transparency:
 
 ---
 
-**Summary**: TabBoard is a privacy-first extension. All your data stays on your device. We never collect, transmit, or share your personal information.
+**Summary**: TabPlex is a privacy-first extension. All your data stays on your device. We never collect, transmit, or share your personal information.
 
 **Questions?** We're happy to clarify any privacy concerns. Please reach out through our GitHub repository.

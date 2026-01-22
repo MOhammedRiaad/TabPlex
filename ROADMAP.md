@@ -1,6 +1,6 @@
-# TabBoard Development Roadmap
+# TabPlex Development Roadmap
 
-This document outlines the complete development journey of TabBoard, from initial concept to a production-ready Chrome extension with advanced productivity features.
+This document outlines the complete development journey of TabPlex, from initial concept to a production-ready Chrome extension with advanced productivity features.
 
 ---
 

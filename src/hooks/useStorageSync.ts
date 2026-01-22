@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useBoardStore } from '../store/boardStore';
 import {
     initDB,
@@ -29,6 +29,9 @@ import {
 } from '../utils/storage';
 
 export const useStorageSync = () => {
+    // Track if initial data has been loaded to prevent race conditions
+    const isInitialized = useRef(false);
+
     const {
         boards,
         folders,
@@ -88,6 +91,9 @@ export const useStorageSync = () => {
             storedTasks.forEach(task => addTaskToStore(task));
             storedNotes.forEach(note => addNoteToStore(note));
             storedSessions.forEach(session => addSessionToStore(session));
+
+            // Mark as initialized AFTER all data is loaded
+            isInitialized.current = true;
         };
 
         loadData();
@@ -95,6 +101,9 @@ export const useStorageSync = () => {
 
     // Sync boards to storage
     useEffect(() => {
+        // Skip sync until data is loaded to prevent race conditions
+        if (!isInitialized.current) return;
+
         const syncBoards = async () => {
             // Get all boards currently in IndexedDB
             const indexedDBBoards = await getAllBoards();
@@ -121,6 +130,9 @@ export const useStorageSync = () => {
 
     // Sync folders to storage
     useEffect(() => {
+        // Skip sync until data is loaded to prevent race conditions
+        if (!isInitialized.current) return;
+
         const syncFolders = async () => {
             // Get all folders currently in IndexedDB
             const indexedDBFolders = await getAllFolders();
@@ -147,6 +159,9 @@ export const useStorageSync = () => {
 
     // Sync tabs to storage
     useEffect(() => {
+        // Skip sync until data is loaded to prevent race conditions
+        if (!isInitialized.current) return;
+
         const syncTabs = async () => {
             // Get all tabs currently in IndexedDB
             const indexedDBTabs = await getAllTabs();
@@ -173,6 +188,9 @@ export const useStorageSync = () => {
 
     // Sync tasks to storage
     useEffect(() => {
+        // Skip sync until data is loaded to prevent race conditions
+        if (!isInitialized.current) return;
+
         const syncTasks = async () => {
             // Get all tasks currently in IndexedDB
             const indexedDBTasks = await getAllTasks();
@@ -199,6 +217,9 @@ export const useStorageSync = () => {
 
     // Sync notes to storage
     useEffect(() => {
+        // Skip sync until data is loaded to prevent race conditions
+        if (!isInitialized.current) return;
+
         const syncNotes = async () => {
             // Get all notes currently in IndexedDB
             const indexedDBNotes = await getAllNotes();
@@ -225,6 +246,9 @@ export const useStorageSync = () => {
 
     // Sync sessions to storage
     useEffect(() => {
+        // Skip sync until data is loaded to prevent race conditions
+        if (!isInitialized.current) return;
+
         const syncSessions = async () => {
             // Get all sessions currently in IndexedDB
             const indexedDBSessions = await getAllSessions();

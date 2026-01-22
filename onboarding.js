@@ -1,3 +1,4 @@
+/* global document, window, chrome, setTimeout, console */
 // Onboarding page script
 document.addEventListener('DOMContentLoaded', () => {
     const getStartedBtn = document.getElementById('getStartedBtn');
@@ -6,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
         getStartedBtn.addEventListener('click', () => {
             // Open TabBoard extension
             if (typeof chrome !== 'undefined' && chrome.runtime) {
-                chrome.runtime.sendMessage({ type: 'OPEN_TABBOARD' }, response => {
+                chrome.runtime.sendMessage({ type: 'OPEN_TABBOARD' }, () => {
                     // Handle response or errors
                     if (chrome.runtime.lastError) {
                         console.error('Error opening TabBoard:', chrome.runtime.lastError);

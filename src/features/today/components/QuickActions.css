@@ -1,0 +1,140 @@
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+@media (max-width: 1200px) {
+    .quick-actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .quick-actions-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.quick-action-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    border-radius: 16px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-secondary);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-action-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.2);
+}
+
+.action-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: white;
+    font-size: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.quick-action-card:hover .action-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.action-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.action-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    letter-spacing: -0.01em;
+}
+
+.action-desc {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    font-weight: 400;
+}
+
+/* Specific Card Styles */
+
+/* New Task - Blue */
+.task-action {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, var(--color-bg-secondary) 100%);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.task-action .action-icon {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.task-action:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%);
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+/* New Note - Purple */
+.note-action {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, var(--color-bg-secondary) 100%);
+    border-color: rgba(139, 92, 246, 0.2);
+}
+
+.note-action .action-icon {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.note-action:hover {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.08) 100%);
+    border-color: rgba(139, 92, 246, 0.4);
+}
+
+/* Start Focus - Teal */
+.focus-action {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, var(--color-bg-secondary) 100%);
+    border-color: rgba(6, 182, 212, 0.2);
+}
+
+.focus-action .action-icon {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+}
+
+.focus-action:hover {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(8, 145, 178, 0.08) 100%);
+    border-color: rgba(6, 182, 212, 0.4);
+}
+
+/* Create Canvas - Rose/Pink */
+.canvas-action {
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.1) 0%, var(--color-bg-secondary) 100%);
+    border-color: rgba(244, 63, 94, 0.2);
+}
+
+.canvas-action .action-icon {
+    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+    box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
+}
+
+.canvas-action:hover {
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(225, 29, 72, 0.08) 100%);
+    border-color: rgba(244, 63, 94, 0.4);
+}

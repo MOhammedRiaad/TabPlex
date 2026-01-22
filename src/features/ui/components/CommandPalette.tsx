@@ -109,6 +109,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                 action: () => {
                     addNote({
                         id: generateNoteId(),
+                        title: 'New Note',
                         content: '',
                         format: 'text',
                         boardId: boards[0]?.id,

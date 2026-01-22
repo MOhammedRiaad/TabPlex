@@ -39,7 +39,7 @@ export function extractDomain(url?: string): string {
         }
 
         return hostname;
-    } catch (error) {
+    } catch {
         // If URL parsing fails, try to extract domain manually
         try {
             // Remove protocol

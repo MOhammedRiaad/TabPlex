@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Task } from '../../../types';
 import { useBoardStore } from '../../../store/boardStore';
+import { formatDate } from '../../../utils/dateUtils';
 import './TaskCard.css';
 
 interface TaskCardProps {
@@ -100,11 +101,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
         setChecklist(prev => prev.filter(item => item.id !== itemId));
     };
 
-    const formatDate = (dateString?: string) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toLocaleDateString();
-    };
+    // Using shared formatDate utility from dateUtils
 
     const getPriorityColor = () => {
         switch (task.priority) {

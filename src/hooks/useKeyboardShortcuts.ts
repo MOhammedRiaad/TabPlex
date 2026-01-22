@@ -115,6 +115,7 @@ export const useKeyboardShortcuts = (
 
                 addNote({
                     id: `note_${Date.now()}`,
+                    title: 'New note',
                     content: 'New note',
                     boardId: state.boards[0]?.id || undefined,
                     folderId: undefined,

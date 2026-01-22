@@ -66,7 +66,7 @@ const FolderDeleteModal: React.FC<FolderDeleteModalProps> = ({
                                 <p className="warning-message">
                                     This folder contains <strong>{folderTabCount}</strong>{' '}
                                     {folderTabCount === 1 ? 'tab' : 'tabs'}. Choose what to do with the tabs before
-                                    deleting "{folder.name}".
+                                    deleting &ldquo;{folder.name}&rdquo;.
                                 </p>
                             </div>
                         </div>

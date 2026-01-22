@@ -1,6 +1,17 @@
 import { create } from 'zustand';
 
-export type ViewType = 'boards' | 'history' | 'sessions' | 'today' | 'analytics' | 'canvas' | 'bookmarks' | 'settings';
+export type ViewType =
+    | 'boards'
+    | 'history'
+    | 'sessions'
+    | 'today'
+    | 'analytics'
+    | 'canvas'
+    | 'bookmarks'
+    | 'notes'
+    | 'tasks'
+    | 'pomodoro'
+    | 'settings';
 
 // Helper to get initial view from URL hash or localStorage
 const getInitialView = (): ViewType => {
@@ -24,6 +35,12 @@ const getInitialView = (): ViewType => {
                     return 'canvas';
                 case '/bookmarks':
                     return 'bookmarks';
+                case '/notes':
+                    return 'notes';
+                case '/tasks':
+                    return 'tasks';
+                case '/pomodoro':
+                    return 'pomodoro';
                 case '/settings':
                     return 'settings';
             }

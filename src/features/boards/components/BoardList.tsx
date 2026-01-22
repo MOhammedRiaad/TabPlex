@@ -29,8 +29,17 @@ const BoardList: React.FC<BoardListProps> = ({
     onShowToast,
     viewMode = 'list',
 }) => {
-    // Separate tabs that belong to folders vs tabs without folders
-    const tabsWithoutFolders = tabs.filter(tab => !tab.folderId || tab.folderId === '');
+    // Get valid folder IDs
+    const folderIds = new Set(folders.map(f => f.id));
+
+    // Separate tabs that belong to folders vs tabs without folders (or orphaned tabs)
+    const tabsWithoutFolders = tabs.filter(tab => {
+        // No folder assigned
+        if (!tab.folderId || tab.folderId === '') return true;
+        // Has folder ID but folder no longer exists (orphaned)
+        if (!folderIds.has(tab.folderId)) return true;
+        return false;
+    });
 
     // Get all tab IDs for sortable context
     const allTabIds = tabs.map(t => t.id);

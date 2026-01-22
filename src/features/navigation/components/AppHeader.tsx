@@ -17,7 +17,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onSearchResultClick }) => {
     return (
         <header className="app-header">
             <div className="header-left">
-                <h1>TabBoard</h1>
+                <h1>TabPlex</h1>
             </div>
 
             <div className="header-center">

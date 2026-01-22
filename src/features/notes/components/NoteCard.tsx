@@ -6,6 +6,7 @@ import './NoteCard.css';
 interface NoteCardProps {
     note: {
         id: string;
+        title: string;
         content: string;
         createdAt: string;
         updatedAt?: string;
@@ -94,6 +95,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                 </div>
             ) : (
                 <div className="note-display">
+                    <h3 className="note-title">{note.title}</h3>
                     <div className="note-content">
                         {note.format === 'markdown' ? (
                             <div
