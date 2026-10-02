@@ -5,6 +5,7 @@ import ThemeToggle from '../../ui/components/ThemeToggle';
 import { SearchResult } from '../../../types';
 import { useUIActions } from '../../ui/store/uiStore';
 import { ROUTES } from '../../../routes';
+import ActiveContextPill from './ActiveContextPill';
 
 interface AppHeaderProps {
     onSearchResultClick: (result: SearchResult) => void;
@@ -25,6 +26,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onSearchResultClick }) => {
             </div>
 
             <div className="header-right">
+                <ActiveContextPill />
                 <ThemeToggle />
                 <button
                     className="settings-trigger"

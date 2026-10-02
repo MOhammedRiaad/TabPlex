@@ -9,6 +9,7 @@ import DailyQuote from './components/DailyQuote';
 import QuickActions from './components/QuickActions';
 import QuickLinks from './components/QuickLinks';
 import PomodoroTimer from '../sessions/components/PomodoroTimer';
+import ParkedContexts from './components/ParkedContexts';
 
 const TodayView: React.FC = () => {
     const { tasks, notes } = useBoardStore();
@@ -55,7 +56,8 @@ const TodayView: React.FC = () => {
     }
 
     const todayTasks = filteredTasks.filter(task => {
-        if (!task.dueDate) return !showAllTasks; // Include no-date tasks only when not showing all
+        // No-date tasks are added separately (noDueDateTasks); including them here listed them twice
+        if (!task.dueDate) return false;
         const taskDueDate = new Date(task.dueDate);
         taskDueDate.setHours(0, 0, 0, 0);
         return taskDueDate.getTime() === today.getTime();
@@ -80,10 +82,10 @@ const TodayView: React.FC = () => {
 
         if (showAllTasks) return true;
 
-        // Only show tasks completed today
-        const updatedDate = new Date(task.updatedAt);
-        updatedDate.setHours(0, 0, 0, 0);
-        return updatedDate.getTime() === today.getTime();
+        // Only show tasks completed today (completedAt; any later edit changes updatedAt)
+        const completedDate = new Date(task.completedAt ?? task.updatedAt);
+        completedDate.setHours(0, 0, 0, 0);
+        return completedDate.getTime() === today.getTime();
     });
 
     // Filter notes for today
@@ -102,6 +104,8 @@ const TodayView: React.FC = () => {
 
                 <div className="dashboard-grid">
                     <div className="dashboard-column main-column">
+                        <ParkedContexts />
+
                         <section className="dashboard-card tasks-card">
                             <TodayTasks
                                 todoTasks={todoTasks}

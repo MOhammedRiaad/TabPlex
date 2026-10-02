@@ -231,3 +231,10 @@
         width: 100%;
     }
 }
+
+.setting-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}

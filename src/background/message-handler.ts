@@ -6,6 +6,7 @@ import { handleHistoryMessage } from './history-service';
 import { handleSessionMessage } from './session-service';
 import { handleDataMessage } from './data-service';
 import { handleBookmarkMessage } from './bookmark-service';
+import { CONTEXT_MESSAGE_TYPES, handleContextMessage } from './context-service';
 import { addTab, deleteTab } from './storage';
 import { ExtensionMessage, Tab, Board } from '../types';
 
@@ -319,6 +320,7 @@ chrome.runtime.onMessage.addListener(
 
             // Handle task messages
             case 'ADD_TASK':
+            case 'UPDATE_TASK':
             case 'DELETE_TASK':
                 return handleTaskMessage(message, _sendResponse);
 
@@ -364,6 +366,10 @@ chrome.runtime.onMessage.addListener(
                 return handleBookmarkMessage(message, _sendResponse);
 
             default:
+                // Park & Resume task contexts
+                if (CONTEXT_MESSAGE_TYPES.includes(message.type)) {
+                    return handleContextMessage(message, _sendResponse);
+                }
                 console.warn('Unknown message type:', message.type, message);
                 safeSendResponse(_sendResponse, { error: `Unknown message type: ${message.type}` });
                 break;

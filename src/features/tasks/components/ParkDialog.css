@@ -1,0 +1,164 @@
+.park-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-md);
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.park-dialog {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    width: min(480px, 100%);
+    max-height: calc(100vh - 2 * var(--spacing-md));
+    overflow-y: auto;
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-lg);
+}
+
+.park-dialog-title {
+    margin: 0 0 var(--spacing-xs);
+    font-size: var(--font-lg);
+    overflow-wrap: anywhere;
+}
+
+.park-dialog-label {
+    font-size: var(--font-sm);
+    font-weight: 600;
+}
+
+.park-dialog-note {
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    font: inherit;
+    resize: vertical;
+}
+
+.park-dialog-note:focus {
+    outline: none;
+    border-color: var(--color-border-focus);
+}
+
+.park-dialog-count {
+    align-self: flex-end;
+    color: var(--color-text-muted);
+    font-size: var(--font-xs);
+}
+
+.park-dialog-tabs {
+    margin: 0;
+    padding: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.park-dialog-tabs legend {
+    padding: 0 var(--spacing-xs);
+    color: var(--color-text-secondary);
+    font-size: var(--font-sm);
+}
+
+.park-dialog-tabs ul {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 180px;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.park-dialog-tabs label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-sm);
+    cursor: pointer;
+}
+
+.park-dialog-tabs label span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.park-dialog-hint {
+    margin: var(--spacing-xs) 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-xs);
+}
+
+.park-dialog-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-sm);
+    cursor: pointer;
+}
+
+.park-dialog-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.park-dialog-link {
+    margin-right: auto;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-text-secondary);
+    font-size: var(--font-sm);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.park-dialog-cancel,
+.park-dialog-submit {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-sm);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.park-dialog-cancel {
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+}
+
+.park-dialog-submit {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+}
+
+.park-dialog-submit:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+}
+
+.park-dialog button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.park-dialog button:focus-visible,
+.park-dialog input:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}

@@ -11,4 +11,5 @@ import './session-service';
 import './data-service';
 import './tab-listeners';
 import './cleanup-service';
+import './context-service';
 import './message-handler';

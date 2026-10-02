@@ -35,6 +35,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 - **Kanban-Style Workflow**: To Do, Doing, Done columns for visual progress tracking
 - **Rich Task Details**: Add descriptions, checklists, due dates, and priority levels
 - **Task-Tab Linking**: Associate web resources with specific tasks
+- **Park & Resume**: Each task keeps its own tabs. Start a task to open them in a named Chrome tab group, park it with a "where I left off" note to close them, and resume later in one click — everything stays on your device
 
 ### 📝 Note-Taking
 
@@ -131,6 +132,14 @@ src/
 ├── utils/                # Utility functions
 └── types/                # TypeScript type definitions
 ```
+
+### Documentation
+
+For detailed technical documentation, please refer to the `docs/` directory:
+
+- [**Architecture Guide**](docs/ARCHITECTURE.md): Deep dive into the system design, layers, and key decisions.
+- [**Data Flow & Sync**](docs/DATA_FLOW.md): Explanation of the message-based synchronization mechanism.
+- [**Maintenance Guide**](docs/MAINTENANCE_GUIDE.md): Workflows for adding features and releasing updates.
 
 ### Design Patterns
 
@@ -234,6 +243,7 @@ npm run preview      # Preview production build
 - `Ctrl/Cmd + Shift + K` - New task
 - `Ctrl/Cmd + Shift + F` - New folder
 - `Ctrl/Cmd + Shift + E` - Export data
+- `Alt + Shift + P` - Park the active task
 
 #### Canvas (when active)
 

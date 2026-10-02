@@ -61,6 +61,37 @@ export interface Task {
     completedAt?: string; // When task was marked as done
     tags?: string[];
     pinned?: boolean;
+    /** Park & Resume: the browser tabs this task owns (see docs/specs/PARK_AND_RESUME.md) */
+    context?: TaskContext;
+}
+
+/** A snapshot of one browser tab that belongs to a task context */
+export interface ContextTab {
+    url: string;
+    title: string;
+    favicon?: string;
+}
+
+export type TaskContextState = 'idle' | 'active' | 'parked';
+
+export interface TaskContext {
+    tabs: ContextTab[];
+    state: TaskContextState;
+    /** Live chrome.tabGroups id while active */
+    chromeGroupId?: number | null;
+    windowId?: number | null;
+    parkedAt?: string;
+    resumedAt?: string;
+    /** "Where I left off" note captured when parking */
+    resumeNote?: string;
+    aiSummary?: string;
+    parkCount?: number;
+    resumeCount?: number;
+}
+
+export interface ParkResumeSettings {
+    closeTabsOnPark: boolean;
+    autoAddNewTabs: boolean;
 }
 
 export interface Note {

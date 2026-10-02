@@ -7,7 +7,7 @@ import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 
 export default [
-  { ignores: ['dist', 'node_modules', '*.config.*', 'LandingPage/**'] },
+  { ignores: ['dist', 'node_modules', '*.config.*', 'landing-page/**', '.kilo/**', '.claude/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

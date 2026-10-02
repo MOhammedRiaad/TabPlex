@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Task } from '../../../types';
 import { useBoardStore } from '../../../store/boardStore';
 import { formatDate } from '../../../utils/dateUtils';
+import { isContextActive } from '../../../utils/taskContext';
+import { useTaskContextActions } from '../hooks/useTaskContextActions';
+import TaskContextStrip from './TaskContextStrip';
 import './TaskCard.css';
 
 interface TaskCardProps {
@@ -25,9 +28,27 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
     const deleteTask = useBoardStore(state => state.deleteTask);
     const tabs = useBoardStore(state => state.tabs); // Get tabs to resolve linked names
 
+    const { park } = useTaskContextActions();
+
     const linkedTabs = task.tabIds?.map(id => tabs.find(t => t.id === id)).filter(Boolean) || [];
 
+    // Load the latest task values when entering edit mode. Initialising them once on mount meant
+    // edits made elsewhere (checklist toggles, other tabs, background) were reverted on Save.
+    const startEditing = () => {
+        setEditTitle(task.title);
+        setEditDescription(task.description || '');
+        setEditDueDate(task.dueDate || '');
+        setEditPriority(task.priority);
+        setChecklist(task.checklist || []);
+        setNewChecklistItem('');
+        setIsEditing(true);
+    };
+
     const handleStatusChange = (newStatus: 'todo' | 'doing' | 'done') => {
+        if (newStatus === 'done' && task.status !== 'done' && isContextActive(task)) {
+            // Finishing a task that has its tabs open: park them (keeps the note and tab list)
+            park(task);
+        }
         if (newStatus === 'done' && task.status !== 'done') {
             setIsAnimatingCard(true);
 
@@ -205,7 +226,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             <div className="task-header">
                 <h3 className="task-title">{task.title}</h3>
                 <div className="task-actions">
-                    <button className="edit-btn" onClick={() => setIsEditing(true)} title="Edit task">
+                    <button className="edit-btn" onClick={startEditing} title="Edit task">
                         ✏️
                     </button>
                     <button className="delete-btn" onClick={handleDelete} title="Delete task">
@@ -231,6 +252,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                     ))}
                 </div>
             )}
+
+            <TaskContextStrip task={task} />
 
             {task.checklist && task.checklist.length > 0 && (
                 <div className="task-checklist">

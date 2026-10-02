@@ -4,6 +4,7 @@
     --color-primary: #3b82f6;
     --color-primary-hover: #2563eb;
     --color-primary-light: #60a5fa;
+    --color-primary-muted: rgba(59, 130, 246, 0.4);
 
     /* Status Colors */
     --color-success: #10b981;
@@ -69,6 +70,7 @@
     --color-primary: #60a5fa;
     --color-primary-hover: #3b82f6;
     --color-primary-light: #93c5fd;
+    --color-primary-muted: rgba(96, 165, 250, 0.4);
 
     --color-bg-primary: #1f2937;
     --color-bg-secondary: #111827;

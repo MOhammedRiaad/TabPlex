@@ -1,5 +1,6 @@
-import { addTask, deleteTask } from './storage';
+import { addTask, deleteTask, getTask, updateTask } from './storage';
 import { ExtensionMessage, ExtensionResponse, Task } from '../types';
+import { releaseContextForDeletedTask } from './context-service';
 
 // Helper function to safely send response
 // Helper function to safely send response
@@ -55,13 +56,53 @@ export function handleTaskMessage(message: ExtensionMessage, _sendResponse: (res
             }
             break;
 
+        case 'UPDATE_TASK':
+            // Update a task (upsert) and let other open TabPlex tabs know
+            if (message.payload && (message.payload as Task).id) {
+                let updateTaskResponseSent = false;
+                const incoming = message.payload as Task;
+                let task = incoming;
+
+                // `context` (Park & Resume) is owned by context-service: a UI edit (title, status…) sent with
+                // a stale copy must not roll back tabs that were captured in the background meanwhile.
+                getTask(incoming.id)
+                    .then(stored => {
+                        task = stored ? { ...incoming, context: stored.context ?? incoming.context } : incoming;
+                        return updateTask(task);
+                    })
+                    .then(() => {
+                        chrome.runtime
+                            .sendMessage({
+                                type: 'STORAGE_TASK_UPDATED',
+                                payload: task,
+                            })
+                            .catch(() => {}); // No listener open — nothing to sync
+
+                        if (!updateTaskResponseSent) {
+                            updateTaskResponseSent = true;
+                            safeSendResponse(_sendResponse, { success: true });
+                        }
+                    })
+                    .catch((error: unknown) => {
+                        if (!updateTaskResponseSent) {
+                            updateTaskResponseSent = true;
+                            safeSendResponse(_sendResponse, { error: (error as Error).message });
+                        }
+                    });
+
+                return true;
+            }
+            break;
+
         case 'DELETE_TASK':
             // Delete a task
             if (message.payload && (message.payload as { id: string }).id) {
                 let deleteTaskResponseSent = false;
                 const taskId = (message.payload as { id: string }).id;
 
-                deleteTask(taskId)
+                releaseContextForDeletedTask(taskId)
+                    .catch(error => console.warn('Could not release task context', error))
+                    .then(() => deleteTask(taskId))
                     .then(() => {
                         // Notify the side panel about the deletion
                         chrome.runtime
