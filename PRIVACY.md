@@ -111,6 +111,11 @@ TabPlex requests the following permissions to function:
     - **Usage**: Display your name in the "Today" dashboard (e.g., "Good Morning, [Name]")
     - **Data Access**: Your email address and profile name (stored locally, never shared)
 
+10. **`favicon`**
+    - **Purpose**: Show website icons for tabs, bookmarks and quick links
+    - **Usage**: Icons come from Chrome's own local favicon cache (`chrome-extension://…/_favicon/`)
+    - **Data Access**: None leaves your device; no third-party icon service is contacted
+
 ### How Permissions Are Used
 
 - **No Background Tracking**: TabPlex does not monitor your browsing

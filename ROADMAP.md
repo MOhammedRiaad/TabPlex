@@ -387,8 +387,8 @@ This document outlines the complete development journey of TabPlex, from initial
 
 ### Technical Improvements
 
-- Unit testing with Vitest
-- E2E testing with Playwright
+- ✅ Unit testing with Vitest (85% coverage gate in CI)
+- ✅ E2E testing with Playwright (Park & Resume flows against the built extension)
 - Performance monitoring
 - Error tracking
 - A/B testing framework

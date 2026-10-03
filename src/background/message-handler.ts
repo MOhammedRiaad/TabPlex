@@ -7,7 +7,7 @@ import { handleSessionMessage } from './session-service';
 import { handleDataMessage } from './data-service';
 import { handleBookmarkMessage } from './bookmark-service';
 import { CONTEXT_MESSAGE_TYPES, handleContextMessage } from './context-service';
-import { addTab, deleteTab } from './storage';
+import { addBoard, addTab, deleteBoard, deleteTab, getBoard } from './storage';
 import { ExtensionMessage, Tab, Board } from '../types';
 
 // Helper function to safely send response
@@ -191,129 +191,44 @@ chrome.runtime.onMessage.addListener(
                 break;
 
             case 'ADD_BOARD':
-                // Add a board
+                // Add or update a board (through the serialized storage layer, so concurrent writes can't clobber)
                 if (message.payload) {
-                    let addBoardResponseSent = false;
-
-                    // Check if board already exists before adding
-                    chrome.storage.local
-                        .get(['tabboard_boards'])
-                        .then((result: { [key: string]: unknown }) => {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            const boards: Board[] = (result['tabboard_boards'] as any[]) || [];
-                            const boardId = (message.payload as { id: string }).id;
-
-                            const existingIndex = boards.findIndex(board => board.id === boardId);
-
-                            if (existingIndex !== -1) {
-                                // Update existing board instead of adding duplicate
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                boards[existingIndex] = message.payload as any;
-                            } else {
-                                // Add new board
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                boards.push(message.payload as any);
-                            }
-
-                            chrome.storage.local
-                                .set({ tabboard_boards: boards })
-                                .then(() => {
-                                    // Only notify if it's a new board, not an update
-                                    if (existingIndex === -1) {
-                                        chrome.runtime
-                                            .sendMessage({
-                                                type: 'STORAGE_BOARD_ADDED',
-                                                payload: message.payload,
-                                            })
-                                            .catch(() => {}); // Ignore errors from sendMessage
-                                    }
-
-                                    if (!addBoardResponseSent) {
-                                        addBoardResponseSent = true;
-                                        safeSendResponse(_sendResponse, { success: true });
-                                    }
-                                })
-                                .catch((error: unknown) => {
-                                    if (!addBoardResponseSent) {
-                                        addBoardResponseSent = true;
-                                        safeSendResponse(_sendResponse, { error: (error as Error).message });
-                                    }
-                                });
-                        })
+                    const board = message.payload as Board;
+                    getBoard(board.id)
+                        .then(existing =>
+                            addBoard(board).then(() => {
+                                if (!existing) {
+                                    chrome.runtime
+                                        .sendMessage({ type: 'STORAGE_BOARD_ADDED', payload: board })
+                                        .catch(() => {}); // No listener open
+                                }
+                                safeSendResponse(_sendResponse, { success: true });
+                            })
+                        )
                         .catch((error: unknown) => {
-                            if (!addBoardResponseSent) {
-                                addBoardResponseSent = true;
-                                safeSendResponse(_sendResponse, { error: (error as Error).message });
-                            }
+                            safeSendResponse(_sendResponse, { error: (error as Error).message });
                         });
-
-                    setTimeout(() => {
-                        if (!addBoardResponseSent) {
-                            addBoardResponseSent = true;
-                            safeSendResponse(_sendResponse, { success: true }); // Fallback response
-                        }
-                    }, 1000);
-
                     return true;
                 }
                 break;
 
             case 'DELETE_BOARD':
-                // Delete a board
                 if (message.payload && (message.payload as { id: string }).id) {
-                    let deleteBoardResponseSent = false;
-
-                    // For now, we'll just delete the board from storage
-                    // In a real implementation, you might want to also delete associated folders/tabs
-                    chrome.storage.local
-                        .get(['tabboard_boards'])
-                        .then((result: { [key: string]: unknown }) => {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            const boards: Board[] = (result['tabboard_boards'] as any[]) || [];
-                            const deletePayload = message.payload as { id: string };
-                            const filteredBoards = boards.filter(board => board.id !== deletePayload.id);
-
-                            chrome.storage.local
-                                .set({ tabboard_boards: filteredBoards })
-                                .then(() => {
-                                    // Notify the side panel about the deletion
-                                    chrome.runtime
-                                        .sendMessage({
-                                            type: 'STORAGE_BOARD_DELETED',
-                                            payload: { id: deletePayload.id },
-                                        })
-                                        .catch(() => {}); // Ignore errors from sendMessage
-
-                                    if (!deleteBoardResponseSent) {
-                                        deleteBoardResponseSent = true;
-                                        safeSendResponse(_sendResponse, { success: true });
-                                    }
-                                })
-                                .catch((error: unknown) => {
-                                    if (!deleteBoardResponseSent) {
-                                        deleteBoardResponseSent = true;
-                                        safeSendResponse(_sendResponse, { error: (error as Error).message });
-                                    }
-                                });
+                    const boardId = (message.payload as { id: string }).id;
+                    deleteBoard(boardId)
+                        .then(() => {
+                            chrome.runtime
+                                .sendMessage({ type: 'STORAGE_BOARD_DELETED', payload: { id: boardId } })
+                                .catch(() => {}); // No listener open
+                            safeSendResponse(_sendResponse, { success: true });
                         })
                         .catch((error: unknown) => {
-                            if (!deleteBoardResponseSent) {
-                                deleteBoardResponseSent = true;
-                                safeSendResponse(_sendResponse, { error: (error as Error).message });
-                            }
+                            safeSendResponse(_sendResponse, { error: (error as Error).message });
                         });
-
-                    setTimeout(() => {
-                        if (!deleteBoardResponseSent) {
-                            deleteBoardResponseSent = true;
-                        }
-                    }, 1000);
-
                     return true;
                 }
                 break;
 
-            // Handle folder messages
             case 'ADD_FOLDER':
             case 'DELETE_FOLDER':
                 return handleFolderMessage(message, _sendResponse);

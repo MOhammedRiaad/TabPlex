@@ -1,6 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useBoardStore } from '../../../store/boardStore';
 import './QuickLinks.css';
+import { getFaviconUrl } from '../../../utils/favicon';
+
+/** Favicon, or a globe when there is none (non-web URL) or it fails to load */
+const LinkIcon: React.FC<{ url?: string }> = ({ url }) => {
+    const [failed, setFailed] = useState(false);
+    const src = getFaviconUrl(url, 64);
+    if (!src || failed) return <span className="link-default-icon">🌐</span>;
+    return <img src={src} alt="" onError={() => setFailed(true)} />;
+};
 
 const QuickLinks: React.FC = () => {
     const { bookmarks, fetchBookmarks } = useBoardStore();
@@ -13,15 +22,6 @@ const QuickLinks: React.FC = () => {
     const quickLinks = bookmarks
         .filter(b => b.url) // Only items with URLs
         .slice(0, 6);
-
-    const getFaviconUrl = (url: string) => {
-        try {
-            const domain = new URL(url).hostname;
-            return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-        } catch {
-            return '';
-        }
-    };
 
     return (
         <div className="quick-links-card">
@@ -37,13 +37,7 @@ const QuickLinks: React.FC = () => {
                         title={link.title}
                     >
                         <div className="link-icon">
-                            <img
-                                src={getFaviconUrl(link.url || '')}
-                                alt=""
-                                onError={e => {
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                }}
-                            />
+                            <LinkIcon url={link.url} />
                         </div>
                         <span className="link-title">{link.title}</span>
                     </a>

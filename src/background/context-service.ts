@@ -351,6 +351,7 @@ async function addTabsToTask(payload: AddTabsPayload): Promise<ContextResponse> 
 async function removeTabFromTask(payload: RemoveTabPayload): Promise<ContextResponse> {
     const task = await resolveTask(payload.task);
     const ctx = getContext(task);
+    let chromeGroupId = ctx.chromeGroupId;
 
     if (ctx.state === 'active' && (await groupExists(ctx.chromeGroupId))) {
         const live = await getGroupTabs(ctx.chromeGroupId as number);
@@ -358,10 +359,12 @@ async function removeTabFromTask(payload: RemoveTabPayload): Promise<ContextResp
             .filter(tab => (tab.url || tab.pendingUrl) === payload.url)
             .map(tab => tab.id)
             .filter((id): id is number => id !== undefined);
+        // Ungrouping the last tab deletes the group; forget it so tabGroups.onRemoved doesn't auto-park
+        if (matching.length && matching.length === live.length) chromeGroupId = null;
         if (matching.length) await withBusy(() => chrome.tabs.ungroup(ids(matching)));
     }
 
-    const next: TaskContext = { ...ctx, tabs: ctx.tabs.filter(tab => tab.url !== payload.url) };
+    const next: TaskContext = { ...ctx, chromeGroupId, tabs: ctx.tabs.filter(tab => tab.url !== payload.url) };
     return { success: true, task: await saveTask({ ...task, context: next }) };
 }
 
@@ -442,9 +445,26 @@ async function reconcileActiveContext(): Promise<void> {
     await parkTask(task, { closeTabs: false, auto: true });
 }
 
-chrome.tabs.onCreated.addListener(tab => {
-    if (busy) return;
+/** Resolve once our own tab operations (and their trailing events) have finished */
+async function waitUntilIdle(maxMs = 5000): Promise<void> {
+    const started = Date.now();
+    while (busy && Date.now() - started < maxMs) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+}
+
+chrome.tabs.onCreated.addListener(created => {
     (async () => {
+        let tab = created;
+        if (busy) {
+            // A tab opened right after Start/Resume must still join the task. Wait for our own
+            // operation to finish, then look again: the tabs we reopened are grouped by then.
+            await waitUntilIdle();
+            if (tab.id === undefined) return;
+            const fresh = await chrome.tabs.get(tab.id).catch(() => undefined);
+            if (!fresh) return;
+            tab = fresh;
+        }
         const settings = await getSettings();
         if (!settings.autoAddNewTabs || tab.pinned || tab.id === undefined) return;
         if ((tab.pendingUrl || tab.url || '').startsWith(extensionBaseUrl())) return;
@@ -485,8 +505,10 @@ chrome.tabs.onMoved.addListener(() => scheduleSnapshot());
 
 // The user closed or ungrouped the whole group by hand: park it, keeping the last snapshot
 chrome.tabGroups.onRemoved.addListener(group => {
-    if (busy) return;
     (async () => {
+        // Don't drop the event if the user closed the group right after one of our own operations;
+        // our operations that remove a group update the context first, so the check below skips them
+        await waitUntilIdle();
         const task = await getActiveTask();
         if (!task || getContext(task).chromeGroupId !== group.id) return;
         await parkTask(task, { closeTabs: false, auto: true });

@@ -1,4 +1,5 @@
 import { StateCreator } from 'zustand';
+import { generateId } from '../../../../utils/idGenerator';
 import { CanvasElement } from '../../types/canvas';
 import { CanvasStoreState, ElementSlice } from '../types';
 
@@ -146,12 +147,14 @@ export const createElementSlice: StateCreator<CanvasStoreState, [], [], ElementS
             canvases: state.canvases.map(canvas => {
                 if (canvas.canvasId !== state.activeCanvasId) return canvas;
                 const elements = [...canvas.elements];
-                ids.forEach(id => {
-                    const index = elements.findIndex(el => el.id === id);
-                    if (index < elements.length - 1) {
+                const selected = new Set(ids);
+                // Walk from the top so adjacent selected elements move together. Unknown ids
+                // used to index -1 and overwrite the bottom element with undefined.
+                for (let index = elements.length - 2; index >= 0; index--) {
+                    if (selected.has(elements[index].id) && !selected.has(elements[index + 1].id)) {
                         [elements[index], elements[index + 1]] = [elements[index + 1], elements[index]];
                     }
-                });
+                }
                 return { ...canvas, elements, updatedAt: Date.now() };
             }),
         }));
@@ -163,12 +166,13 @@ export const createElementSlice: StateCreator<CanvasStoreState, [], [], ElementS
             canvases: state.canvases.map(canvas => {
                 if (canvas.canvasId !== state.activeCanvasId) return canvas;
                 const elements = [...canvas.elements];
-                [...ids].reverse().forEach(id => {
-                    const index = elements.findIndex(el => el.id === id);
-                    if (index > 0) {
+                const selected = new Set(ids);
+                // Walk from the bottom so adjacent selected elements move together
+                for (let index = 1; index < elements.length; index++) {
+                    if (selected.has(elements[index].id) && !selected.has(elements[index - 1].id)) {
                         [elements[index], elements[index - 1]] = [elements[index - 1], elements[index]];
                     }
-                });
+                }
                 return { ...canvas, elements, updatedAt: Date.now() };
             }),
         }));
@@ -178,7 +182,7 @@ export const createElementSlice: StateCreator<CanvasStoreState, [], [], ElementS
     groupElements: (ids: string[]) => {
         if (ids.length < 2) return; // Need at least 2 elements to group
 
-        const groupId = `group-${Date.now()}`;
+        const groupId = generateId('group');
         set(state => ({
             canvases: state.canvases.map(canvas =>
                 canvas.canvasId === state.activeCanvasId

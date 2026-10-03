@@ -353,6 +353,16 @@ Contributions are welcome! Please follow these guidelines:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+### Testing
+
+```bash
+npm test               # unit + component tests (Vitest)
+npm run test:coverage  # same, with the 85% coverage gate CI enforces
+npm run build && npm run test:e2e   # end-to-end tests in Chromium (Playwright)
+```
+
+First run of the E2E suite: `npx playwright install chromium`.
+
 ### Code Standards
 
 - Follow TypeScript strict mode

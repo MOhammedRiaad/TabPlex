@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Bookmark } from '../../../types';
+import { normalizeUrl, validateRequiredText, validateUrl } from '../../../utils/formValidation';
 import '../BookmarkView.css';
 
 /**
@@ -108,82 +109,17 @@ const BookmarkModal: React.FC<BookmarkModalProps> = ({
 
     const folderOptions = buildFolderOptions();
 
-    // Validation
-    const validate = useCallback((): boolean => {
-        const newErrors: { title?: string; url?: string } = {};
-
-        // Title is always required
-        if (!title.trim()) {
-            newErrors.title = 'Title is required';
-        } else if (title.trim().length > 200) {
-            newErrors.title = 'Title must be 200 characters or less';
-        }
-
-        // URL validation (only for bookmarks, not folders)
-        if (!isFolder) {
-            if (!url.trim()) {
-                newErrors.url = 'URL is required';
-            } else {
-                try {
-                    const urlObj = new URL(url.trim());
-                    // Basic URL validation
-                    if (
-                        !urlObj.protocol ||
-                        (!urlObj.protocol.startsWith('http') && !urlObj.protocol.startsWith('file'))
-                    ) {
-                        newErrors.url = 'URL must start with http://, https://, or file://';
-                    }
-                } catch {
-                    // Try adding https:// if no protocol
-                    try {
-                        new URL(`https://${url.trim()}`);
-                        // Valid URL with https prefix, we'll auto-add it
-                    } catch {
-                        newErrors.url = 'Please enter a valid URL';
-                    }
-                }
-            }
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    }, [title, url, isFolder]);
-
     // Handle form submission
     const handleSubmit = useCallback(
         async (e: React.FormEvent) => {
             e.preventDefault();
 
-            // Validate and get errors
-            const validationErrors: { title?: string; url?: string } = {};
-
-            if (!title.trim()) {
-                validationErrors.title = 'Title is required';
-            } else if (title.trim().length > 200) {
-                validationErrors.title = 'Title must be 200 characters or less';
-            }
-
-            if (!isFolder) {
-                if (!url.trim()) {
-                    validationErrors.url = 'URL is required';
-                } else {
-                    try {
-                        const urlObj = new URL(url.trim());
-                        if (
-                            !urlObj.protocol ||
-                            (!urlObj.protocol.startsWith('http') && !urlObj.protocol.startsWith('file'))
-                        ) {
-                            validationErrors.url = 'URL must start with http://, https://, or file://';
-                        }
-                    } catch {
-                        try {
-                            new URL(`https://${url.trim()}`);
-                        } catch {
-                            validationErrors.url = 'Please enter a valid URL';
-                        }
-                    }
-                }
-            }
+            const validationErrors: { title?: string; url?: string } = {
+                title: validateRequiredText(title, 'Title', 200),
+                url: isFolder ? undefined : validateUrl(url),
+            };
+            if (!validationErrors.title) delete validationErrors.title;
+            if (!validationErrors.url) delete validationErrors.url;
 
             if (Object.keys(validationErrors).length > 0) {
                 setErrors(validationErrors);
@@ -204,15 +140,7 @@ const BookmarkModal: React.FC<BookmarkModalProps> = ({
 
             try {
                 // Auto-add https:// if URL doesn't have protocol
-                let finalUrl = url.trim();
-                if (!isFolder && finalUrl) {
-                    try {
-                        new URL(finalUrl);
-                    } catch {
-                        // Invalid URL, try adding https://
-                        finalUrl = `https://${finalUrl}`;
-                    }
-                }
+                const finalUrl = normalizeUrl(url);
 
                 onSubmit({
                     title: title.trim(),
@@ -238,7 +166,7 @@ const BookmarkModal: React.FC<BookmarkModalProps> = ({
                 setIsSubmitting(false);
             }
         },
-        [title, url, parentId, isFolder, mode, validate, onSubmit, onClose, onShowToast, errors]
+        [title, url, parentId, isFolder, mode, onSubmit, onClose, onShowToast]
     );
 
     // Handle Escape key and click outside

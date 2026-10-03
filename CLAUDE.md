@@ -24,9 +24,30 @@ npm run format        # prettier --write
 npm run format:check
 npm run package       # zip dist/ → release/tabplex-v<version>.zip
 npm run release:dry   # preview the next semantic-release version + notes
+npm run typecheck     # tsc for src/ and e2e/
+npm test              # vitest (unit + component tests, jsdom)
+npm run test:watch
+npm run test:coverage # vitest + v8 coverage; fails under 85% statements/branches/functions/lines
+npm run test:e2e      # playwright: loads the built dist/ into Chromium (run npm run build first)
 ```
 
-There is **no test suite**. "Verified" means `npx tsc --noEmit`, `npm run lint` and `npm run build` all pass (see the `verify` skill).
+"Verified" means typecheck, lint, format:check, test:coverage and build all pass (see the `verify` skill).
+
+## Tests
+
+- Unit/component tests sit next to the code in `__tests__/` folders (`*.test.ts(x)`); config in `vitest.config.ts`.
+- `src/test/setup.ts` installs a fresh in-memory `chrome` mock before every test (`src/test/chromeMock.ts`: tabs, groups,
+  windows, storage with `onChanged`, runtime messaging, events). Use `fakeChrome()` / `installChromeMock()` to get its
+  `browser` helpers (`addTab`, `addGroup`, `openWindow`, `events.*.emit`…). IndexedDB is `fake-indexeddb`.
+- Build data with `src/test/factories.ts` (`makeTask`, `makeContext`, `makeBoard`, `makeTab`, `makeNote`…).
+- Background modules register listeners at import: `vi.resetModules()` then `await import(...)` per test, and drive timers
+  with `vi.useFakeTimers()` (busy guard 300 ms, snapshot debounce).
+- Coverage gate is 85% on logic and key UI. Excluded (see `vitest.config.ts`): types, entry files, and pure-visual canvas
+  code (`canvas/components`, `canvas/tools`, `canvas/utils/render.ts`, tldraw, `utils/export.ts`) — covered by E2E instead.
+  Don't add exclusions to dodge the gate; write the test.
+- E2E (`e2e/`): `fixtures.ts` launches Chromium with the extension, serves fake sites at `https://e2e.test/<name>`, and
+  gives `serviceWorker`, `extensionId` and `app` (the TabPlex page, fails on page errors). Locally set
+  `PW_CHROMIUM_PATH` to use an existing Chromium instead of `npx playwright install chromium`.
 
 ## Layout
 
@@ -87,7 +108,8 @@ Message handlers that respond asynchronously must `return true` and guard agains
 
 | Skill              | Use when                                                                               |
 | ------------------ | -------------------------------------------------------------------------------------- |
-| `verify`           | Before declaring any change done — typecheck, lint, format, build                      |
+| `verify`           | Before declaring any change done — typecheck, lint, format, tests + coverage, build    |
+| `write-tests`      | Adding a feature or fix, coverage under 85%, or writing unit/E2E tests                 |
 | `add-data-entity`  | Adding a new persisted domain (e.g. reminders) end to end                              |
 | `add-message-sync` | Adding/changing a UI ↔ background message or cross-tab sync                            |
 | `add-view`         | Adding a new page/route to the app                                                     |

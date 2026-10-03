@@ -21,3 +21,8 @@ Thumbs.db
 
 # Local tool worktrees
 .kilo
+
+# Test output
+coverage
+playwright-report
+test-results

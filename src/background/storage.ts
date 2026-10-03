@@ -206,6 +206,17 @@ export async function deleteSession(id: string): Promise<void> {
 // History functions
 const HISTORY_KEY = 'history_items';
 
+/** chrome.storage.local keys of every collection (used by export / import) */
+export const STORAGE_KEYS = {
+    boards: BOARDS_KEY,
+    folders: FOLDERS_KEY,
+    tabs: TABS_KEY,
+    tasks: TASKS_KEY,
+    notes: NOTES_KEY,
+    sessions: SESSIONS_KEY,
+    history: HISTORY_KEY,
+} as const;
+
 export async function getAllHistory(): Promise<HistoryItem[]> {
     return await getAllItems<HistoryItem>(HISTORY_KEY);
 }

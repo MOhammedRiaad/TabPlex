@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Folder, Tab } from '../../../types';
+import { normalizeUrl, validateRequiredText, validateUrl } from '../../../utils/formValidation';
 import '../BoardView.css';
 
 interface BoardModalProps {
@@ -122,41 +123,13 @@ const BoardModal: React.FC<BoardModalProps> = ({
         async (e: React.FormEvent) => {
             e.preventDefault();
 
-            const newErrors: { name?: string; title?: string; url?: string } = {};
-
-            if (type === 'folder') {
-                if (!name.trim()) {
-                    newErrors.name = 'Name is required';
-                } else if (name.trim().length > 100) {
-                    newErrors.name = 'Name must be 100 characters or less';
-                }
-            } else {
-                if (!title.trim()) {
-                    newErrors.title = 'Title is required';
-                } else if (title.trim().length > 200) {
-                    newErrors.title = 'Title must be 200 characters or less';
-                }
-
-                if (!url.trim()) {
-                    newErrors.url = 'URL is required';
-                } else {
-                    try {
-                        const urlObj = new URL(url.trim());
-                        if (
-                            !urlObj.protocol ||
-                            (!urlObj.protocol.startsWith('http') && !urlObj.protocol.startsWith('file'))
-                        ) {
-                            newErrors.url = 'URL must start with http://, https://, or file://';
-                        }
-                    } catch {
-                        try {
-                            new URL(`https://${url.trim()}`);
-                        } catch {
-                            newErrors.url = 'Please enter a valid URL';
-                        }
-                    }
-                }
-            }
+            const newErrors: { name?: string; title?: string; url?: string } =
+                type === 'folder'
+                    ? { name: validateRequiredText(name, 'Name', 100) }
+                    : { title: validateRequiredText(title, 'Title', 200), url: validateUrl(url) };
+            (Object.keys(newErrors) as (keyof typeof newErrors)[]).forEach(key => {
+                if (!newErrors[key]) delete newErrors[key];
+            });
 
             if (Object.keys(newErrors).length > 0) {
                 setErrors(newErrors);
@@ -176,15 +149,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
             setIsSubmitting(true);
 
             try {
-                let finalUrl = url.trim();
-                if (type === 'tab' && finalUrl) {
-                    try {
-                        new URL(finalUrl);
-                    } catch {
-                        finalUrl = `https://${finalUrl}`;
-                    }
-                }
-
+                const finalUrl = normalizeUrl(url);
                 onSubmit({
                     name: type === 'folder' ? name.trim() : undefined,
                     title: type === 'tab' ? title.trim() : undefined,
