@@ -22,6 +22,8 @@ npm run build         # tsc && vite build -> dist/   (load dist/ via chrome://ex
 npm run lint          # eslint, --max-warnings 0 (zero-warning policy)
 npm run format        # prettier --write
 npm run format:check
+npm run package       # zip dist/ → release/tabplex-v<version>.zip
+npm run release:dry   # preview the next semantic-release version + notes
 ```
 
 There is **no test suite**. "Verified" means `npx tsc --noEmit`, `npm run lint` and `npm run build` all pass (see the `verify` skill).
@@ -67,7 +69,7 @@ Message handlers that respond asynchronously must `return true` and guard agains
 - Feature-first folders; co-locate a component's `.css` next to it. No CSS framework.
 - Commits: **Conventional Commits** enforced by commitlint (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`…). Husky pre-commit runs lint-staged (prettier + eslint --fix).
 - Branches: `feature/<name>`, merged to `main` via PR.
-- Keep `version` in `package.json` and `manifest.json` in sync on release.
+- Versions are set by semantic-release on merge to `main` (see `docs/MAINTENANCE_GUIDE.md` → Release Process). Never edit `version` by hand; the commit type decides the bump (`feat` → minor, `fix`/`perf`/`refactor` → patch, `!` → major).
 
 ## Gotchas
 
@@ -83,12 +85,12 @@ Message handlers that respond asynchronously must `return true` and guard agains
 
 ## Project skills (`.claude/skills/`)
 
-| Skill              | Use when                                                                            |
-| ------------------ | ----------------------------------------------------------------------------------- |
-| `verify`           | Before declaring any change done — typecheck, lint, format, build                   |
-| `add-data-entity`  | Adding a new persisted domain (e.g. reminders) end to end                           |
-| `add-message-sync` | Adding/changing a UI ↔ background message or cross-tab sync                         |
-| `add-view`         | Adding a new page/route to the app                                                  |
-| `debug-extension`  | Something works in dev but not in the loaded extension, data not syncing, SW errors |
-| `release`          | Bumping version and packaging `dist/` for the Chrome Web Store                      |
-| `commit`           | Writing a commit that passes commitlint/husky                                       |
+| Skill              | Use when                                                                               |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| `verify`           | Before declaring any change done — typecheck, lint, format, build                      |
+| `add-data-entity`  | Adding a new persisted domain (e.g. reminders) end to end                              |
+| `add-message-sync` | Adding/changing a UI ↔ background message or cross-tab sync                            |
+| `add-view`         | Adding a new page/route to the app                                                     |
+| `debug-extension`  | Something works in dev but not in the loaded extension, data not syncing, SW errors    |
+| `release`          | Shipping a version: how the automated GitHub release works, dry runs, Web Store upload |
+| `commit`           | Writing a commit that passes commitlint/husky                                          |

@@ -67,24 +67,41 @@ Follow this checklist to add a new "slice" of functionality (e.g., "Reminders") 
 
 ## 🚀 Release Process
 
-1. **Verify Build**:
+Releases are automated with [semantic-release](https://semantic-release.gitbook.io/) and GitHub Actions. **Never bump versions by hand.**
 
-    ```bash
-    npm run lint  # Must be zero errors
-    npm run build # Must exit with code 0
-    ```
+### How it works
 
-2. **Bump Version**:
-    - Update `version` in `package.json`.
-    - Update `version` in `manifest.json`.
+1. Work on a `feature/*` branch with [Conventional Commits](https://www.conventionalcommits.org/) (enforced by commitlint). CI (`.github/workflows/ci.yml`) runs lint, format check and build on every PR and uploads the packaged zip as an artifact.
+2. Merge the PR into `main`. The **Release** workflow (`.github/workflows/release.yml`) then:
+    - works out the next version from the commits since the last tag:
 
-3. **Package**:
-    - The build output is in `dist/`.
-    - Create a ZIP file of the `dist/` directory.
+        | Commit                                           | Release               |
+        | ------------------------------------------------ | --------------------- |
+        | `fix:` `perf:` `refactor:`                       | patch (1.1.0 → 1.1.1) |
+        | `feat:`                                          | minor (1.1.0 → 1.2.0) |
+        | `feat!:` / `BREAKING CHANGE:` footer             | major (1.1.0 → 2.0.0) |
+        | `docs:` `style:` `test:` `build:` `ci:` `chore:` | no release            |
 
-4. **Test Production Build**:
-    - Load the _fresh_ `dist/` folder in Chrome.
-    - Test critical flows (Data import, Session restore).
+    - sets the version in `package.json`, `package-lock.json` and `manifest.json` (`scripts/sync-version.mjs`)
+    - builds and zips `dist/` into `release/tabplex-vX.Y.Z.zip` (`scripts/package-extension.mjs`)
+    - updates `CHANGELOG.md`, commits `chore(release): X.Y.Z [skip ci]` and tags `vX.Y.Z`
+    - publishes a GitHub release with the notes and the zip attached
+
+3. Download the zip from the GitHub release and upload it to the Chrome Web Store dashboard. Store publishing stays manual.
+
+### Useful commands
+
+```bash
+npm run release:dry                 # preview the next version and notes locally (needs GITHUB_TOKEN)
+node scripts/sync-version.mjs 1.2.0 # set a version by hand (emergencies only)
+npm run build && npm run package    # build + zip locally → release/
+```
+
+### Notes
+
+- The release bot pushes to `main`. If `main` is protected, allow GitHub Actions to bypass the rule (or use a PAT secret instead of `GITHUB_TOKEN`).
+- Chrome versions must be plain integers (`1.2.3`); pre-release tags such as `-beta.1` are rejected by `sync-version.mjs`.
+- Test the zip before uploading: load the unzipped folder in `chrome://extensions` and check data import, session restore and Park & Resume.
 
 ---
 

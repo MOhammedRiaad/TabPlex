@@ -1,19 +1,30 @@
 ---
 name: release
-description: Prepare a TabPlex release — bump version in package.json and manifest.json, verify, build and zip dist/ for the Chrome Web Store. Use when the user says release, publish, ship, bump version or package the extension.
+description: Ship a TabPlex version — releases are automated by semantic-release + GitHub Actions on merge to main. Use when the user says release, publish, ship, bump version, changelog, GitHub release or package the extension.
 ---
 
 # Release
 
-1. **Confirm the version** with the user (semver). Note `package.json` (currently `0.0.0`) and `manifest.json` (`1.0.0`) have drifted — set both to the same new value.
-2. **Bump** `"version"` in `package.json` and `manifest.json`. Chrome requires 1–4 dot-separated integers (no `-beta` suffix in the manifest).
-3. **Permissions review** — if `manifest.json` permissions or `host_permissions` changed since last release, make sure `PRIVACY.md` and README "Permissions Explained" describe them (Web Store review checks this).
-4. **Verify** — run the `verify` skill; all four checks must pass.
-5. **Clean build** — delete `dist/` first so stale hashed assets aren't shipped, then `npm run build`. Confirm `dist/manifest.json` shows the new version.
-6. **Package** — zip the _contents_ of `dist/` (manifest.json at the zip root), e.g. `TabPlex-v<version>.zip`:
-    - bash: `cd dist && zip -r ../TabPlex-v<version>.zip . && cd ..`
-    - PowerShell: `Compress-Archive -Path dist\* -DestinationPath TabPlex-v<version>.zip -Force`
-      Don't commit the zip.
-7. **Smoke test** — load the fresh `dist/` unpacked; test onboarding, adding a tab to a folder, tasks, export/import, session restore.
-8. **Commit & tag** — `chore(release): v<version>` then `git tag v<version>`. Push only if the user asks.
-9. Update `ROADMAP.md` if milestones were completed.
+Versions, tags, `CHANGELOG.md` and GitHub releases are produced automatically by **semantic-release** when commits land on `main` (`.github/workflows/release.yml`, config in `.releaserc.json`). Never edit `version` in `package.json` / `manifest.json` by hand.
+
+## Ship a release
+
+1. Make sure the work is on a `feature/*` branch with Conventional Commit messages (see the `commit` skill). The commit types decide the bump:
+   - `feat` → minor · `fix` / `perf` / `refactor` → patch · `type!:` or a `BREAKING CHANGE:` footer → major
+   - `docs` `style` `test` `build` `ci` `chore` → no release
+2. Run the `verify` skill.
+3. Preview (optional): `GITHUB_TOKEN=<token> npm run release:dry` shows the next version and the release notes.
+4. Open a PR to `main`; CI (`ci.yml`) must pass. It also uploads the packaged zip as a build artifact for testing.
+5. Merge. The Release workflow syncs the version into `package.json`, `package-lock.json`, `manifest.json`, builds, zips `dist/` to `release/tabplex-vX.Y.Z.zip`, commits `chore(release): X.Y.Z [skip ci]`, tags `vX.Y.Z`, and publishes the GitHub release with the zip attached.
+6. Pull `main` locally afterwards (the bot pushed a commit).
+
+## Chrome Web Store
+
+Store upload stays manual: download `tabplex-vX.Y.Z.zip` from the GitHub release, smoke-test it unpacked (onboarding, add tab to folder, tasks, export/import, session restore, Park & Resume), then upload it in the Web Store dashboard. If `manifest.json` permissions changed, update `PRIVACY.md` and the README "Permissions Explained" first.
+
+## Troubleshooting
+
+- **No release happened**: only `docs/chore/ci/...` commits since the last tag, or the workflow failed — check the Actions tab. semantic-release opens an issue on failure.
+- **Push rejected**: `main` is protected — let GitHub Actions bypass the rule or use a PAT secret.
+- **Invalid version**: Chrome needs plain integers; pre-release suffixes are rejected by `scripts/sync-version.mjs`.
+- **Manual packaging** (emergency): `npm run build && npm run package` → `release/`.
