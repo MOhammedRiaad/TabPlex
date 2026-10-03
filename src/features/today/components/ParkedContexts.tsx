@@ -36,6 +36,14 @@ const ParkedContexts: React.FC = () => {
                                 {task.context?.resumeNote && (
                                     <p className="parked-context-note">“{task.context.resumeNote}”</p>
                                 )}
+                                {task.context?.aiSummary && (
+                                    <p
+                                        className="parked-context-ai"
+                                        title="Written on your device by Chrome's built-in AI"
+                                    >
+                                        <span aria-hidden="true">✨</span> {task.context.aiSummary}
+                                    </p>
+                                )}
                                 <div className="parked-context-favicons" aria-hidden="true">
                                     {tabs.slice(0, MAX_FAVICONS).map(tab =>
                                         tab.favicon ? (

@@ -74,6 +74,18 @@ export interface ContextTab {
 
 export type TaskContextState = 'idle' | 'active' | 'parked';
 
+/** One entry in a context's history (kept short; used for local analytics) */
+export interface ContextEvent {
+    type: 'start' | 'resume' | 'park';
+    at: string;
+    /** Tabs in the context at that moment */
+    tabCount: number;
+    /** Park only: tabs actually closed (memory freed) */
+    closedTabs?: number;
+    /** Park only: parked automatically (another task started, group closed by hand…) */
+    auto?: boolean;
+}
+
 export interface TaskContext {
     tabs: ContextTab[];
     state: TaskContextState;
@@ -87,11 +99,17 @@ export interface TaskContext {
     aiSummary?: string;
     parkCount?: number;
     resumeCount?: number;
+    /** Most recent events, newest last (capped) */
+    events?: ContextEvent[];
 }
 
 export interface ParkResumeSettings {
     closeTabsOnPark: boolean;
     autoAddNewTabs: boolean;
+    /** Start a Pomodoro work session (linked to the task) when a task starts or resumes */
+    startPomodoroOnStart: boolean;
+    /** Generate an on-device AI summary of the tabs when parking (Chrome built-in Summarizer) */
+    aiSummaries: boolean;
 }
 
 export interface Note {

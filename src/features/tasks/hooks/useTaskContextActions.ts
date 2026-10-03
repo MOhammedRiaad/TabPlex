@@ -10,6 +10,9 @@ import {
     ParkContextPayload,
 } from '../../../utils/taskContext';
 import { pluralizeTabs } from '../utils/contextUtils';
+import { pausePomodoroForTask, startPomodoroForTask } from '../utils/pomodoroLink';
+import { readParkResumeSettings } from './useParkResumeSettings';
+import { summarizeContext } from '../utils/aiSummary';
 
 async function currentWindowId(): Promise<number | undefined> {
     try {
@@ -58,13 +61,16 @@ export function useTaskContextActions() {
                     windowId: await currentWindowId(),
                 });
                 apply(response);
+                const settings = await readParkResumeSettings();
+                const timerStarted = settings.startPomodoroOnStart && startPomodoroForTask(task.id);
+                const timerNote = timerStarted ? ' · 🍅 timer started' : '';
                 if (response.autoParked) {
-                    showToast(`Parked "${response.autoParked.title}" · Started "${task.title}"`, 'info');
+                    showToast(`Parked "${response.autoParked.title}" · Started "${task.title}"${timerNote}`, 'info');
                 } else {
                     showToast(
                         isResume
-                            ? `Resumed "${task.title}" · ${pluralizeTabs(count)}`
-                            : `Started "${task.title}" — new tabs join its group`,
+                            ? `Resumed "${task.title}" · ${pluralizeTabs(count)}${timerNote}`
+                            : `Started "${task.title}" — new tabs join its group${timerNote}`,
                         'success'
                     );
                 }
@@ -75,18 +81,48 @@ export function useTaskContextActions() {
         [apply, showToast]
     );
 
+    /** Generate and attach an on-device summary of a just-parked context (best effort, silent on failure) */
+    const attachSummary = useCallback(
+        async (parked: Task, summarizer: Promise<Parameters<typeof summarizeContext>[0]>) => {
+            const ctx = parked.context;
+            if (!ctx?.parkedAt || ctx.tabs.length === 0) return;
+            try {
+                const summary = await summarizeContext(await summarizer, parked, ctx.tabs, ctx.resumeNote);
+                if (!summary) return;
+                apply(
+                    await sendContextMessage(CONTEXT_MESSAGES.SET_SUMMARY, {
+                        taskId: parked.id,
+                        summary,
+                        parkedAt: ctx.parkedAt,
+                    })
+                );
+            } catch (error) {
+                console.warn('On-device summary failed', error);
+            }
+        },
+        [apply]
+    );
+
     const park = useCallback(
-        async (task: Task, options: Omit<ParkContextPayload, 'task'> = {}) => {
+        async (
+            task: Task,
+            options: Omit<ParkContextPayload, 'task'> = {},
+            /** Started from the click that triggered the park (Chrome needs user activation) */
+            summarizer?: Promise<Parameters<typeof summarizeContext>[0]>
+        ) => {
             try {
                 const response = await sendContextMessage(CONTEXT_MESSAGES.PARK, { task, ...options });
                 apply(response);
+                if (summarizer && response.task) attachSummary(response.task, summarizer);
+                const settings = await readParkResumeSettings();
+                if (settings.startPomodoroOnStart) pausePomodoroForTask(task.id);
                 const saved = response.task?.context?.tabs.length ?? 0;
                 showToast(`Parked "${task.title}" · ${pluralizeTabs(saved)} saved`, 'success');
             } catch (error) {
                 showToast(`Couldn't park "${task.title}": ${errorMessage(error)}`, 'error');
             }
         },
-        [apply, showToast]
+        [apply, attachSummary, showToast]
     );
 
     /** Open the Park dialog (asks "where did you leave off?") */

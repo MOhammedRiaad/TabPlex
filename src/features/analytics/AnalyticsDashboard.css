@@ -301,3 +301,20 @@
     font-size: var(--font-xs);
     color: var(--color-text-muted);
 }
+
+/* Park & Resume stats */
+.context-stats-headline {
+    margin: 0 0 var(--spacing-md);
+    color: var(--color-text-primary);
+    font-size: var(--font-base);
+}
+
+.context-stats-cards {
+    margin-bottom: 0;
+}
+
+.context-stats-footnote {
+    margin: var(--spacing-md) 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-sm);
+}

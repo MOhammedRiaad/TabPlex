@@ -8,6 +8,8 @@ import ActivityChart from './components/ActivityChart';
 import DomainList from './components/DomainList';
 import FocusMetrics from './components/FocusMetrics';
 import SessionStats from './components/SessionStats';
+import ContextStatsWidget from './components/ContextStatsWidget';
+import { computeContextStats } from './utils/contextStats';
 
 const AnalyticsDashboard: React.FC = () => {
     const { tabs, tasks, notes, sessions, history } = useBoardStore();
@@ -69,8 +71,9 @@ const AnalyticsDashboard: React.FC = () => {
 
             const dayTasks = tasks.filter(t => {
                 if (t.status !== 'done') return false;
-                const updated = new Date(t.updatedAt);
-                return updated >= date && updated < nextDay;
+                // completedAt: any later edit changes updatedAt and would move the completion day
+                const completed = new Date(t.completedAt ?? t.updatedAt);
+                return completed >= date && completed < nextDay;
             }).length;
 
             const daySessions = sessions.filter(s => {
@@ -139,6 +142,8 @@ const AnalyticsDashboard: React.FC = () => {
         };
     }, [tabs, tasks, notes, sessions, history]);
 
+    const contextStats = useMemo(() => computeContextStats(tasks), [tasks]);
+
     const formatDuration = (ms: number): string => {
         const hours = Math.floor(ms / (1000 * 60 * 60));
         const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
@@ -167,6 +172,8 @@ const AnalyticsDashboard: React.FC = () => {
                 pendingTasks={analytics.pendingTasks}
                 completionRate={analytics.taskCompletionRate}
             />
+
+            <ContextStatsWidget stats={contextStats} />
 
             <ActivityChart activityByDay={analytics.activityByDay} />
 

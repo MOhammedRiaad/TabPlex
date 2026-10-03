@@ -13,7 +13,9 @@ import {
     PARK_RESUME_SETTINGS_KEY,
     ParkContextPayload,
     RemoveTabPayload,
+    SetSummaryPayload,
     StartContextPayload,
+    appendContextEvent,
     dedupeTabsByUrl,
     getContext,
     groupColorForPriority,
@@ -162,6 +164,8 @@ interface ParkOptions {
     note?: string;
     closeTabs: boolean;
     keepOpenUrls?: string[];
+    /** Parked without the user asking (another task started, group closed, restart) */
+    auto?: boolean;
 }
 
 async function parkTask(task: Task, options: ParkOptions): Promise<Task> {
@@ -187,6 +191,7 @@ async function parkTask(task: Task, options: ParkOptions): Promise<Task> {
     }
 
     const note = options.note === undefined ? ctx.resumeNote : options.note.trim() || undefined;
+    const parkedAt = new Date().toISOString();
     const parked: Task = {
         ...task,
         context: {
@@ -194,9 +199,18 @@ async function parkTask(task: Task, options: ParkOptions): Promise<Task> {
             tabs,
             state: 'parked',
             chromeGroupId: null,
-            parkedAt: new Date().toISOString(),
+            parkedAt,
             resumeNote: note,
+            // A new park describes different work; the UI may generate a fresh summary
+            aiSummary: undefined,
             parkCount: (ctx.parkCount ?? 0) + 1,
+            events: appendContextEvent(ctx, {
+                type: 'park',
+                at: parkedAt,
+                tabCount: tabs.length,
+                closedTabs: options.closeTabs ? closeIds.length : 0,
+                auto: options.auto || undefined,
+            }),
         },
     };
 
@@ -229,7 +243,7 @@ async function parkActiveIfOther(taskId: string): Promise<Task | undefined> {
         return undefined;
     }
     const settings = await getSettings();
-    return parkTask(active, { closeTabs: settings.closeTabsOnPark });
+    return parkTask(active, { closeTabs: settings.closeTabsOnPark, auto: true });
 }
 
 async function startTask(
@@ -266,6 +280,7 @@ async function startTask(
         return id;
     });
 
+    const resumedAt = new Date().toISOString();
     const started: Task = {
         ...task,
         status: task.status === 'todo' ? 'doing' : task.status,
@@ -274,8 +289,13 @@ async function startTask(
             state: 'active',
             chromeGroupId: groupId,
             windowId,
-            resumedAt: new Date().toISOString(),
+            resumedAt,
             resumeCount: (ctx.resumeCount ?? 0) + (isResume ? 1 : 0),
+            events: appendContextEvent(ctx, {
+                type: isResume ? 'resume' : 'start',
+                at: resumedAt,
+                tabCount: ctx.tabs.length,
+            }),
         },
     };
 
@@ -345,6 +365,16 @@ async function removeTabFromTask(payload: RemoveTabPayload): Promise<ContextResp
     return { success: true, task: await saveTask({ ...task, context: next }) };
 }
 
+async function setSummary(payload: SetSummaryPayload): Promise<ContextResponse> {
+    const task = await getTask(payload.taskId);
+    if (!task) return { error: 'Task not found' };
+    const ctx = getContext(task);
+    // Only attach it to the park it was generated for
+    if (ctx.state !== 'parked' || ctx.parkedAt !== payload.parkedAt) return { success: true, task };
+    const summary = payload.summary.trim().slice(0, 600);
+    return { success: true, task: await saveTask({ ...task, context: { ...ctx, aiSummary: summary || undefined } }) };
+}
+
 /** Called when a task is deleted: release its tabs (never close them) */
 export async function releaseContextForDeletedTask(taskId: string): Promise<void> {
     if ((await getActiveTaskId()) !== taskId) return;
@@ -409,7 +439,7 @@ async function reconcileActiveContext(): Promise<void> {
         await saveTask({ ...task, context: { ...ctx, chromeGroupId: group.id, windowId: group.windowId } });
         return;
     }
-    await parkTask(task, { closeTabs: false });
+    await parkTask(task, { closeTabs: false, auto: true });
 }
 
 chrome.tabs.onCreated.addListener(tab => {
@@ -459,7 +489,7 @@ chrome.tabGroups.onRemoved.addListener(group => {
     (async () => {
         const task = await getActiveTask();
         if (!task || getContext(task).chromeGroupId !== group.id) return;
-        await parkTask(task, { closeTabs: false });
+        await parkTask(task, { closeTabs: false, auto: true });
     })().catch(error => console.warn('Auto-park failed', error));
 });
 
@@ -511,6 +541,8 @@ export function handleContextMessage(message: ExtensionMessage, sendResponse: (r
                 return addTabsToTask(message.payload as AddTabsPayload);
             case CONTEXT_MESSAGES.REMOVE_TAB:
                 return removeTabFromTask(message.payload as RemoveTabPayload);
+            case CONTEXT_MESSAGES.SET_SUMMARY:
+                return setSummary(message.payload as SetSummaryPayload);
             default:
                 return { error: `Unknown context message: ${message.type}` };
         }

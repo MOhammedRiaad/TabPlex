@@ -1,6 +1,6 @@
 // Shared helpers for Park & Resume (task contexts).
 // Used by both the UI and the background service worker — keep this file free of DOM and React.
-import { ContextTab, ParkResumeSettings, Task, TaskContext } from '../types';
+import { ContextEvent, ContextTab, ParkResumeSettings, Task, TaskContext } from '../types';
 
 /** Messages sent from the UI to the background */
 export const CONTEXT_MESSAGES = {
@@ -10,6 +10,7 @@ export const CONTEXT_MESSAGES = {
     ADD_TABS: 'TASK_CONTEXT_ADD_TABS',
     REMOVE_TAB: 'TASK_CONTEXT_REMOVE_TAB',
     PARK_ACTIVE: 'TASK_CONTEXT_PARK_ACTIVE',
+    SET_SUMMARY: 'TASK_CONTEXT_SET_SUMMARY',
 } as const;
 
 export type ContextMessageType = (typeof CONTEXT_MESSAGES)[keyof typeof CONTEXT_MESSAGES];
@@ -39,6 +40,13 @@ export interface RemoveTabPayload {
     url: string;
 }
 
+export interface SetSummaryPayload {
+    taskId: string;
+    summary: string;
+    /** The park this summary describes; ignored if the task was parked again or resumed since */
+    parkedAt: string;
+}
+
 export interface ContextResponse {
     success?: boolean;
     error?: string;
@@ -56,6 +64,8 @@ export const PARK_RESUME_SETTINGS_KEY = 'tabplex_park_resume_settings';
 export const DEFAULT_PARK_RESUME_SETTINGS: ParkResumeSettings = {
     closeTabsOnPark: true,
     autoAddNewTabs: true,
+    startPomodoroOnStart: false,
+    aiSummaries: false,
 };
 
 export const RESUME_NOTE_MAX_LENGTH = 280;
@@ -63,6 +73,13 @@ export const RESUME_NOTE_MAX_LENGTH = 280;
 export const LARGE_CONTEXT_THRESHOLD = 25;
 
 export const emptyContext = (): TaskContext => ({ tabs: [], state: 'idle' });
+
+/** Keep the per-task event log small: it is stored on the task in two places */
+export const MAX_CONTEXT_EVENTS = 50;
+
+export function appendContextEvent(ctx: TaskContext, event: ContextEvent): ContextEvent[] {
+    return [...(ctx.events ?? []), event].slice(-MAX_CONTEXT_EVENTS);
+}
 
 export const getContext = (task: Task): TaskContext => task.context ?? emptyContext();
 

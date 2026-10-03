@@ -4,6 +4,7 @@ import { clearAllData } from '../../utils/storage';
 import ThemeToggle from '../ui/components/ThemeToggle';
 import Toast from '../bookmarks/components/Toast';
 import { useParkResumeSettings } from '../tasks/hooks/useParkResumeSettings';
+import AiSummarySetting from './components/AiSummarySetting';
 import './SettingsView.css';
 
 interface SettingsViewProps {
@@ -190,6 +191,28 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                                 />
                             </div>
                         </div>
+                        <div className="setting-item">
+                            <div className="setting-info">
+                                <h4>Start a Pomodoro when a task starts</h4>
+                                <p>
+                                    Starting or resuming a task links the focus timer to it and starts a work session.
+                                    Parking pauses it.
+                                </p>
+                            </div>
+                            <div className="setting-control">
+                                <input
+                                    type="checkbox"
+                                    className="setting-checkbox"
+                                    aria-label="Start a Pomodoro when a task starts"
+                                    checked={parkSettings.startPomodoroOnStart}
+                                    onChange={e => updateParkSettings({ startPomodoroOnStart: e.target.checked })}
+                                />
+                            </div>
+                        </div>
+                        <AiSummarySetting
+                            enabled={parkSettings.aiSummaries}
+                            onChange={aiSummaries => updateParkSettings({ aiSummaries })}
+                        />
                     </div>
                 </section>
 

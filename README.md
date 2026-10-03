@@ -35,7 +35,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 - **Kanban-Style Workflow**: To Do, Doing, Done columns for visual progress tracking
 - **Rich Task Details**: Add descriptions, checklists, due dates, and priority levels
 - **Task-Tab Linking**: Associate web resources with specific tasks
-- **Park & Resume**: Each task keeps its own tabs. Start a task to open them in a named Chrome tab group, park it with a "where I left off" note to close them, and resume later in one click — everything stays on your device
+- **Park & Resume**: Each task keeps its own tabs. Start a task to open them in a named Chrome tab group, park it with a "where I left off" note to close them, and resume later in one click — everything stays on your device. Optional: start a Pomodoro with the task, and on-device AI summaries of parked work (Chrome's built-in AI)
 
 ### 📝 Note-Taking
 

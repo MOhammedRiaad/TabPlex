@@ -5,6 +5,7 @@ import { useUIActions, useUIStore } from '../../ui/store/uiStore';
 import { isCapturableUrl, RESUME_NOTE_MAX_LENGTH } from '../../../utils/taskContext';
 import { useTaskContextActions } from '../hooks/useTaskContextActions';
 import { useParkResumeSettings } from '../hooks/useParkResumeSettings';
+import { createSummarizer, getSummaryAvailability, SummaryAvailability } from '../utils/aiSummary';
 import './ParkDialog.css';
 
 /** Read the tabs currently in the task's Chrome group, so the user can choose which to keep open */
@@ -37,6 +38,7 @@ const ParkDialog: React.FC = () => {
     const [liveTabs, setLiveTabs] = useState<ContextTab[]>([]);
     const [keepOpen, setKeepOpen] = useState<Set<string>>(new Set());
     const [submitting, setSubmitting] = useState(false);
+    const [summaryAvailability, setSummaryAvailability] = useState<SummaryAvailability>('unsupported');
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
     const groupId = task?.context?.chromeGroupId;
@@ -48,6 +50,7 @@ const ParkDialog: React.FC = () => {
         setKeepOpen(new Set());
         setSubmitting(false);
         readLiveTabs(groupId).then(setLiveTabs);
+        getSummaryAvailability().then(setSummaryAvailability);
         // Focus after the dialog renders
         const timer = setTimeout(() => inputRef.current?.focus(), 0);
         return () => clearTimeout(timer);
@@ -66,14 +69,23 @@ const ParkDialog: React.FC = () => {
 
     const tabs = liveTabs.length ? liveTabs : (task.context?.tabs ?? []);
 
+    const willSummarize = settings.aiSummaries && summaryAvailability === 'available';
+
     const submit = async (withNote: boolean) => {
         if (submitting) return;
         setSubmitting(true);
-        await park(task, {
-            note: withNote ? note : '',
-            closeTabs: settings.closeTabsOnPark,
-            keepOpenUrls: [...keepOpen],
-        });
+        // Create the summarizer synchronously in the click/Enter handler: Chrome requires user activation
+        const summarizer = willSummarize ? createSummarizer() : undefined;
+        summarizer?.catch(() => undefined); // failures are handled where it's awaited
+        await park(
+            task,
+            {
+                note: withNote ? note : '',
+                closeTabs: settings.closeTabsOnPark,
+                keepOpenUrls: [...keepOpen],
+            },
+            summarizer
+        );
         closeParkDialog();
     };
 
@@ -152,6 +164,10 @@ const ParkDialog: React.FC = () => {
                     />
                     Close tabs after parking
                 </label>
+
+                {willSummarize && (
+                    <p className="park-dialog-hint">✨ A short summary will be written on your device after parking.</p>
+                )}
 
                 <div className="park-dialog-actions">
                     <button
