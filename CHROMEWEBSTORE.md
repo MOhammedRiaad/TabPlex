@@ -54,6 +54,7 @@ NEW TASK FROM TABS
 • Turn the tabs you're looking at into a task in one step
 • With Chrome's built-in AI, TabPlex drafts the title, priority and next steps; without it, it suggests a title
 • Edit the draft, then create the task, or create and start it: its tabs move into the task's group, nothing reopens
+• Or create and park it: the tabs are saved to the task and closed, ready to reopen later
 • Works from the Tasks view, the command palette, or a group you just organized
 
 ALSO INCLUDED
@@ -190,11 +191,11 @@ TabPlex organizes your browser work around tasks. Each task can own a set of tab
 
 Most recent first. Versions come from semantic-release (`CHANGELOG.md`); a store row changes when the version is uploaded or reviewed.
 
-| Version | Date       | Changes                                                                         | Status                                                    |
-| ------- | ---------- | ------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| next    | —          | New task from tabs (draft a task from open tabs, create & start it in place)    | Not released yet (on `develop`)                           |
-| 1.0.1   | 2026-10-04 | Landing page fix only; no change to the extension                               | Edge: submitted by hand, in review. Chrome: not submitted |
-| 1.0.0   | 2026-10-04 | First public release: Park & Resume, Organize tabs, boards, tasks, notes, timer | GitHub release only                                       |
+| Version | Date       | Changes                                                                                                        | Status                                                    |
+| ------- | ---------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| next    | —          | New task from tabs (draft a task from open tabs, create & start or park it); one task form for create and edit | Not released yet (on `develop`)                           |
+| 1.0.1   | 2026-10-04 | Landing page fix only; no change to the extension                                                              | Edge: submitted by hand, in review. Chrome: not submitted |
+| 1.0.0   | 2026-10-04 | First public release: Park & Resume, Organize tabs, boards, tasks, notes, timer                                | GitHub release only                                       |
 
 ## Review Notes
 

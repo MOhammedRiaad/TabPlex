@@ -209,4 +209,37 @@ describe('TaskFromTabsDialog', () => {
             'Compare Stripe and Paddle pricing',
         ]);
     });
+
+    it('Create & park needs a checked tab, and shows its busy label', async () => {
+        render(<TaskFromTabsDialog />);
+        setState({ ...ready, checkedIds: [] });
+        expect(button('⏸ Create & park')).toBeDisabled();
+        expect(button('⏸ Create & park')).toHaveAttribute('title', expect.stringContaining('close them'));
+
+        setState({ checkedIds: [1, 2] });
+        fireEvent.click(button('⏸ Create & park'));
+        expect(button('Parking…')).toBeDisabled();
+        await waitFor(() => expect(useTaskDraftStore.getState().phase).toBe('closed'));
+    });
+
+    it('hides the download line at 100% (the model was already installed)', () => {
+        render(<TaskFromTabsDialog />);
+        setState({ ...ready, phase: 'drafting', downloadProgress: 1 });
+        expect(document.querySelector('.task-from-tabs-body')).not.toHaveTextContent('Downloading');
+    });
+
+    it('gives focus back to the button that opened it', async () => {
+        render(
+            <>
+                <button type="button">Opener</button>
+                <TaskFromTabsDialog />
+            </>
+        );
+        const opener = screen.getByRole('button', { name: 'Opener' });
+        opener.focus();
+        setState(ready);
+        await waitFor(() => expect(screen.getByRole('textbox', { name: 'Task title' })).toHaveFocus());
+        fireEvent.click(button('Cancel'));
+        expect(opener).toHaveFocus();
+    });
 });

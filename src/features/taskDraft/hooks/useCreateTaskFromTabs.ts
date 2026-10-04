@@ -1,4 +1,5 @@
-// "Create task" and "Create & start" for the New task from tabs dialog. See docs/specs/AI_TASK_FROM_TABS.md §8.4.
+// "Create task", "Create & start" and "Create & park" for the New task from tabs dialog.
+// See docs/specs/AI_TASK_FROM_TABS.md §8.4 and §15.
 import { useCallback } from 'react';
 import { Task } from '../../../types';
 import { useBoardStore } from '../../../store/boardStore';
@@ -10,9 +11,13 @@ import { useTaskDraftStore } from '../store/taskDraftStore';
 
 const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-export function useCreateTaskFromTabs(): { create(): Promise<void>; createAndStart(): Promise<void> } {
+export function useCreateTaskFromTabs(): {
+    create(): Promise<void>;
+    createAndStart(): Promise<void>;
+    createAndPark(): Promise<void>;
+} {
     const addTaskAndSync = useBoardStore(state => state.addTaskAndSync);
-    const { attachTabs, startQuietly } = useTaskContextActions();
+    const { attachTabs, startQuietly, parkQuietly } = useTaskContextActions();
     const { showToast } = useUIActions();
 
     /** Save the task (waiting for the background) and return it with the checked tab ids, or null on failure */
@@ -79,5 +84,21 @@ export function useCreateTaskFromTabs(): { create(): Promise<void>; createAndSta
         close();
     }, [save, startQuietly, attachTabs, showToast]);
 
-    return { create, createAndStart };
+    const createAndPark = useCallback(async () => {
+        const result = await save();
+        if (!result) return;
+        const { saved, ids } = result;
+        try {
+            // Attach the tabs, then park: the task never becomes active, so the current active task is untouched
+            const withTabs = await attachTabs(saved, ids);
+            const parked = await parkQuietly(withTabs, ids);
+            const count = parked.context?.tabs.length ?? 0;
+            showToast(`Parked “${saved.title}” · ${pluralizeTabs(count)} saved and closed`, 'success');
+        } catch (error) {
+            showToast(`Created “${saved.title}”, but couldn't park it: ${errorMessage(error)}`, 'error');
+        }
+        close();
+    }, [save, attachTabs, parkQuietly, showToast]);
+
+    return { create, createAndStart, createAndPark };
 }

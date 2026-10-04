@@ -71,7 +71,7 @@ describe('useCreateTaskFromTabs', () => {
     });
 
     /** Render first, then act: renderHook inside act() leaves result.current null until act ends */
-    const run = async (action: 'create' | 'createAndStart') => {
+    const run = async (action: 'create' | 'createAndStart' | 'createAndPark') => {
         const { current } = renderHook(() => useCreateTaskFromTabs()).result;
         await act(() => current[action]());
     };
@@ -159,6 +159,27 @@ describe('useCreateTaskFromTabs', () => {
         const taskId = (received[0].payload as unknown as Task).id;
         expect(useTimerStore.getState()).toMatchObject({ isRunning: true, linkedTaskId: taskId });
         expect(toast()!.message).toContain('· 🍅 timer started');
+    });
+
+    it('create & park: ADD_TASK, then ADD_TABS, then PARK closing those tabs; never starts the task', async () => {
+        seedDraft();
+        await run('createAndPark');
+        expect(log).toEqual(['ADD_TASK', CONTEXT_MESSAGES.ADD_TABS, CONTEXT_MESSAGES.PARK]);
+        expect(received[2].payload).toMatchObject({ closeTabs: true, chromeTabIds: [11, 12, 13] });
+        // PARK gets the task with its attached tabs
+        expect((received[2].payload.task as Task).context!.tabs).toHaveLength(2);
+        expect(toast()).toMatchObject({
+            type: 'success',
+            message: 'Parked “Compare pricing” · 2 tabs saved and closed',
+        });
+        expect(draft().phase).toBe('closed');
+
+        seedDraft();
+        const base = reply;
+        reply = m => (m.type === CONTEXT_MESSAGES.PARK ? { error: 'tab is gone' } : base(m));
+        await run('createAndPark');
+        expect(toast()!.message).toBe("Created “Compare pricing”, but couldn't park it: tab is gone");
+        expect(draft().phase).toBe('closed');
     });
 
     it('does nothing without a title or while already creating', async () => {

@@ -185,6 +185,55 @@ describe('context-service', () => {
             expect([...mock.browser.tabs.values()].map(t => t.url)).toEqual([`${EXTENSION_BASE}index.html`]);
         });
 
+        describe('Create & park (task not active, explicit tabs)', () => {
+            /** An idle task whose context holds the two open tabs a and b, as attachTabs leaves it */
+            async function idleWithOpenTabs() {
+                mock.browser.addTab({ url: `${EXTENSION_BASE}index.html` });
+                const a = mock.browser.addTab({ url: 'https://a.example/' });
+                const b = mock.browser.addTab({ url: 'https://b.example/' });
+                const other = mock.browser.addTab({ url: 'https://other.example/' });
+                const task = makeTask({ context: makeContext({ state: 'idle' }) });
+                await seed(task);
+                return { task, a, b, other };
+            }
+
+            it('closes the given tabs that belong to the task and parks it', async () => {
+                const { task, a, b, other } = await idleWithOpenTabs();
+                const res = await send(CONTEXT_MESSAGES.PARK, {
+                    task,
+                    closeTabs: true,
+                    chromeTabIds: [a.id, b.id, other.id, 9999],
+                });
+                expect(res.task!.context).toMatchObject({ state: 'parked', parkCount: 1 });
+                expect(res.task!.context!.tabs.map(t => t.url)).toEqual(['https://a.example/', 'https://b.example/']);
+                expect(res.task!.context!.events!.slice(-1)[0]).toMatchObject({ type: 'park', closedTabs: 2 });
+                // other.example isn't saved in the task: never closed
+                expect([...mock.browser.tabs.values()].map(t => t.url)).toEqual([
+                    `${EXTENSION_BASE}index.html`,
+                    'https://other.example/',
+                ]);
+            });
+
+            it('opens a TabPlex tab when the tabs were the last ones in their window', async () => {
+                const a = mock.browser.addTab({ url: 'https://a.example/' });
+                const b = mock.browser.addTab({ url: 'https://b.example/' });
+                const task = makeTask({ context: makeContext({ state: 'idle' }) });
+                await send(CONTEXT_MESSAGES.PARK, { task, closeTabs: true, chromeTabIds: [a.id, b.id] });
+                expect([...mock.browser.tabs.values()].map(t => t.url)).toEqual([`${EXTENSION_BASE}index.html`]);
+            });
+
+            it('keeps the tabs open when closeTabs is off, and ignores the ids for an active task', async () => {
+                const { task, a } = await idleWithOpenTabs();
+                await send(CONTEXT_MESSAGES.PARK, { task, closeTabs: false, chromeTabIds: [a.id] });
+                expect(mock.browser.tabs.has(a.id)).toBe(true);
+
+                const active = await startWithTabs();
+                const loose = mock.browser.addTab({ url: 'https://a.example/' }); // same URL, outside the group
+                await send(CONTEXT_MESSAGES.PARK, { task: active, closeTabs: true, chromeTabIds: [loose.id] });
+                expect(mock.browser.tabs.has(loose.id)).toBe(true);
+            });
+        });
+
         it('keeps the saved tabs and note when the group is gone', async () => {
             const task = makeTask({
                 context: makeContext({ state: 'active', chromeGroupId: 12345, resumeNote: 'old note' }),
