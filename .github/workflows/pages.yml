@@ -1,0 +1,36 @@
+name: Landing page
+
+# Publishes landing-page/ (the site and the privacy policy) to GitHub Pages.
+# privacy.html is generated from PRIVACY.md and kept up to date by CI (npm run build:privacy -- --check).
+on:
+    push:
+        branches: [main]
+        paths:
+            - 'landing-page/**'
+            - 'PRIVACY.md'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+    pages: write
+    id-token: write
+
+# One deployment at a time; let an in-progress one finish
+concurrency:
+    group: pages
+    cancel-in-progress: false
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        steps:
+            - uses: actions/checkout@v6
+            - uses: actions/configure-pages@v5
+            - uses: actions/upload-pages-artifact@v3
+              with:
+                  path: landing-page
+            - id: deployment
+              uses: actions/deploy-pages@v4
