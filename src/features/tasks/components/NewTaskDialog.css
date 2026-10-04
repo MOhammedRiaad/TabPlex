@@ -1,0 +1,29 @@
+.new-task-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-md);
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.new-task-dialog {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    width: min(520px, 100%);
+    max-height: calc(100vh - 2 * var(--spacing-md));
+    overflow-y: auto;
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-lg);
+}
+
+.new-task-dialog h2 {
+    margin: 0;
+    font-size: var(--font-lg);
+}

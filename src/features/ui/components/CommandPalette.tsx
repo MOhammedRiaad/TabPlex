@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useBoardStore } from '../../../store/boardStore';
 import { Command } from '../../../types';
-import { generateTaskId, generateNoteId, generateFolderId } from '../../../utils/idGenerator';
+import { generateNoteId, generateFolderId } from '../../../utils/idGenerator';
+import { useUIStore } from '../store/uiStore';
 import { useTaskContextActions } from '../../tasks/hooks/useTaskContextActions';
 import { startOrganize } from '../../organize/store/organizeStore';
 import { openTaskFromTabs } from '../../taskDraft/store/taskDraftStore';
@@ -22,7 +23,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
 
-    const { addTask, addNote, addFolder, boards, tasks } = useBoardStore();
+    const { addNote, addFolder, boards, tasks } = useBoardStore();
     const { requestPark, startOrResume, addCurrentTabs } = useTaskContextActions();
     const activeContextTask = getActiveContextTask(tasks);
     const lastParkedTask = getParkedTasks(tasks)[0];
@@ -97,15 +98,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                 name: 'Create New Task',
                 shortcut: 'Ctrl+Shift+K',
                 icon: '✅',
-                action: () => {
-                    addTask({
-                        id: generateTaskId(),
-                        title: 'New Task',
-                        status: 'todo',
-                        priority: 'medium',
-                        boardId: boards[0]?.id,
-                    });
-                },
+                action: () => useUIStore.getState().actions.openNewTaskDialog(),
                 category: 'creation',
             },
             {
@@ -370,7 +363,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
         ],
         [
             onNavigate,
-            addTask,
             addNote,
             addFolder,
             boards,

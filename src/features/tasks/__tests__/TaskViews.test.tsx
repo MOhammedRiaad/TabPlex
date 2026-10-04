@@ -49,10 +49,10 @@ describe('TaskCard', () => {
         fireEvent.click(screen.getByRole('checkbox'));
         fireEvent.change(screen.getByPlaceholderText('Add item...'), { target: { value: 'Second' } });
         fireEvent.keyDown(screen.getByPlaceholderText('Add item...'), { key: 'Enter' });
-        fireEvent.click(screen.getByText('Add')); // empty: ignored
+        fireEvent.click(screen.getByText('Add item')); // empty: ignored
         fireEvent.change(screen.getByPlaceholderText('Add item...'), { target: { value: 'Third' } });
-        fireEvent.click(screen.getByText('Add'));
-        fireEvent.click(screen.getAllByRole('button', { name: '×' })[2]); // remove "Third"
+        fireEvent.click(screen.getByText('Add item'));
+        fireEvent.click(screen.getByRole('button', { name: 'Remove Third' }));
         fireEvent.click(screen.getByText('Save'));
         expect(task()).toMatchObject({
             title: 'New title',
