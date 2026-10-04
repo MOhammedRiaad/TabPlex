@@ -34,6 +34,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 - **Today View**: Consolidated dashboard with personalized greetings, daily focus, and tasks
 - **Kanban-Style Workflow**: To Do, Doing, Done columns for visual progress tracking
 - **Rich Task Details**: Add descriptions, checklists, due dates, and priority levels
+- **Pinning**: Pin a task or note (📌) to keep it at the top of its column or list, on Today too
 - **Task-Tab Linking**: Associate web resources with specific tasks
 - **Park & Resume**: Each task keeps its own tabs. Start a task to open them in a named Chrome tab group, park it with a "where I left off" note to close them, and resume later in one click — everything stays on your device. Optional: start a Pomodoro with the task, and on-device AI summaries of parked work (Chrome's built-in AI)
 - **On-device AI**: Chrome's built-in AI (Gemini Nano) runs on your computer, never in the cloud. Settings → On-device AI shows whether your device supports it and turns AI features on or off; every feature still works without it

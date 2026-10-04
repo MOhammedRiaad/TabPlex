@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { pinnedFirst } from '../../../utils/pinned';
 import { useNavigate } from 'react-router-dom';
 import NoteCard from '../../notes/components/NoteCard';
 import AddNoteForm from '../../notes/components/AddNoteForm';
@@ -12,9 +13,10 @@ interface TodayNotesProps {
 const TodayNotes: React.FC<TodayNotesProps> = ({ notes }) => {
     const navigate = useNavigate();
 
-    // Get 6 latest notes sorted by creation date
+    // Pinned notes first, then the newest; 6 at most
     const latestNotes = useMemo(() => {
-        return [...notes].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 6);
+        const newest = [...notes].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return pinnedFirst(newest).slice(0, 6);
     }, [notes]);
 
     const hasMoreNotes = notes.length > 6;

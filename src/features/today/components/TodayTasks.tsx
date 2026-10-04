@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import TaskCard from '../../tasks/components/TaskCard';
 import AddTaskForm from '../../tasks/components/AddTaskForm';
+import { pinnedFirst } from '../../../utils/pinned';
 import '../TodayView.css';
 import { Task } from '../../../types';
 
@@ -92,9 +93,11 @@ const TodayTasks: React.FC<TodayTasksProps> = ({
                         <span className="task-count">{todoTasks.length}</span>
                     </h3>
                     <div className="tasks-list">
-                        {todoTasks.slice(0, showAllTasks ? undefined : 3).map(task => (
-                            <TaskCard key={task.id} task={task} />
-                        ))}
+                        {pinnedFirst(todoTasks)
+                            .slice(0, showAllTasks ? undefined : 3)
+                            .map(task => (
+                                <TaskCard key={task.id} task={task} />
+                            ))}
                         <AddTaskForm status="todo" />
                     </div>
                 </div>
@@ -105,9 +108,11 @@ const TodayTasks: React.FC<TodayTasksProps> = ({
                         <span className="task-count">{doingTasks.length}</span>
                     </h3>
                     <div className="tasks-list">
-                        {doingTasks.slice(0, showAllTasks ? undefined : 3).map(task => (
-                            <TaskCard key={task.id} task={task} />
-                        ))}
+                        {pinnedFirst(doingTasks)
+                            .slice(0, showAllTasks ? undefined : 3)
+                            .map(task => (
+                                <TaskCard key={task.id} task={task} />
+                            ))}
                         <AddTaskForm status="doing" />
                     </div>
                 </div>
@@ -118,9 +123,11 @@ const TodayTasks: React.FC<TodayTasksProps> = ({
                         <span className="task-count">{doneTasks.length}</span>
                     </h3>
                     <div className="tasks-list">
-                        {doneTasks.slice(0, showAllTasks ? undefined : 3).map(task => (
-                            <TaskCard key={task.id} task={task} />
-                        ))}
+                        {pinnedFirst(doneTasks)
+                            .slice(0, showAllTasks ? undefined : 3)
+                            .map(task => (
+                                <TaskCard key={task.id} task={task} />
+                            ))}
                         <AddTaskForm status="done" />
                     </div>
                 </div>

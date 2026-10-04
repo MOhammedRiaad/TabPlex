@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
+import { Note } from '../../../types';
 import { useBoardStore } from '../../../store/boardStore';
 import MarkdownEditor from '../../ui/components/MarkdownEditor';
 import { escapeHtml, renderMarkdownLinks } from '../../../utils/markdown';
 import './NoteCard.css';
 
 interface NoteCardProps {
-    note: {
-        id: string;
-        title: string;
-        content: string;
-        createdAt: string;
-        updatedAt?: string;
-        format?: 'markdown' | 'text';
-    };
+    note: Note;
 }
 
 // Simple markdown parser for display
@@ -67,7 +61,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
     };
 
     return (
-        <div className={`note-card ${isEditing ? 'editing' : ''}`}>
+        <div className={`note-card ${isEditing ? 'editing' : ''} ${note.pinned ? 'is-pinned' : ''}`}>
             {isEditing ? (
                 <div className="note-edit">
                     <MarkdownEditor
@@ -117,6 +111,15 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                         {note.format === 'markdown' && <span className="format-badge">MD</span>}
                     </div>
                     <div className="note-actions">
+                        <button
+                            onClick={() => updateNote(note.id, { pinned: !note.pinned })}
+                            className={`pin-btn ${note.pinned ? 'active' : ''}`}
+                            aria-pressed={Boolean(note.pinned)}
+                            aria-label={note.pinned ? 'Unpin note' : 'Pin note'}
+                            title={note.pinned ? 'Unpin note' : 'Pin note to the top'}
+                        >
+                            📌
+                        </button>
                         <button onClick={() => setIsEditing(true)} className="edit-btn" aria-label="Edit note">
                             ✏️
                         </button>
