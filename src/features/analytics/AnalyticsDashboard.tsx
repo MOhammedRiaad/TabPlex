@@ -38,7 +38,7 @@ const AnalyticsDashboard: React.FC = () => {
         [...tabs, ...history].forEach(item => {
             try {
                 const url = new URL(item.url);
-                const domain = url.hostname.replace('www.', '');
+                const domain = url.hostname.replace(/^www\./, ''); // only a leading "www."
                 domainCounts[domain] = (domainCounts[domain] || 0) + 1;
             } catch {
                 // Invalid URL, skip
