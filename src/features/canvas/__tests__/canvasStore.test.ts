@@ -216,6 +216,29 @@ describe('canvas store', () => {
             expect(canvas().selectedIds).toEqual([]);
         });
 
+        it('changes only the active canvas (selection and view)', () => {
+            store().createCanvas('board_1');
+            const otherId = store().activeCanvasId!;
+            store().addElement(makeElement('rectangle', { id: 'x' }));
+            store().addToSelection('x');
+            store().createCanvas('board_2'); // becomes active
+            store().addElement(makeElement('rectangle', { id: 'a' }));
+            const other = () => store().canvases.find(c => c.canvasId === otherId)!;
+            const before = { ...other(), selectedIds: [...other().selectedIds] };
+
+            store().setSelectedIds(['a']);
+            store().addToSelection('a');
+            store().removeFromSelection('a');
+            store().clearSelection();
+            store().setZoom(2);
+            store().setPan(5, 5);
+            store().resetView();
+
+            expect(other().selectedIds).toEqual(before.selectedIds);
+            expect(other()).toMatchObject({ zoom: before.zoom, panX: before.panX, panY: before.panY });
+            expect(canvas().selectedIds).toEqual([]);
+        });
+
         it('undoes and redoes element changes', () => {
             expect(store().canUndo()).toBe(false);
             expect(store().canRedo()).toBe(false);
