@@ -303,7 +303,6 @@ TabPlex requests the following Chrome permissions:
 - **`history`**: To allow you to import and organize browser history (only when you explicitly request it)
 - **`storage`**: To save your boards, tasks, and notes locally
 - **`notifications`**: To send task reminders and timer notifications
-- **`<all_urls>`**: To capture favicons and tab metadata from any website you visit
 - **`sessions`**: To restore recently closed tabs and windows
 - **`bookmarks`**: To manage and organize your browser bookmarks (read/write access)
 - **`favicon`**: To show website icons from Chrome's own local icon cache (no third-party icon service)
