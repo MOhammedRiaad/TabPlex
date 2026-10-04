@@ -234,6 +234,7 @@ describe('message-handler', () => {
         ['EXPORT_ALL_DATA', undefined],
         ['GET_BOOKMARKS', undefined],
         ['TASK_CONTEXT_PARK_ACTIVE', undefined],
+        ['TABS_UNDO_GROUPS', { groupIds: [] }],
     ])('routes %s to its service', async (type, payload) => {
         const { keepOpen, sendResponse } = dispatch({ type, payload });
         expect(keepOpen).toBe(true);

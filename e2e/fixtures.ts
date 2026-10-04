@@ -8,6 +8,9 @@ const EXTENSION_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 /** Pages served for tests (no network needed): https://e2e.test/<name> */
 export const site = (name: string) => `https://e2e.test/${name}`;
 
+/** A page on another fake site: any *.test host is served, e.g. siteOn('news.test', 'a') */
+export const siteOn = (host: string, path: string) => `https://${host}/${path}`;
+
 type Fixtures = {
     context: BrowserContext;
     serviceWorker: Worker;
@@ -24,7 +27,7 @@ export const test = base.extend<Fixtures>({
             executablePath: process.env.PW_CHROMIUM_PATH || undefined,
             args: [`--disable-extensions-except=${EXTENSION_PATH}`, `--load-extension=${EXTENSION_PATH}`],
         });
-        await context.route('https://e2e.test/**', route => {
+        await context.route(/^https:\/\/[a-z0-9.-]+\.test\//, route => {
             const name = new URL(route.request().url()).pathname.slice(1);
             return route.fulfill({
                 contentType: 'text/html',

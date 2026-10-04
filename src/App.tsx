@@ -15,6 +15,7 @@ import { downloadExportFile, importFromFile } from './utils/exportImport';
 import { SearchResult } from './types';
 import BoardToast from './features/boards/components/BoardToast';
 import ParkDialog from './features/tasks/components/ParkDialog';
+import OrganizeTabsDialog from './features/organize/components/OrganizeTabsDialog';
 import { useParkShortcut } from './features/tasks/hooks/useParkShortcut';
 import './App.css';
 
@@ -226,6 +227,8 @@ function AppContent() {
             />
 
             <ParkDialog />
+
+            <OrganizeTabsDialog />
 
             {/* key restarts the auto-dismiss timer for each new toast; clearToast is stable so re-renders don't */}
             {toast && <BoardToast key={toast.id} message={toast.message} type={toast.type} onClose={clearToast} />}

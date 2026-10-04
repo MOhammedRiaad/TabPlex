@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CommandPalette from '../components/CommandPalette';
 import { useBoardStore } from '../../../store/boardStore';
 import { useUIStore } from '../store/uiStore';
+import { useOrganizeStore } from '../../organize/store/organizeStore';
 import { respondToMessages } from '../../../test/chromeMock';
 import { makeBoard, makeContext, makeTask } from '../../../test/factories';
 
@@ -48,6 +49,15 @@ describe('CommandPalette', () => {
             )
         );
         expect(onClose).toHaveBeenCalled();
+    });
+
+    it('starts "Organize open tabs"', () => {
+        const start = vi
+            .spyOn(useOrganizeStore.getState().actions, 'startOrganize')
+            .mockImplementation(() => undefined);
+        render(<CommandPalette isOpen onClose={vi.fn()} onNavigate={vi.fn()} />);
+        fireEvent.click(screen.getByText('Organize open tabs'));
+        expect(start).toHaveBeenCalled();
     });
 
     it('filters, navigates with the keyboard and closes', () => {

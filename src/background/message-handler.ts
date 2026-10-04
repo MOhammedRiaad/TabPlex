@@ -7,6 +7,7 @@ import { handleSessionMessage } from './session-service';
 import { handleDataMessage } from './data-service';
 import { handleBookmarkMessage } from './bookmark-service';
 import { CONTEXT_MESSAGE_TYPES, handleContextMessage } from './context-service';
+import { ORGANIZE_MESSAGE_TYPES, handleOrganizeMessage } from './organize-service';
 import { addBoard, addTab, deleteBoard, deleteTab, getBoard, updateBoard, updateFolder, updateTab } from './storage';
 import { handleUpdate } from './update-handler';
 import { ExtensionMessage, Tab, Board, Folder } from '../types';
@@ -277,6 +278,10 @@ chrome.runtime.onMessage.addListener(
                 // Park & Resume task contexts
                 if (CONTEXT_MESSAGE_TYPES.includes(message.type)) {
                     return handleContextMessage(message, _sendResponse);
+                }
+                // Organize tabs (create / undo tab groups)
+                if (ORGANIZE_MESSAGE_TYPES.includes(message.type)) {
+                    return handleOrganizeMessage(message, _sendResponse);
                 }
                 console.warn('Unknown message type:', message.type, message);
                 safeSendResponse(_sendResponse, { error: `Unknown message type: ${message.type}` });
