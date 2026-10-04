@@ -5,6 +5,7 @@ import { useBoardStore } from '../../store/boardStore';
 import * as db from '../../utils/storage';
 import { fakeChrome } from '../../test/chromeMock';
 import { makeBoard, makeContext, makeFolder, makeNote, makeSession, makeTab, makeTask } from '../../test/factories';
+import { markImportInThisTab } from '../../utils/exportImport';
 
 const state = () => useBoardStore.getState();
 
@@ -159,5 +160,20 @@ describe('useStorageSync', () => {
         expect(reload).toHaveBeenCalled();
         unmount();
         expect(fakeChrome().runtime.onMessage.listeners.size).toBe(0);
+    });
+
+    it('lets the importing tab reload on its own, after showing its toast', async () => {
+        const reload = vi.fn();
+        Object.defineProperty(window, 'location', { value: { ...window.location, reload }, configurable: true });
+        const { unmount } = renderHook(() => useStorageSync());
+
+        markImportInThisTab(true);
+        broadcast({ type: 'STORAGE_DATA_IMPORTED' });
+        expect(reload).not.toHaveBeenCalled();
+
+        markImportInThisTab(false);
+        broadcast({ type: 'STORAGE_DATA_IMPORTED' });
+        expect(reload).toHaveBeenCalledTimes(1);
+        unmount();
     });
 });
