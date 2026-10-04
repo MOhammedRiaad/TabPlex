@@ -29,6 +29,7 @@ jobs:
             - run: npm run typecheck
             - run: npm run lint
             - run: npm run format:check
+            - run: npm run build:privacy -- --check # landing-page/privacy.html matches PRIVACY.md
 
             - name: Unit tests (85% coverage gate)
               run: npm run test:coverage

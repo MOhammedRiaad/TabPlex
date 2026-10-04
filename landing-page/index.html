@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TabPlex - Your Workspace, Reimagined</title>
+    <title>TabPlex: tasks, tabs and focus in one private workspace</title>
+    <meta name="description"
+        content="TabPlex is a Chrome extension that gives every task its own tabs. Park your work with a note and resume it in one click, organize loose tabs into groups, and keep everything on your device.">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,42 +26,43 @@
             </a>
             <div class="nav-links">
                 <a href="#features">Features</a>
-                <a href="#how-it-works">How it Works</a>
+                <a href="#how-it-works">How it works</a>
                 <a href="#privacy">Privacy</a>
             </div>
-            <a href="#" class="btn btn-primary btn-sm">Get Early Access</a>
+            <!-- TODO(v1.0.0): replace with the Chrome Web Store listing URL -->
+            <a href="https://github.com/MOhammedRiaad/TabPlex/releases" class="btn btn-primary btn-sm">Download</a>
         </div>
     </nav>
 
     <header class="hero">
         <div class="container hero-container">
             <div class="hero-content fade-in-up">
-                <div class="badge">✨ Now in Beta</div>
-                <h1>Your Browser, but <span class="gradient-text">Organized.</span></h1>
-                <p class="hero-subtitle">Stop drowning in tabs. TabPlex turns your chaotic browser into a powerful,
-                    organized workspace with Kanban boards, tasks, and focus tools.</p>
+                <div class="badge">Coming soon to the Chrome Web Store</div>
+                <h1>Close your tabs, <span class="gradient-text">keep your train of thought.</span></h1>
+                <p class="hero-subtitle">TabPlex gives every task its own tabs. Park your work with a note when you
+                    switch, resume it in one click, and turn tab chaos into tidy groups. Tasks, notes, boards and a
+                    focus timer, all in one private workspace.</p>
                 <div class="hero-actions">
-                    <a href="#" class="btn btn-primary btn-lg icon-btn">
-                        <span>Add to Chrome</span>
+                    <!-- TODO(v1.0.0): replace with the Chrome Web Store listing URL -->
+                    <a href="https://github.com/MOhammedRiaad/TabPlex/releases" class="btn btn-primary btn-lg icon-btn">
+                        <span>Download for Chrome</span>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M12 5v14M5 12h14" />
+                            stroke-width="2" aria-hidden="true">
+                            <path d="M12 5v14M5 12l7 7 7-7" />
                         </svg>
                     </a>
-                    <a href="#features" class="btn btn-secondary btn-lg">Explore Features</a>
+                    <a href="#features" class="btn btn-secondary btn-lg">Explore features</a>
                 </div>
-                <div class="user-avatars">
-                    <div class="avatar-group">
-                        <span class="avatar" style="background-color: #fca5a5;">A</span>
-                        <span class="avatar" style="background-color: #86efac;">B</span>
-                        <span class="avatar" style="background-color: #93c5fd;">C</span>
-                    </div>
-                    <p>Trusted by 10,000+ productivity enthusiasts</p>
-                </div>
+                <ul class="trust-row">
+                    <li>No account</li>
+                    <li>No servers</li>
+                    <li>No tracking</li>
+                </ul>
             </div>
             <div class="hero-image float-animation fade-in-up delay-200">
                 <div class="glass-card image-wrapper">
-                    <img src="images/dashboard-hero.png" alt="TabPlex Dashboard Interface">
+                    <img src="images/1-today.png" width="1280" height="800"
+                        alt="TabPlex Today view: a parked task with its note, today's tasks, quick actions and a focus timer">
                     <div class="shine"></div>
                 </div>
             </div>
@@ -69,44 +72,69 @@
     <section id="features" class="features section">
         <div class="container">
             <div class="section-header text-center fade-in-up">
-                <h2>Designed for <span class="gradient-text">Focus</span></h2>
-                <p>Everything you need to stay productive, right in your new tab.</p>
+                <h2>Built around <span class="gradient-text">how you actually work</span></h2>
+                <p>Opens in its own tab from the TabPlex toolbar icon.</p>
             </div>
 
             <div class="feature-row">
                 <div class="feature-content fade-in-left">
-                    <div class="feature-icon bg-purple">📋</div>
-                    <h3>Visualize Your Work</h3>
-                    <p>Transform your to-do list into a powerful Kanban board. Drag and drop tasks, set priorities, and
-                        track progress without leaving your browser.</p>
+                    <div class="feature-icon bg-purple">⏸</div>
+                    <h3>Park &amp; Resume</h3>
+                    <p>A task can own a set of tabs. Start it and its tabs open in a labelled Chrome tab group. Switching
+                        to something else? Park it with a one-line "where I left off" note and the tabs close. Resume
+                        later and you're back exactly where you were.</p>
                     <ul class="feature-list">
-                        <li>Customizable columns</li>
-                        <li>Drag & drop interface</li>
-                        <li>Priority tagging</li>
+                        <li>Tab groups named and coloured after the task</li>
+                        <li>New tabs join the active task automatically</li>
+                        <li>Parked work waits for you on the Today view</li>
+                        <li>Optional on-device summary of what you were doing</li>
                     </ul>
                 </div>
                 <div class="feature-image fade-in-right">
                     <div class="glass-card">
-                        <img src="images/feature-tasks.png" alt="Kanban Board Feature">
+                        <img src="images/2-park-resume.png" width="1280" height="800" loading="lazy"
+                            alt="Parking a task: a dialog asks where you left off and lists the tabs to save">
                     </div>
                 </div>
             </div>
 
             <div class="feature-row reverse">
                 <div class="feature-content fade-in-right">
-                    <div class="feature-icon bg-blue">📑</div>
-                    <h3>Tame Your Tabs</h3>
-                    <p>Group related tabs into project folders. Save sessions for later and declutter your mind
-                        instantly.</p>
+                    <div class="feature-icon bg-blue">✨</div>
+                    <h3>Organize tabs in one click</h3>
+                    <p>TabPlex suggests Chrome tab groups for your loose tabs: by what you're working on with
+                        Chrome's built-in AI, or by site when AI isn't available. Rename, recolour or drop tabs in a
+                        preview, then create the groups. Changed your mind? Undo.</p>
                     <ul class="feature-list">
-                        <li>One-click session save</li>
-                        <li>Visual tab grid</li>
-                        <li>Auto-categorization</li>
+                        <li>AI runs on your computer, never in the cloud</li>
+                        <li>Pinned tabs and existing groups are never touched</li>
+                        <li>Save the groups to Boards for later</li>
                     </ul>
                 </div>
                 <div class="feature-image fade-in-left">
                     <div class="glass-card">
-                        <img src="images/feature-tabs.png" alt="Tab Management Feature">
+                        <img src="images/3-organize-tabs.png" width="1280" height="800" loading="lazy"
+                            alt="Organize tabs: suggested groups named React Effects and Lisbon Trip, ready to create">
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-row">
+                <div class="feature-content fade-in-left">
+                    <div class="feature-icon bg-purple">📋</div>
+                    <h3>Boards for the tabs you keep</h3>
+                    <p>Save tabs into folders, search them, drag them around, and pull in pages from your browser
+                        history. Tasks get a Kanban view with priorities, due dates and checklists.</p>
+                    <ul class="feature-list">
+                        <li>Folders with colours and drag &amp; drop</li>
+                        <li>To Do · Doing · Done task columns</li>
+                        <li>Command palette (Ctrl+K) for everything</li>
+                    </ul>
+                </div>
+                <div class="feature-image fade-in-right">
+                    <div class="glass-card">
+                        <img src="images/4-boards.png" width="1280" height="800" loading="lazy"
+                            alt="Boards view with folders of saved tabs">
                     </div>
                 </div>
             </div>
@@ -114,19 +142,81 @@
             <div class="grid-features">
                 <div class="grid-card glass fade-in-up delay-100">
                     <div class="card-icon">🍅</div>
-                    <h4>Focus Mode</h4>
-                    <p>Built-in Pomodoro timer to help you stay in the flow and manage deep work sessions.</p>
+                    <h4>Focus timer</h4>
+                    <p>A built-in Pomodoro timer that can start with a task and pause when you park it.</p>
                 </div>
                 <div class="grid-card glass fade-in-up delay-200">
                     <div class="card-icon">📝</div>
-                    <h4>Quick Notes</h4>
-                    <p>Capture ideas instantly with markdown support. Notes sync across your devices.</p>
+                    <h4>Markdown notes</h4>
+                    <p>Capture ideas next to your tasks. Everything is saved in your browser, on this device.</p>
                 </div>
                 <div class="grid-card glass fade-in-up delay-300">
-                    <div class="card-icon">🔒</div>
-                    <h4>Privacy First</h4>
-                    <p>Your data stays on your device. Zero tracking, zero cloud dependencies.</p>
+                    <div class="card-icon">📊</div>
+                    <h4>Local insights</h4>
+                    <p>See how often you switched context and how many tabs parking closed for you.</p>
                 </div>
+                <div class="grid-card glass fade-in-up delay-100">
+                    <div class="card-icon">🔖</div>
+                    <h4>Bookmarks &amp; sessions</h4>
+                    <p>Browse and organize your Chrome bookmarks, and save browsing sessions to restore later.</p>
+                </div>
+                <div class="grid-card glass fade-in-up delay-200">
+                    <div class="card-icon">🎨</div>
+                    <h4>Canvas</h4>
+                    <p>A whiteboard for sketching plans and diagrams beside your work.</p>
+                </div>
+                <div class="grid-card glass fade-in-up delay-300">
+                    <div class="card-icon">🌗</div>
+                    <h4>Light &amp; dark</h4>
+                    <p>Follows your system theme, or pick one yourself.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="section">
+        <div class="container">
+            <div class="section-header text-center fade-in-up">
+                <h2>How <span class="gradient-text">Park &amp; Resume</span> works</h2>
+                <p>Three steps, no lost tabs.</p>
+            </div>
+            <ol class="steps">
+                <li class="grid-card glass fade-in-up delay-100">
+                    <span class="step-number">1</span>
+                    <h4>Start a task</h4>
+                    <p>Add the tabs you're using to a task, or just start it. Its tabs open in a Chrome tab group
+                        named after the task.</p>
+                </li>
+                <li class="grid-card glass fade-in-up delay-200">
+                    <span class="step-number">2</span>
+                    <h4>Park it</h4>
+                    <p>Type where you left off. The tabs close, and the task remembers them and your note.</p>
+                </li>
+                <li class="grid-card glass fade-in-up delay-300">
+                    <span class="step-number">3</span>
+                    <h4>Resume</h4>
+                    <p>One click on Today reopens the group and shows your note. Closing the group by hand parks it
+                        safely too.</p>
+                </li>
+            </ol>
+        </div>
+    </section>
+
+    <section id="privacy" class="section">
+        <div class="container">
+            <div class="cta-card glass fade-in-up privacy-card">
+                <h2>Private by design</h2>
+                <p>TabPlex keeps everything in your browser. There's no account, no TabPlex server and no analytics.
+                </p>
+                <ul class="feature-list privacy-list">
+                    <li>Your tasks, notes, boards and tabs are stored on this device only</li>
+                    <li>AI features use Chrome's built-in model on your computer; tab data never leaves it</li>
+                    <li>No access to the content of the websites you visit: TabPlex only sees tab titles and
+                        addresses</li>
+                    <li>Website icons come from Chrome's own local cache, not a third-party service</li>
+                    <li>Export everything to a file at any time, or delete it all in Settings</li>
+                </ul>
+                <a href="privacy.html" class="btn btn-secondary">Read the privacy policy</a>
             </div>
         </div>
     </section>
@@ -134,9 +224,12 @@
     <section class="cta section">
         <div class="container">
             <div class="cta-card glass text-center fade-in-up">
-                <h2>Ready to upgrade your workflow?</h2>
-                <p>Join thousands of users who have reclaimed their browser sanity.</p>
-                <a href="#" class="btn btn-primary btn-lg">Install TabPlex Free</a>
+                <h2>Ready to close some tabs?</h2>
+                <p>TabPlex is free. It's coming to the Chrome Web Store; until then, download the latest release
+                    from GitHub and load it in Chrome.</p>
+                <!-- TODO(v1.0.0): replace with the Chrome Web Store listing URL -->
+                <a href="https://github.com/MOhammedRiaad/TabPlex/releases" class="btn btn-primary btn-lg">Get
+                    TabPlex</a>
             </div>
         </div>
     </section>
@@ -149,62 +242,46 @@
                         <div class="logo-icon">T</div>
                         <span>TabPlex</span>
                     </div>
-                    <p>The operating system for your browser workflow.</p>
+                    <p>Tasks, tabs and focus in one private workspace.</p>
                 </div>
                 <div class="footer-links">
                     <div class="link-group">
                         <h4>Product</h4>
-                        <a href="#">Features</a>
-                        <a href="#">Pricing</a>
-                        <a href="#">Changelog</a>
-                    </div>
-                    <div class="link-group">
-                        <h4>Company</h4>
-                        <a href="#">About</a>
-                        <a href="#">Blog</a>
-                        <a href="#">Careers</a>
+                        <a href="#features">Features</a>
+                        <a href="#how-it-works">How it works</a>
+                        <a href="https://github.com/MOhammedRiaad/TabPlex/releases">Releases</a>
                     </div>
                     <div class="link-group">
                         <h4>Legal</h4>
-                        <a href="#">Privacy</a>
-                        <a href="#">Terms</a>
+                        <a href="privacy.html">Privacy policy</a>
                     </div>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2026 TabPlex. All rights reserved.</p>
+                <p>&copy; 2026 TabPlex</p>
                 <div class="socials">
-                    <a href="#">Twitter</a>
-                    <a href="#">GitHub</a>
-                    <a href="#">Discord</a>
+                    <a href="https://github.com/MOhammedRiaad/TabPlex">GitHub</a>
                 </div>
             </div>
         </div>
     </footer>
 
     <script>
-        // Simple Intersection Observer for scroll animations
+        // Scroll-in animations and the mouse glow
         document.addEventListener('DOMContentLoaded', () => {
-            const observerOptions = {
-                threshold: 0.1,
-                rootMargin: '0px 0px -50px 0px'
-            };
-
-            const observer = new IntersectionObserver((entries) => {
+            const observer = new IntersectionObserver(entries => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         entry.target.classList.add('visible');
                         observer.unobserve(entry.target);
                     }
                 });
-            }, observerOptions);
+            }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-            const animateElements = document.querySelectorAll('.fade-in-up, .fade-in-left, .fade-in-right');
-            animateElements.forEach(el => observer.observe(el));
+            document.querySelectorAll('.fade-in-up, .fade-in-left, .fade-in-right').forEach(el => observer.observe(el));
 
-            // Mouse glow effect
             const cursor = document.querySelector('.cursor-glow');
-            document.addEventListener('mousemove', (e) => {
+            document.addEventListener('mousemove', e => {
                 cursor.style.left = e.clientX + 'px';
                 cursor.style.top = e.clientY + 'px';
             });

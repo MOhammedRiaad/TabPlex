@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Generated from PRIVACY.md by scripts/build-privacy-page.mjs. Edit PRIVACY.md, then run: npm run build:privacy -->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy policy · TabPlex</title>
+    <meta name="description" content="How TabPlex handles your data: everything stays in your browser.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar glass">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">T</div>
+                <span>TabPlex</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html#features">Features</a>
+                <a href="index.html#privacy">Privacy</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container legal">
+<h1>Privacy Policy for TabPlex</h1>
+<p><strong>Last Updated</strong>: October 2026</p>
+<h2>Overview</h2>
+<p>TabPlex is committed to protecting your privacy. This privacy policy explains how TabPlex handles your data.</p>
+<h2>Data Collection</h2>
+<p><strong>TabPlex collects NO personal data and transmits NO data to external servers.</strong></p>
+<h3>What Data is Stored Locally</h3>
+<p>TabPlex stores the following data <strong>exclusively on your local device</strong>:</p>
+<ol>
+<li><p><strong>Tab Information</strong></p>
+<ul>
+<li>URLs of tabs you organize</li>
+<li>Tab titles</li>
+<li>Favicons (website icons)</li>
+<li>Tab metadata (creation time, last accessed)</li>
+</ul>
+</li>
+<li><p><strong>Tasks</strong></p>
+<ul>
+<li>Task titles and descriptions</li>
+<li>Due dates and priority levels</li>
+<li>Completion status</li>
+<li>Checklists and sub-items</li>
+<li>Associated tab references</li>
+<li>Park &amp; Resume contexts: the titles, addresses and icons of the tabs saved with a task, your &quot;where I left off&quot; note, an optional on-device summary, and a short history of when the task was started, parked and resumed (used for the local analytics)</li>
+</ul>
+</li>
+<li><p><strong>Notes</strong></p>
+<ul>
+<li>Note content (text/markdown)</li>
+<li>Creation and modification timestamps</li>
+<li>Associated board/folder/tab references</li>
+</ul>
+</li>
+<li><p><strong>Browsing Sessions</strong></p>
+<ul>
+<li>Session start and end times</li>
+<li>Associated tab IDs</li>
+<li>Session summaries (if provided by you)</li>
+</ul>
+</li>
+<li><p><strong>Browser History</strong> (Optional)</p>
+<ul>
+<li>History items you explicitly choose to import</li>
+<li>Visit timestamps and counts</li>
+<li>Only stored if you use the &quot;Load Recent History&quot; feature</li>
+</ul>
+</li>
+<li><p><strong>Canvas Drawings</strong></p>
+<ul>
+<li>Drawing elements (shapes, text, paths)</li>
+<li>Canvas metadata and settings</li>
+</ul>
+</li>
+<li><p><strong>User Preferences</strong></p>
+<ul>
+<li>Theme selection (light/dark/system)</li>
+<li>Timer settings (work/break durations)</li>
+<li>UI preferences</li>
+<li>Your name for the Today greeting, only if you type one in Settings → Profile (TabPlex does not read your Google account or email)</li>
+</ul>
+</li>
+</ol>
+<h2>Data Storage Location</h2>
+<p>All data is stored using:</p>
+<ul>
+<li><strong>IndexedDB</strong>: Browser&#39;s local database (for structured data)</li>
+<li><strong>chrome.storage.local</strong>: Chrome&#39;s local storage API (for settings and sync)</li>
+</ul>
+<p><strong>Important</strong>: This data never leaves your device. There are no servers, no cloud storage, and no data transmission.</p>
+<h2>Chrome Permissions Explained</h2>
+<p>TabPlex requests the following permissions to function:</p>
+<h3>Required Permissions</h3>
+<ol>
+<li><p><strong><code>tabs</code></strong></p>
+<ul>
+<li><strong>Purpose</strong>: Read tab URLs and titles to organize them</li>
+<li><strong>Usage</strong>: Only when you explicitly add tabs to boards</li>
+<li><strong>Data Access</strong>: Tab URL, title, favicon</li>
+</ul>
+</li>
+<li><p><strong><code>tabGroups</code></strong></p>
+<ul>
+<li><strong>Purpose</strong>: Integration with Chrome&#39;s native tab groups</li>
+<li><strong>Usage</strong>: Optional feature for advanced tab organization</li>
+</ul>
+</li>
+<li><p><strong><code>storage</code></strong></p>
+<ul>
+<li><strong>Purpose</strong>: Save your boards, tasks, notes, and settings</li>
+<li><strong>Usage</strong>: All data stored locally in your browser</li>
+<li><strong>Data Access</strong>: Everything you create in TabPlex</li>
+</ul>
+</li>
+<li><p><strong><code>history</code></strong></p>
+<ul>
+<li><strong>Purpose</strong>: Allow you to import browser history</li>
+<li><strong>Usage</strong>: Only when you click &quot;Load Recent History&quot;</li>
+<li><strong>Data Access</strong>: Browser history (only when requested)</li>
+</ul>
+</li>
+<li><p><strong><code>notifications</code></strong></p>
+<ul>
+<li><strong>Purpose</strong>: Send task reminders and timer alerts</li>
+<li><strong>Usage</strong>: When tasks are due or timer completes</li>
+<li><strong>Data Access</strong>: Task titles for notification display</li>
+</ul>
+</li>
+<li><p><strong><code>sessions</code></strong></p>
+<ul>
+<li><strong>Purpose</strong>: Restore recently closed tabs and windows</li>
+<li><strong>Usage</strong>: Used in the &quot;Sessions&quot; view to show recent browsing history</li>
+<li><strong>Data Access</strong>: Recently closed tab URLs and titles</li>
+</ul>
+</li>
+<li><p><strong><code>bookmarks</code></strong></p>
+<ul>
+<li><strong>Purpose</strong>: Manage and organize your browser bookmarks</li>
+<li><strong>Usage</strong>: View, search, and organize bookmarks within the Bookmarks Manager</li>
+<li><strong>Data Access</strong>: Read and write access to your browser bookmarks</li>
+</ul>
+</li>
+<li><p><strong><code>favicon</code></strong></p>
+<ul>
+<li><strong>Purpose</strong>: Show website icons for tabs, bookmarks and quick links</li>
+<li><strong>Usage</strong>: Icons come from Chrome&#39;s own local favicon cache (<code>chrome-extension://…/_favicon/</code>)</li>
+<li><strong>Data Access</strong>: None leaves your device; no third-party icon service is contacted</li>
+</ul>
+</li>
+</ol>
+<p><strong>No website access</strong>: TabPlex requests no host permissions. It cannot read or change the content of the web pages you visit; it only sees tab titles and addresses through the <code>tabs</code> permission.</p>
+<h3>How Permissions Are Used</h3>
+<ul>
+<li><strong>No Background Tracking</strong>: TabPlex does not monitor your browsing</li>
+<li><strong>Explicit Actions Only</strong>: Data is only captured when you explicitly add tabs or import history</li>
+<li><strong>No Analytics</strong>: We do not track how you use the extension</li>
+<li><strong>No Telemetry</strong>: No usage statistics are collected</li>
+</ul>
+<h2>Data Sharing</h2>
+<p><strong>TabPlex does NOT share any data with third parties.</strong></p>
+<ul>
+<li>❌ No data sent to external servers</li>
+<li>❌ No analytics or tracking services</li>
+<li>❌ No advertising networks</li>
+<li>❌ No data brokers</li>
+<li>❌ No cloud synchronization</li>
+<li>✅ 100% local, 100% private</li>
+</ul>
+<h2>Data Security</h2>
+<h3>Local Security</h3>
+<ul>
+<li>Data stored using browser&#39;s secure storage APIs</li>
+<li>Protected by your browser&#39;s security model</li>
+<li>Encrypted at rest (browser-level encryption)</li>
+</ul>
+<h3>No Network Transmission</h3>
+<ul>
+<li>Zero network requests for data storage</li>
+<li>No API calls to external services</li>
+<li>No data uploaded or downloaded</li>
+</ul>
+<h3>On-device AI summaries (optional, off by default)</h3>
+<p>If you turn on <strong>On-device AI summaries</strong> in Settings, TabPlex uses Chrome&#39;s built-in Summarizer API to write a one-line summary when you park a task. The model (Gemini Nano) runs inside Chrome on your computer:</p>
+<ul>
+<li>The input is the task title and description, your note, and the titles and addresses (host and path only, without query strings) of the parked tabs</li>
+<li>Nothing is sent to TabPlex, Google or any other server by this feature</li>
+<li>Chrome downloads the model once, directly from Google, the first time you turn the setting on; that download is managed by Chrome and contains none of your data</li>
+<li>The summary is stored locally with the task and can be removed by parking again or deleting the task</li>
+</ul>
+<h3>On-device AI features (optional)</h3>
+<p>&quot;Organize tabs&quot; and &quot;New task from tabs&quot; can use Chrome&#39;s built-in AI model (Gemini Nano), which runs on your computer:</p>
+<ul>
+<li>TabPlex sends it the titles and addresses (host and path only, without query strings) of the tabs you choose, and any hint you type</li>
+<li>The model&#39;s answer stays in your browser, and nothing changes until you confirm it</li>
+<li>No tab data is sent to TabPlex, Google or any other server by these features</li>
+<li>Without the model (another browser, or a device that can&#39;t run it) the features use simple local rules instead</li>
+<li>Turn them off in Settings → On-device AI</li>
+</ul>
+<h2>Your Data Rights</h2>
+<h3>Full Control</h3>
+<ul>
+<li><strong>Access</strong>: View all your data within the extension</li>
+<li><strong>Export</strong>: Download all data as JSON file</li>
+<li><strong>Delete</strong>: Remove all data by uninstalling the extension</li>
+<li><strong>Modify</strong>: Edit or delete individual items anytime</li>
+</ul>
+<h3>Data Portability</h3>
+<ul>
+<li>Export feature creates a complete JSON backup</li>
+<li>Import feature restores data from backup</li>
+<li>No vendor lock-in - your data is yours</li>
+</ul>
+<h3>Data Deletion</h3>
+<p>To completely remove all TabPlex data:</p>
+<ol>
+<li><strong>Option 1</strong>: Uninstall the extension from Chrome</li>
+<li><strong>Option 2</strong>: Clear browser data for the extension</li>
+<li><strong>Option 3</strong>: Use Chrome&#39;s &quot;Clear browsing data&quot; for site data</li>
+</ol>
+<h2>Children&#39;s Privacy</h2>
+<p>TabPlex does not knowingly collect data from children under 13. Since we collect no personal data and all data is stored locally, the extension is safe for all ages when used appropriately.</p>
+<h2>Changes to Privacy Policy</h2>
+<p>We may update this privacy policy to reflect:</p>
+<ul>
+<li>Changes in Chrome extension requirements</li>
+<li>New features that affect data handling</li>
+<li>User feedback and clarifications</li>
+</ul>
+<p><strong>Notification of Changes</strong>:</p>
+<ul>
+<li>Major changes will be communicated via extension update notes</li>
+<li>Privacy policy version and date updated at the top</li>
+<li>Continued use after updates constitutes acceptance</li>
+</ul>
+<h2>Contact Information</h2>
+<p>For privacy-related questions or concerns:</p>
+<ul>
+<li><strong>GitHub Issues</strong>: [Repository URL]</li>
+<li><strong>Email</strong>: [Contact Email]</li>
+</ul>
+<h2>Compliance</h2>
+<h3>GDPR Compliance (EU Users)</h3>
+<ul>
+<li><strong>Data Minimization</strong>: We collect only what&#39;s necessary (locally)</li>
+<li><strong>Right to Access</strong>: Export feature provides full data access</li>
+<li><strong>Right to Erasure</strong>: Uninstall removes all data</li>
+<li><strong>Data Portability</strong>: JSON export enables data transfer</li>
+<li><strong>No Data Processing</strong>: No personal data sent to processors</li>
+</ul>
+<h3>CCPA Compliance (California Users)</h3>
+<ul>
+<li><strong>No Sale of Data</strong>: We do not sell personal information</li>
+<li><strong>No Sharing</strong>: We do not share personal information</li>
+<li><strong>Right to Know</strong>: All data visible within extension</li>
+<li><strong>Right to Delete</strong>: Uninstall removes all data</li>
+</ul>
+<h3>Chrome Web Store Policies</h3>
+<p>TabPlex complies with:</p>
+<ul>
+<li>Chrome Web Store Developer Program Policies</li>
+<li>User Data Privacy requirements</li>
+<li>Limited Use disclosure requirements</li>
+</ul>
+<h2>Technical Details</h2>
+<h3>Data Storage Specifications</h3>
+<ul>
+<li><strong>IndexedDB</strong>: Structured data (boards, tabs, tasks, notes)</li>
+<li><strong>chrome.storage.local</strong>: Settings and preferences</li>
+<li><strong>Storage Limits</strong>:<ul>
+<li>IndexedDB: Browser-dependent (typically 50-100MB+)</li>
+<li>chrome.storage.local: 10MB limit</li>
+</ul>
+</li>
+</ul>
+<h3>No External Dependencies</h3>
+<ul>
+<li>No third-party SDKs for analytics</li>
+<li>No advertising frameworks</li>
+<li>No crash reporting services</li>
+<li>No A/B testing platforms</li>
+</ul>
+<h2>Transparency Commitment</h2>
+<p>TabPlex is committed to transparency:</p>
+<ul>
+<li><strong>Open Source</strong>: Code available for review</li>
+<li><strong>No Hidden Features</strong>: All functionality documented</li>
+<li><strong>Clear Permissions</strong>: Explicit explanation of why each permission is needed</li>
+<li><strong>User Control</strong>: You decide what data to create and store</li>
+</ul>
+<hr>
+<p><strong>Summary</strong>: TabPlex is a privacy-first extension. All your data stays on your device. We never collect, transmit, or share your personal information.</p>
+<p><strong>Questions?</strong> We&#39;re happy to clarify any privacy concerns. Please reach out through our GitHub repository.</p>
+
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-bottom">
+            <p>&copy; 2026 TabPlex</p>
+            <div class="socials">
+                <a href="index.html">Home</a>
+                <a href="https://github.com/MOhammedRiaad/TabPlex">GitHub</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

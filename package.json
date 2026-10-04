@@ -4,7 +4,7 @@
     "version": "0.0.0",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/MOhammedRiaad/TabBoard.git"
+        "url": "git+https://github.com/MOhammedRiaad/TabPlex.git"
     },
     "type": "module",
     "scripts": {
@@ -22,6 +22,8 @@
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage",
         "test:e2e": "playwright test",
+        "screenshots": "playwright test -c playwright.screenshots.config.ts",
+        "build:privacy": "node scripts/build-privacy-page.mjs",
         "typecheck": "tsc --noEmit && tsc -p tsconfig.e2e.json"
     },
     "dependencies": {
@@ -68,6 +70,7 @@
         "jiti": "^2.6.1",
         "jsdom": "^30.1.1",
         "lint-staged": "^16.2.7",
+        "marked": "^15.0.12",
         "prettier": "^3.7.4",
         "semantic-release": "^25.0.9",
         "typescript": "^5.0.2",
