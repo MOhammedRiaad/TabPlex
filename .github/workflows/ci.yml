@@ -41,6 +41,7 @@ jobs:
                   retention-days: 14
 
             - run: npm run build
+            - run: npm run check:bundle # startup chunks stay under 500 kB
 
             - name: Package (artifact for testing)
               run: node scripts/package-extension.mjs

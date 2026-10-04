@@ -13,6 +13,7 @@ npm run lint              # eslint --max-warnings 0 — a single warning fails
 npm run format:check      # prettier
 npm run test:coverage     # vitest; fails below 85% statements/branches/functions/lines
 npm run build             # tsc && vite build -> dist/
+npm run check:bundle      # every JS chunk under 500 kB except the lazy tldraw canvas
 npm run test:e2e          # only when tabs, groups, background or Park & Resume changed; needs the build
 ```
 

@@ -32,6 +32,9 @@ export default defineConfig({
     })
   ],
   build: {
+    // Views are lazy-loaded (routes.tsx). The only chunk over 500 kB is the optional tldraw canvas,
+    // loaded on demand; scripts/check-bundle-size.mjs keeps every other chunk under 500 kB in CI.
+    chunkSizeWarningLimit: 1800,
     rollupOptions: {
       input: {
         sidepanel: 'index.html',
