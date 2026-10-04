@@ -10,6 +10,7 @@
     "scripts": {
         "dev": "vite",
         "build": "tsc && vite build",
+        "check:bundle": "node scripts/check-bundle-size.mjs",
         "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
         "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\" \"*.{ts,js,json,md}\"",
         "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\" \"*.{ts,js,json,md}\"",
