@@ -89,7 +89,7 @@ Message handlers that respond asynchronously must `return true` and guard agains
 - IDs via `src/utils/idGenerator.ts`; timestamps as ISO strings (`new Date().toISOString()`).
 - Feature-first folders; co-locate a component's `.css` next to it. No CSS framework.
 - Commits: **Conventional Commits** enforced by commitlint (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`…). Husky pre-commit runs lint-staged (prettier + eslint --fix).
-- Branches: `feature/<name>`, merged via PR into **`develop`** (not `main`) until v1.0.0 ships. Every push to `main` publishes a release, so `main` only receives `develop` once the v1.0 queue in `ROADMAP.md` is done. After launch: back to feature → `main`.
+- Branches: `feature/<name>`, merged via PR into **`develop`** (never straight into `main`), and the branch is deleted after the merge. Every push to `main` publishes a release, so `main` only receives `develop` when a release is wanted (ROADMAP.md decision D14). `develop` and `main` are the only long-lived branches.
 - Versions are set by semantic-release on merge to `main` (see `docs/MAINTENANCE_GUIDE.md` → Release Process). Never edit `version` by hand; the commit type decides the bump (`feat` → minor, `fix`/`perf`/`refactor` → patch, `!` → major).
 
 ## Gotchas

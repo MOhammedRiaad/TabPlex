@@ -80,19 +80,19 @@ Follow this checklist to add a new "slice" of functionality (e.g., "Reminders") 
 
 Releases are automated with [semantic-release](https://semantic-release.gitbook.io/) and GitHub Actions. **Never bump versions by hand.**
 
-### Until v1.0.0: the `develop` branch
+### Branches: `feature/*` → `develop` → `main`
 
-Every push to `main` publishes a release, and the first one will be **v1.0.0** (no tag exists yet). v1.0.0 is reserved for the Chrome Web Store launch (`ROADMAP.md`, decisions D1–D3), so until then:
+Every push to `main` publishes a release, so work is collected on `develop` first (`ROADMAP.md`, decisions D2 and D14):
 
-- Feature branches open PRs into **`develop`**. CI runs there as on any branch.
-- When the v1.0 queue in `ROADMAP.md` is done, `develop` is merged into `main` **once**. That push releases `v1.0.0`.
-- Don't create release tags by hand. semantic-release creates `v1.0.0` itself.
-- After launch, go back to the flow below (feature → `main`) and delete `develop`, or keep it as the integration branch if that works better.
+- Feature branches (`feature/<name>`) open PRs into **`develop`**. CI runs there as on any branch. Delete the feature branch once its PR is merged; `develop` and `main` are the only long-lived branches.
+- To release, open a PR from `develop` into `main`. Its merge runs the Release workflow below.
+- The release commit (`chore(release): X.Y.Z`) lands on `main` only. Merge `main` back into `develop` afterwards so `CHANGELOG.md` and the version stay in step.
+- Don't create release tags by hand. semantic-release creates them.
 
 ### How it works
 
 1. Work on a `feature/*` branch with [Conventional Commits](https://www.conventionalcommits.org/) (enforced by commitlint). CI (`.github/workflows/ci.yml`) runs lint, format check and build on every PR and uploads the packaged zip as an artifact.
-2. Merge the PR into `main` (after v1.0.0; see above). The **Release** workflow (`.github/workflows/release.yml`) then:
+2. Merge `develop` into `main` (see above). The **Release** workflow (`.github/workflows/release.yml`) then:
     - works out the next version from the commits since the last tag:
 
         | Commit                                           | Release               |
