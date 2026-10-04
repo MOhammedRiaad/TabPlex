@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useBoardStore } from '../../../store/boardStore';
 import { Command } from '../../../types';
 import { generateTaskId, generateNoteId, generateFolderId } from '../../../utils/idGenerator';
+import { useTaskContextActions } from '../../tasks/hooks/useTaskContextActions';
+import { startOrganize } from '../../organize/store/organizeStore';
+import { getActiveContextTask, getParkedTasks } from '../../tasks/utils/contextUtils';
 import './CommandPalette.css';
 
 interface CommandPaletteProps {
@@ -18,7 +21,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
 
-    const { addTask, addNote, addFolder, boards } = useBoardStore();
+    const { addTask, addNote, addFolder, boards, tasks } = useBoardStore();
+    const { requestPark, startOrResume, addCurrentTabs } = useTaskContextActions();
+    const activeContextTask = getActiveContextTask(tasks);
+    const lastParkedTask = getParkedTasks(tasks)[0];
 
     const commands = useMemo(
         (): Command[] => [
@@ -144,6 +150,48 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                     window.dispatchEvent(new CustomEvent('createTab'));
                 },
                 category: 'creation',
+            },
+            // Park & Resume commands (only listed when they apply)
+            ...(activeContextTask
+                ? [
+                      {
+                          id: 'context-park-active',
+                          name: `Park "${activeContextTask.title}"`,
+                          shortcut: 'Alt+Shift+P',
+                          icon: '⏸',
+                          action: () => requestPark(activeContextTask),
+                          category: 'action' as const,
+                      },
+                      {
+                          id: 'context-add-tabs',
+                          name: `Add current tabs to "${activeContextTask.title}"`,
+                          icon: '➕',
+                          action: () => {
+                              addCurrentTabs(activeContextTask);
+                          },
+                          category: 'action' as const,
+                      },
+                  ]
+                : []),
+            ...(lastParkedTask
+                ? [
+                      {
+                          id: 'context-resume-last',
+                          name: `Resume "${lastParkedTask.title}"`,
+                          icon: '▶️',
+                          action: () => {
+                              startOrResume(lastParkedTask);
+                          },
+                          category: 'action' as const,
+                      },
+                  ]
+                : []),
+            {
+                id: 'organize-tabs',
+                name: 'Organize open tabs',
+                icon: '✨',
+                action: () => startOrganize(),
+                category: 'action' as const,
             },
             // Action commands
             {
@@ -311,7 +359,18 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                 category: 'canvas',
             },
         ],
-        [onNavigate, addTask, addNote, addFolder, boards]
+        [
+            onNavigate,
+            addTask,
+            addNote,
+            addFolder,
+            boards,
+            activeContextTask,
+            lastParkedTask,
+            requestPark,
+            startOrResume,
+            addCurrentTabs,
+        ]
     );
 
     // Filter commands based on query

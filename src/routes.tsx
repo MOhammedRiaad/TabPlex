@@ -1,17 +1,19 @@
-import React, { useMemo, Suspense } from 'react';
+import React, { lazy, useMemo, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import BoardView from './features/boards/BoardView';
-import HistoryView from './features/history/HistoryView';
-import SessionsView from './features/sessions/SessionsView';
+// Today is the landing view, so it loads with the app. Every other view loads on first visit,
+// which keeps heavy libraries (tldraw, dnd-kit, framer-motion) out of the startup bundle.
 import TodayView from './features/today/TodayView';
-import AnalyticsDashboard from './features/analytics/AnalyticsDashboard';
-import CanvasContainer from './features/canvas/components/CanvasContainer';
-import TldrawContainer from './features/canvas/components/TldrawContainer';
-import SettingsView from './features/settings/SettingsView';
-import BookmarkView from './features/bookmarks/BookmarkView';
-import NotesView from './features/notes/NotesView';
-import TasksView from './features/tasks/TasksView';
-import PomodoroView from './features/pomodoro/PomodoroView';
+const BoardView = lazy(() => import('./features/boards/BoardView'));
+const HistoryView = lazy(() => import('./features/history/HistoryView'));
+const SessionsView = lazy(() => import('./features/sessions/SessionsView'));
+const AnalyticsDashboard = lazy(() => import('./features/analytics/AnalyticsDashboard'));
+const CanvasContainer = lazy(() => import('./features/canvas/components/CanvasContainer'));
+const TldrawContainer = lazy(() => import('./features/canvas/components/TldrawContainer'));
+const SettingsView = lazy(() => import('./features/settings/SettingsView'));
+const BookmarkView = lazy(() => import('./features/bookmarks/BookmarkView'));
+const NotesView = lazy(() => import('./features/notes/NotesView'));
+const TasksView = lazy(() => import('./features/tasks/TasksView'));
+const PomodoroView = lazy(() => import('./features/pomodoro/PomodoroView'));
 import { ViewType } from './features/ui/store/uiStore';
 
 export const ROUTES = {

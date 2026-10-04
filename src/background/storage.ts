@@ -11,7 +11,8 @@ export type { Board, Folder, FolderRule, Tab, Task, Note, Session, HistoryItem }
 const BOARDS_KEY = 'tabboard_boards';
 const FOLDERS_KEY = 'tabboard_folders';
 const TABS_KEY = 'tabboard_tabs';
-const TASKS_KEY = 'tabboard_tasks';
+import { BACKGROUND_TASKS_KEY } from '../utils/taskContext';
+const TASKS_KEY = BACKGROUND_TASKS_KEY;
 const NOTES_KEY = 'tabboard_notes';
 const SESSIONS_KEY = 'tabboard_sessions';
 
@@ -28,7 +29,26 @@ async function getItemById<T>(key: string, id: string): Promise<T | undefined> {
     return items.find(item => (item as any).id === id);
 }
 
-async function addItem<T>(key: string, item: T): Promise<void> {
+// chrome.storage.local has no transactions: two concurrent read-modify-write calls on the same key
+// (e.g. several tabs finishing loading at once) silently drop each other's changes.
+// Serialize every write per key so they apply in order.
+const writeQueues = new Map<string, Promise<unknown>>();
+
+function withWriteLock<R>(key: string, fn: () => Promise<R>): Promise<R> {
+    const previous = writeQueues.get(key) ?? Promise.resolve();
+    const next = previous.then(fn, fn);
+    writeQueues.set(
+        key,
+        next.catch(() => undefined)
+    );
+    return next;
+}
+
+function addItem<T>(key: string, item: T): Promise<void> {
+    return withWriteLock(key, () => upsertItemUnlocked(key, item));
+}
+
+async function upsertItemUnlocked<T>(key: string, item: T): Promise<void> {
     const items = await getAllItems<T>(key);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const itemId = (item as any).id;
@@ -48,25 +68,18 @@ async function addItem<T>(key: string, item: T): Promise<void> {
     await chrome.storage.local.set({ [key]: items });
 }
 
-async function updateItem<T>(key: string, item: T): Promise<void> {
-    const items = await getAllItems<T>(key);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const index = items.findIndex(i => (i as any).id === (item as any).id);
-
-    if (index !== -1) {
-        items[index] = item;
-        await chrome.storage.local.set({ [key]: items });
-    } else {
-        // If not found, add it
-        await addItem(key, item);
-    }
+function updateItem<T>(key: string, item: T): Promise<void> {
+    // Upsert: replaces the item with the same id, or appends it if missing
+    return withWriteLock(key, () => upsertItemUnlocked(key, item));
 }
 
-async function deleteItem(key: string, id: string): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const items = await getAllItems<any>(key);
-    const filteredItems = items.filter(item => item.id !== id);
-    await chrome.storage.local.set({ [key]: filteredItems });
+function deleteItem(key: string, id: string): Promise<void> {
+    return withWriteLock(key, async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const items = await getAllItems<any>(key);
+        const filteredItems = items.filter(item => item.id !== id);
+        await chrome.storage.local.set({ [key]: filteredItems });
+    });
 }
 
 // Specific functions for each entity type
@@ -192,6 +205,17 @@ export async function deleteSession(id: string): Promise<void> {
 
 // History functions
 const HISTORY_KEY = 'history_items';
+
+/** chrome.storage.local keys of every collection (used by export / import) */
+export const STORAGE_KEYS = {
+    boards: BOARDS_KEY,
+    folders: FOLDERS_KEY,
+    tabs: TABS_KEY,
+    tasks: TASKS_KEY,
+    notes: NOTES_KEY,
+    sessions: SESSIONS_KEY,
+    history: HISTORY_KEY,
+} as const;
 
 export async function getAllHistory(): Promise<HistoryItem[]> {
     return await getAllItems<HistoryItem>(HISTORY_KEY);

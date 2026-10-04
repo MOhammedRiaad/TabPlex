@@ -3,18 +3,22 @@
  * These functions provide consistent date formatting across all features.
  */
 
+type DateInput = string | number | Date | undefined;
+
+/** Parse a date input; `null` when missing or invalid. `new Date('garbage')` doesn't throw, it is NaN. */
+function toValidDate(date: DateInput): Date | null {
+    if (date === undefined || date === null || date === '') return null;
+    const parsed = new Date(date);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 /**
  * Format a date as a localized date string (e.g., "1/12/2026")
  * @param date - Date string, timestamp, or Date object
  * @returns Formatted date string or empty string if invalid
  */
-export function formatDate(date: string | number | Date | undefined): string {
-    if (!date) return '';
-    try {
-        return new Date(date).toLocaleDateString();
-    } catch {
-        return '';
-    }
+export function formatDate(date: DateInput): string {
+    return toValidDate(date)?.toLocaleDateString() ?? '';
 }
 
 /**
@@ -22,13 +26,8 @@ export function formatDate(date: string | number | Date | undefined): string {
  * @param date - Date string, timestamp, or Date object
  * @returns Formatted date-time string or empty string if invalid
  */
-export function formatDateTime(date: string | number | Date | undefined): string {
-    if (!date) return '';
-    try {
-        return new Date(date).toLocaleString();
-    } catch {
-        return '';
-    }
+export function formatDateTime(date: DateInput): string {
+    return toValidDate(date)?.toLocaleString() ?? '';
 }
 
 /**
@@ -36,13 +35,8 @@ export function formatDateTime(date: string | number | Date | undefined): string
  * @param date - Date string, timestamp, or Date object
  * @returns Formatted time string or empty string if invalid
  */
-export function formatTime(date: string | number | Date | undefined): string {
-    if (!date) return '';
-    try {
-        return new Date(date).toLocaleTimeString();
-    } catch {
-        return '';
-    }
+export function formatTime(date: DateInput): string {
+    return toValidDate(date)?.toLocaleTimeString() ?? '';
 }
 
 /**
@@ -50,25 +44,20 @@ export function formatTime(date: string | number | Date | undefined): string {
  * @param date - Date string, timestamp, or Date object
  * @returns Relative time string or empty string if invalid
  */
-export function formatRelative(date: string | number | Date | undefined): string {
-    if (!date) return '';
-    try {
-        const now = new Date();
-        const then = new Date(date);
-        const diffMs = now.getTime() - then.getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMins / 60);
-        const diffDays = Math.floor(diffHours / 24);
+export function formatRelative(date: DateInput): string {
+    const then = toValidDate(date);
+    if (!then) return '';
+    const diffMs = Date.now() - then.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
 
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-        if (diffDays === 1) return 'Yesterday';
-        if (diffDays < 7) return `${diffDays} days ago`;
-        return formatDate(date);
-    } catch {
-        return '';
-    }
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return formatDate(then);
 }
 
 /**
@@ -76,17 +65,10 @@ export function formatRelative(date: string | number | Date | undefined): string
  * @param date - Date string, timestamp, or Date object
  * @returns True if the date is today
  */
-export function isToday(date: string | number | Date | undefined): boolean {
-    if (!date) return false;
-    try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const checkDate = new Date(date);
-        checkDate.setHours(0, 0, 0, 0);
-        return today.getTime() === checkDate.getTime();
-    } catch {
-        return false;
-    }
+export function isToday(date: DateInput): boolean {
+    const check = toValidDate(date);
+    if (!check) return false;
+    return getStartOfDay(check).getTime() === getStartOfDay().getTime();
 }
 
 /**

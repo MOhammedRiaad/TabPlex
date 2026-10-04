@@ -29,23 +29,38 @@ export interface ExportData {
     };
 }
 
+/**
+ * True in the tab that is importing. The background broadcasts STORAGE_DATA_IMPORTED to every TabPlex tab
+ * so they reload; the importing tab ignores it and reloads itself after showing its success toast.
+ */
+let importInThisTab = false;
+export const isImportInThisTab = () => importInThisTab;
+export const markImportInThisTab = (value: boolean) => {
+    importInThisTab = value;
+};
+
+/** History (the History view) lives only in the background's chrome.storage copy, not in IndexedDB */
+async function getBackgroundHistory(): Promise<HistoryItem[]> {
+    try {
+        const response = (await chrome.runtime.sendMessage({ type: 'GET_HISTORY' })) as unknown;
+        return Array.isArray(response) ? (response as HistoryItem[]) : [];
+    } catch {
+        return []; // Background unavailable: export everything else rather than fail
+    }
+}
+
 export const exportData = async (): Promise<string> => {
     try {
         // Get all data directly from IndexedDB
-        const [boards, folders, tabs, tasks, notes, sessions] = await Promise.all([
+        const [boards, folders, tabs, tasks, notes, sessions, history] = await Promise.all([
             getAllBoards(),
             getAllFolders(),
             getAllTabs(),
             getAllTasks(),
             getAllNotes(),
             getAllSessions(),
+            getBackgroundHistory(),
         ]);
-
-        // History is not currently stored in IndexedDB in the same way, but we can return empty or implement if needed
-        // For now, consistent with previous behavior if history was in local storage, but frontend uses IDB.
-        // If history is supposed to be exported, we need a getAllHistory in storage.ts.
-        // Checking storage.ts, there is no getAllHistory. So we'll pass empty array or skip.
-        const history: HistoryItem[] = [];
 
         const exportData: ExportData = {
             version: '1.0.0',
@@ -79,7 +94,8 @@ export const importData = async (jsonData: string): Promise<void> => {
         // Clear existing data in IndexedDB
         await clearAllData();
 
-        const { boards, folders, tabs, tasks, notes, sessions } = parsedData.data;
+        // Older or hand-edited exports may omit collections; treat them as empty
+        const { boards = [], folders = [], tabs = [], tasks = [], notes = [], sessions = [] } = parsedData.data ?? {};
 
         // Import data into IndexedDB
         await Promise.all([
@@ -91,9 +107,22 @@ export const importData = async (jsonData: string): Promise<void> => {
             ...sessions.map(s => addSession(s)),
         ]);
 
-        // Notify background/other tabs if needed?
-        // Since we are writing to IDB, and useStorageSync reads from IDB on mount, a reload is sufficient.
-        // App.tsx handles the reload.
+        // Replace the background's copy too. Otherwise, on reload, useStorageSync merges tasks with the
+        // background's newer pre-import versions (undoing the restore), and Park & Resume keeps acting on
+        // the old data. The background then broadcasts STORAGE_DATA_IMPORTED so other TabPlex tabs reload.
+        // Exports made before history was included carry an empty list: keep the current history then.
+        const history = parsedData.data?.history?.length ? parsedData.data.history : await getBackgroundHistory();
+        markImportInThisTab(true);
+        try {
+            const response = (await chrome.runtime.sendMessage({
+                type: 'IMPORT_ALL_DATA',
+                payload: { boards, folders, tabs, tasks, notes, sessions, history },
+            })) as { error?: string } | undefined;
+            if (response?.error) throw new Error(`The background could not import the data: ${response.error}`);
+        } catch (error) {
+            markImportInThisTab(false);
+            throw error;
+        }
     } catch (error) {
         console.error('Error importing data:', error);
         throw error;

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { escapeHtml, renderMarkdownLinks } from '../../../utils/markdown';
 import './MarkdownEditor.css';
 
 interface MarkdownEditorProps {
@@ -10,12 +11,8 @@ interface MarkdownEditorProps {
 }
 
 // Simple markdown parser for preview
-const parseMarkdown = (text: string): string => {
-    let html = text
-        // Escape HTML
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
+export const parseMarkdown = (text: string): string => {
+    let html = escapeHtml(text)
         // Code blocks (must be before inline code)
         .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>')
         // Inline code
@@ -33,8 +30,6 @@ const parseMarkdown = (text: string): string => {
         .replace(/_(.+?)_/g, '<em>$1</em>')
         // Strikethrough
         .replace(/~~(.+?)~~/g, '<del>$1</del>')
-        // Links
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
         // Unordered lists
         .replace(/^\s*[-*+] (.+)$/gm, '<li>$1</li>')
         // Ordered lists
@@ -43,13 +38,15 @@ const parseMarkdown = (text: string): string => {
         .replace(/^\s*\[x\] (.+)$/gm, '<div class="checkbox checked">☑ $1</div>')
         .replace(/^\s*\[ \] (.+)$/gm, '<div class="checkbox">☐ $1</div>')
         // Blockquotes
-        .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+        .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>') // '>' is already escaped above
         // Horizontal rules
         .replace(/^---$/gm, '<hr />')
         // Line breaks
         .replace(/\n/g, '<br />');
 
     // Wrap consecutive <li> tags in <ul>
+    // Links: only web and mail URLs
+    html = renderMarkdownLinks(html);
     html = html.replace(/(<li>.*?<\/li>(<br \/>)?)+/g, match => {
         return '<ul>' + match.replace(/<br \/>/g, '') + '</ul>';
     });

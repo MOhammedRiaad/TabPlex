@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './QuickActions.css';
+import { startOrganize } from '../../organize/store/organizeStore';
 
 const QuickActions: React.FC = () => {
     const navigate = useNavigate();
@@ -73,6 +74,21 @@ const QuickActions: React.FC = () => {
                 <div className="action-info">
                     <span className="action-title">Open Canvas</span>
                     <span className="action-desc">Whiteboard</span>
+                </div>
+            </button>
+
+            <button className="quick-action-card organize-action" onClick={() => startOrganize()}>
+                <div className="action-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                        <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                    </svg>
+                </div>
+                <div className="action-info">
+                    <span className="action-title">Organize tabs</span>
+                    <span className="action-desc">Group open tabs</span>
                 </div>
             </button>
         </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useBoardStore } from '../../../store/boardStore';
 import MarkdownEditor from '../../ui/components/MarkdownEditor';
+import { escapeHtml, renderMarkdownLinks } from '../../../utils/markdown';
 import './NoteCard.css';
 
 interface NoteCardProps {
@@ -16,11 +17,7 @@ interface NoteCardProps {
 
 // Simple markdown parser for display
 const parseMarkdownToHtml = (text: string): string => {
-    const html = text
-        // Escape HTML
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
+    const html = escapeHtml(text)
         // Code blocks
         .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
         // Inline code
@@ -36,15 +33,14 @@ const parseMarkdownToHtml = (text: string): string => {
         .replace(/_(.+?)_/g, '<em>$1</em>')
         // Strikethrough
         .replace(/~~(.+?)~~/g, '<del>$1</del>')
-        // Links
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
         // Checkboxes
         .replace(/^\s*\[x\] (.+)$/gm, '☑ $1')
         .replace(/^\s*\[ \] (.+)$/gm, '☐ $1')
         // Line breaks (simple)
         .replace(/\n/g, '<br />');
 
-    return html;
+    // Links: only web and mail URLs
+    return renderMarkdownLinks(html);
 };
 
 const NoteCard: React.FC<NoteCardProps> = ({ note }) => {

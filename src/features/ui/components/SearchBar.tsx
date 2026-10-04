@@ -61,6 +61,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onResultClick }) => {
         // Search notes
         notes.forEach(note => {
             if (
+                note.title?.toLowerCase().includes(lowerQuery) ||
                 note.content.toLowerCase().includes(lowerQuery) ||
                 note.tags?.some(tag => tag.toLowerCase().includes(lowerQuery))
             ) {

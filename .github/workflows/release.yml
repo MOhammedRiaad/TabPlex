@@ -1,0 +1,42 @@
+name: Release
+
+on:
+    push:
+        branches: [main]
+    workflow_dispatch:
+
+# One release at a time; never cancel one half-way (it pushes a commit and a tag)
+concurrency:
+    group: release
+    cancel-in-progress: false
+
+permissions:
+    contents: write # tag, release commit, GitHub release + zip
+    issues: write # comment on / label released issues
+    pull-requests: write # comment on released PRs
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        env:
+            HUSKY: 0 # no git hooks for the bot's release commit
+        steps:
+            - uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0 # semantic-release needs the full history and tags
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: 22
+                  cache: npm
+
+            - run: npm ci
+            - run: npm run lint
+            - run: npm run format:check
+            - run: npm run typecheck
+            - run: npm run test:coverage
+
+            - name: Release
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: npx semantic-release

@@ -1,7 +1,14 @@
 import { addTab as addTabToDB, deleteTab as deleteTabFromDB, updateTab as updateTabInDB } from '../../../utils/storage';
+import { Tab } from '../../../types';
 import { TabSlice, BoardStoreCreator } from './types';
 
-export const createTabSlice: BoardStoreCreator<TabSlice> = set => ({
+/** Save a changed tab and tell the background (which updates its copy and the other open TabPlex tabs) */
+function saveAndSync(tab: Tab) {
+    updateTabInDB(tab).catch(console.error);
+    chrome.runtime.sendMessage({ type: 'UPDATE_TAB', payload: tab }).catch(console.error);
+}
+
+export const createTabSlice: BoardStoreCreator<TabSlice> = (set, get) => ({
     tabs: [],
 
     addTab: tab => {
@@ -26,19 +33,13 @@ export const createTabSlice: BoardStoreCreator<TabSlice> = set => ({
         });
     },
 
-    updateTab: (id, updates) =>
-        set(state => {
-            const updatedTabs = state.tabs.map(tab => {
-                if (tab.id === id) {
-                    const updatedTab = { ...tab, ...updates };
-                    // Persist to IndexedDB
-                    updateTabInDB(updatedTab).catch(console.error);
-                    return updatedTab;
-                }
-                return tab;
-            });
-            return { tabs: updatedTabs };
-        }),
+    updateTab: (id, updates) => {
+        const tab = get().tabs.find(t => t.id === id);
+        if (!tab) return;
+        const updated = { ...tab, ...updates };
+        set(state => ({ tabs: state.tabs.map(t => (t.id === id ? updated : t)) }));
+        saveAndSync(updated);
+    },
 
     deleteTab: id => {
         set(state => ({
@@ -63,63 +64,40 @@ export const createTabSlice: BoardStoreCreator<TabSlice> = set => ({
         deleteTabFromDB(id).catch(console.error);
     },
 
-    moveTab: (tabId, newFolderId) =>
-        set(state => {
-            const newState = {
-                tabs: state.tabs.map(tab => (tab.id === tabId ? { ...tab, folderId: newFolderId } : tab)),
-            };
-            // Also need to persist this change
-            const updatedTab = newState.tabs.find(t => t.id === tabId);
-            if (updatedTab) {
-                updateTabInDB(updatedTab).catch(console.error);
-            }
-            return newState;
-        }),
+    moveTab: (tabId, newFolderId) => {
+        const tab = get().tabs.find(t => t.id === tabId);
+        if (!tab) return;
+        const moved = { ...tab, folderId: newFolderId };
+        set(state => ({ tabs: state.tabs.map(t => (t.id === tabId ? moved : t)) }));
+        saveAndSync(moved);
+    },
 
-    moveAllTabsToFolder: (sourceFolderId, targetFolderId) =>
-        set(state => {
-            const updatedTabs = state.tabs.map(tab => {
-                if (tab.folderId === sourceFolderId) {
-                    const updatedTab = { ...tab, folderId: targetFolderId };
-                    updateTabInDB(updatedTab).catch(console.error);
-                    return updatedTab;
-                }
-                return tab;
-            });
+    moveAllTabsToFolder: (sourceFolderId, targetFolderId) => {
+        const moved = get()
+            .tabs.filter(t => t.folderId === sourceFolderId)
+            .map(t => ({ ...t, folderId: targetFolderId }));
+        if (moved.length === 0) return;
+        const byId = new Map(moved.map(t => [t.id, t]));
+        set(state => ({ tabs: state.tabs.map(t => byId.get(t.id) ?? t) }));
+        moved.forEach(saveAndSync);
+    },
 
-            return { tabs: updatedTabs };
-        }),
+    reorderTab: (tabId, newIndex, folderId) => {
+        const state = get();
+        const folderTabs = state.tabs
+            .filter(t => t.folderId === folderId)
+            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        const otherTabs = state.tabs.filter(t => t.folderId !== folderId);
+        const tabToMove = folderTabs.find(t => t.id === tabId);
+        if (!tabToMove) return;
 
-    reorderTab: (tabId, newIndex, folderId) =>
-        set(state => {
-            const folderTabs = state.tabs
-                .filter(t => t.folderId === folderId)
-                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-            const otherTabs = state.tabs.filter(t => t.folderId !== folderId);
-            const tabToMove = folderTabs.find(t => t.id === tabId);
+        // Remove from old position, insert at the new one, then renumber the folder
+        folderTabs.splice(folderTabs.indexOf(tabToMove), 1);
+        folderTabs.splice(newIndex, 0, tabToMove);
+        const updatedFolderTabs = folderTabs.map((tab, index) => ({ ...tab, order: index }));
 
-            if (!tabToMove) return state;
-
-            const oldIndex = folderTabs.indexOf(tabToMove);
-            if (oldIndex === -1) return state;
-
-            // Remove from old position
-            folderTabs.splice(oldIndex, 1);
-            // Insert at new position
-            folderTabs.splice(newIndex, 0, tabToMove);
-
-            // Update order field for all tabs in folder
-            const updatedFolderTabs = folderTabs.map((tab, index) => {
-                const updatedTab = { ...tab, order: index };
-                // Persist only if changed
-                if (tab.order !== index) {
-                    updateTabInDB(updatedTab).catch(console.error);
-                }
-                return updatedTab;
-            });
-
-            return {
-                tabs: [...otherTabs, ...updatedFolderTabs],
-            };
-        }),
+        set({ tabs: [...otherTabs, ...updatedFolderTabs] });
+        // Persist and sync only the tabs whose position changed
+        updatedFolderTabs.filter((tab, i) => folderTabs[i].order !== tab.order).forEach(saveAndSync);
+    },
 });

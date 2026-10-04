@@ -3,9 +3,11 @@ import {
     deleteNote as deleteNoteFromDB,
     updateNote as updateNoteInDB,
 } from '../../../utils/storage';
+import { Note } from '../../../types';
+import { deriveNoteTitle } from '../../../utils/noteTitle';
 import { NoteSlice, BoardStoreCreator } from './types';
 
-export const createNoteSlice: BoardStoreCreator<NoteSlice> = set => ({
+export const createNoteSlice: BoardStoreCreator<NoteSlice> = (set, get) => ({
     notes: [],
 
     addNote: note => {
@@ -29,19 +31,30 @@ export const createNoteSlice: BoardStoreCreator<NoteSlice> = set => ({
             .catch(console.error);
     },
 
-    updateNote: (id, updates) =>
-        set(state => {
-            const updatedNotes = state.notes.map(note => {
-                if (note.id === id) {
-                    const updatedNote = { ...note, ...updates, updatedAt: new Date().toISOString() };
-                    // Persist to IndexedDB
-                    updateNoteInDB(updatedNote).catch(console.error);
-                    return updatedNote;
-                }
-                return note;
-            });
-            return { notes: updatedNotes };
-        }),
+    updateNote: (id, updates) => {
+        const note = get().notes.find(n => n.id === id);
+        if (!note) return;
+
+        const updatedNote: Note = {
+            ...note,
+            ...updates,
+            // The title is the first line: keep it in step when the content changes (unless one is given)
+            title: updates.title ?? (updates.content !== undefined ? deriveNoteTitle(updates.content) : note.title),
+            updatedAt: new Date().toISOString(),
+        };
+
+        set(state => ({ notes: state.notes.map(n => (n.id === id ? updatedNote : n)) }));
+
+        updateNoteInDB(updatedNote).catch(console.error);
+
+        // Keep the background copy and other open TabPlex tabs in sync
+        chrome.runtime
+            .sendMessage({
+                type: 'UPDATE_NOTE',
+                payload: updatedNote,
+            })
+            .catch(console.error);
+    },
 
     deleteNote: id => {
         set(state => ({

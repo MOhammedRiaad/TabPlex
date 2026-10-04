@@ -7,16 +7,21 @@ import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 
 export default [
-  { ignores: ['dist', 'node_modules', '*.config.*', 'LandingPage/**'] },
+  { ignores: ['dist', 'node_modules', '*.config.*', 'landing-page/**', '.kilo/**', '.claude/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    // Node build/release scripts
+    files: ['scripts/**/*.{js,mjs}'],
+    languageOptions: { globals: globals.node },
+  },
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
       parserOptions: {
-        project: ['./tsconfig.json'],
+        project: ['./tsconfig.json', './tsconfig.e2e.json'],
       },
     },
     plugins: {

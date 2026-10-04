@@ -6,6 +6,7 @@ import { Folder, Tab } from '../../../types';
 import { useBoardStore } from '../../../store/boardStore';
 import BoardModal from './BoardModal';
 import FolderDeleteModal from './FolderDeleteModal';
+import { getFaviconUrl } from '../../../utils/favicon';
 import '../BoardView.css';
 
 interface BoardNodeProps {
@@ -86,13 +87,7 @@ const BoardNode: React.FC<BoardNodeProps> = ({
     // Get favicon for tab
     useEffect(() => {
         if (tab && tab.url) {
-            try {
-                const url = new URL(tab.url);
-                const favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=32`;
-                setFaviconUrl(favicon);
-            } catch {
-                setFaviconUrl(null);
-            }
+            setFaviconUrl(tab.favicon || getFaviconUrl(tab.url));
         }
     }, [tab]);
 

@@ -1,5 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useBoardStore } from '../store/boardStore';
+import { Task } from '../types';
+import { BACKGROUND_TASKS_KEY } from '../utils/taskContext';
+import { isImportInThisTab } from '../utils/exportImport';
 import {
     initDB,
     getAllBoards,
@@ -28,6 +31,32 @@ import {
     deleteBoard,
 } from '../utils/storage';
 
+// Insert an item, or merge it over the existing item with the same id
+function upsertById<T extends { id: string }>(list: T[], item: T): T[] {
+    return list.some(i => i.id === item.id)
+        ? list.map(i => (i.id === item.id ? { ...i, ...item } : i))
+        : [...list, item];
+}
+
+// The background service worker can change tasks while no TabPlex tab is open (e.g. a task context
+// auto-parked when its tab group was closed). Prefer whichever copy was updated most recently.
+async function reconcileTasksWithBackground(local: Task[]): Promise<Task[]> {
+    try {
+        const result = await chrome.storage.local.get([BACKGROUND_TASKS_KEY]);
+        const remote = (result[BACKGROUND_TASKS_KEY] as Task[] | undefined) ?? [];
+        const remoteById = new Map(remote.map(t => [t.id, t]));
+        return local.map(task => {
+            const other = remoteById.get(task.id);
+            if (!other) return task;
+            const newer = (other.updatedAt ?? '') > (task.updatedAt ?? '') ? other : task;
+            // Task contexts are owned by the background service worker
+            return { ...newer, context: other.context ?? task.context };
+        });
+    } catch {
+        return local;
+    }
+}
+
 export const useStorageSync = () => {
     // Track if initial data has been loaded to prevent race conditions
     const isInitialized = useRef(false);
@@ -39,20 +68,8 @@ export const useStorageSync = () => {
         tasks,
         notes,
         sessions,
-        addBoard: addBoardToStore,
         addBoardSilently: addBoardSilentlyToStore,
-        addFolder: addFolderToStore,
         addFolderSilently: addFolderSilentlyToStore,
-        addTab: addTabToStore,
-        addTask: addTaskToStore,
-        addNote: addNoteToStore,
-        addSession: addSessionToStore,
-        updateBoard: updateBoardInStore,
-        updateFolder: updateFolderInStore,
-        updateTab: updateTabInStore,
-        updateTask: updateTaskInStore,
-        updateNote: updateNoteInStore,
-        updateSession: updateSessionInStore,
         deleteTabSilently: deleteTabSilentlyFromStore,
         deleteTaskSilently: deleteTaskSilentlyFromStore,
         deleteNoteSilently: deleteNoteSilentlyFromStore,
@@ -76,21 +93,26 @@ export const useStorageSync = () => {
                     getAllSessions(),
                 ]);
 
-            // Populate store with loaded data
-            storedBoards.forEach(board => addBoardToStore(board));
-            storedFolders.forEach(folder => addFolderToStore(folder));
-
             // Sort tabs by order, handling undefined order by placing at end or keeping relative
             const sortedTabs = storedTabs.sort((a, b) => {
                 const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
                 const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
                 return orderA - orderB;
             });
-            sortedTabs.forEach(tab => addTabToStore(tab));
 
-            storedTasks.forEach(task => addTaskToStore(task));
-            storedNotes.forEach(note => addNoteToStore(note));
-            storedSessions.forEach(session => addSessionToStore(session));
+            const reconciledTasks = await reconcileTasksWithBackground(storedTasks);
+
+            // Hydrate the store in one go. Using the add* actions here would reset every item's
+            // createdAt/updatedAt and send an ADD_* message to the background for every stored item
+            // on every page load.
+            useBoardStore.setState({
+                boards: storedBoards,
+                folders: storedFolders,
+                tabs: sortedTabs,
+                tasks: reconciledTasks,
+                notes: storedNotes,
+                sessions: storedSessions,
+            });
 
             // Mark as initialized AFTER all data is loaded
             isInitialized.current = true;
@@ -282,8 +304,10 @@ export const useStorageSync = () => {
                         // Use silent add to prevent infinite loops (doesn't send message back to background)
                         addBoardSilentlyToStore(event.data.payload);
                         break;
+                    // Updates are applied silently: updateBoard/updateFolder/updateTab would send
+                    // UPDATE_* back to the background and loop forever
                     case 'STORAGE_BOARD_UPDATED':
-                        updateBoardInStore(event.data.payload.id, event.data.payload);
+                        useBoardStore.setState(state => ({ boards: upsertById(state.boards, event.data.payload) }));
                         break;
 
                     case 'STORAGE_BOARD_DELETED':
@@ -295,54 +319,40 @@ export const useStorageSync = () => {
                         addFolderSilentlyToStore(event.data.payload);
                         break;
                     case 'STORAGE_FOLDER_UPDATED':
-                        updateFolderInStore(event.data.payload.id, event.data.payload);
+                        useBoardStore.setState(state => ({ folders: upsertById(state.folders, event.data.payload) }));
                         break;
 
                     case 'STORAGE_TAB_ADDED':
-                        // Check if it already exists to prevent infinite loops
-                        const tabState = useBoardStore.getState();
-                        if (!tabState.tabs.some(t => t.id === event.data.payload.id)) {
-                            addTabToStore(event.data.payload);
-                        }
+                        // Apply as-is: never re-send to the background (prevents loops) or reset timestamps
+                        useBoardStore.setState(state => ({ tabs: upsertById(state.tabs, event.data.payload) }));
                         break;
                     case 'STORAGE_TAB_UPDATED':
-                        updateTabInStore(event.data.payload.id, event.data.payload);
+                        // Update only: the background also tracks every browser tab and broadcasts on
+                        // activation; adding unknown ones would fill Boards with the user's browsing
+                        useBoardStore.setState(state => ({
+                            tabs: state.tabs.map(t =>
+                                t.id === event.data.payload.id ? { ...t, ...event.data.payload } : t
+                            ),
+                        }));
                         break;
                     case 'STORAGE_TAB_DELETED':
                         deleteTabSilentlyFromStore(event.data.payload.id);
                         break;
 
                     case 'STORAGE_TASK_ADDED':
-                        // Check if it already exists to prevent infinite loops
-                        const taskState = useBoardStore.getState();
-                        if (!taskState.tasks.some(t => t.id === event.data.payload.id)) {
-                            addTaskToStore(event.data.payload);
-                        }
-                        break;
                     case 'STORAGE_TASK_UPDATED':
-                        updateTaskInStore(event.data.payload.id, event.data.payload);
+                        // Silent upsert: updateTask would send UPDATE_TASK back and loop forever
+                        useBoardStore.getState().upsertTaskSilently(event.data.payload);
                         break;
 
                     case 'STORAGE_NOTE_ADDED':
-                        // Check if it already exists to prevent infinite loops
-                        const noteState = useBoardStore.getState();
-                        if (!noteState.notes.some(n => n.id === event.data.payload.id)) {
-                            addNoteToStore(event.data.payload);
-                        }
-                        break;
                     case 'STORAGE_NOTE_UPDATED':
-                        updateNoteInStore(event.data.payload.id, event.data.payload);
+                        useBoardStore.setState(state => ({ notes: upsertById(state.notes, event.data.payload) }));
                         break;
 
                     case 'STORAGE_SESSION_ADDED':
-                        // Check if it already exists to prevent infinite loops
-                        const sessionState = useBoardStore.getState();
-                        if (!sessionState.sessions.some(s => s.id === event.data.payload.id)) {
-                            addSessionToStore(event.data.payload);
-                        }
-                        break;
                     case 'STORAGE_SESSION_UPDATED':
-                        updateSessionInStore(event.data.payload.id, event.data.payload);
+                        useBoardStore.setState(state => ({ sessions: upsertById(state.sessions, event.data.payload) }));
                         break;
 
                     case 'STORAGE_TASK_DELETED':
@@ -362,8 +372,9 @@ export const useStorageSync = () => {
                         break;
 
                     case 'STORAGE_DATA_IMPORTED':
-                        // When data is imported, we need to refresh all data
-                        window.location.reload();
+                        // Another tab imported data: reload to show it. The importing tab reloads itself
+                        // after its success toast (App.tsx), so it would otherwise reload twice.
+                        if (!isImportInThisTab()) window.location.reload();
                         break;
                 }
             }
@@ -372,14 +383,18 @@ export const useStorageSync = () => {
         // Listen for messages from background script
         window.addEventListener('message', handleStorageChange);
 
-        // Also listen for messages from extension runtime
-        chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
+        // Also listen for messages from extension runtime.
+        // Return false: this listener never responds. Returning true kept every message channel open
+        // until it timed out ("message port closed before a response was received").
+        const handleRuntimeMessage = (message: unknown) => {
             handleStorageChange({ data: message } as MessageEvent);
-            return true; // Required for async response
-        });
+            return false;
+        };
+        chrome.runtime.onMessage.addListener(handleRuntimeMessage);
 
         return () => {
             window.removeEventListener('message', handleStorageChange);
+            chrome.runtime.onMessage.removeListener(handleRuntimeMessage);
         };
     }, []);
 };

@@ -3,9 +3,10 @@ import {
     deleteTask as deleteTaskFromDB,
     updateTask as updateTaskInDB,
 } from '../../../utils/storage';
+import { Task } from '../../../types';
 import { TaskSlice, BoardStoreCreator } from './types';
 
-export const createTaskSlice: BoardStoreCreator<TaskSlice> = set => ({
+export const createTaskSlice: BoardStoreCreator<TaskSlice> = (set, get) => ({
     tasks: [],
 
     addTask: task => {
@@ -29,37 +30,55 @@ export const createTaskSlice: BoardStoreCreator<TaskSlice> = set => ({
             .catch(console.error);
     },
 
-    updateTask: (id, updates) =>
+    updateTask: (id, updates) => {
+        const task = get().tasks.find(t => t.id === id);
+        if (!task) return;
+
+        const now = new Date().toISOString();
+
+        // Determine completedAt value
+        let completedAt = task.completedAt;
+        if (updates.status === 'done' && task.status !== 'done') {
+            // Task is being marked as done - set completedAt
+            completedAt = now;
+        } else if (updates.status && updates.status !== 'done') {
+            // Task is being unmarked from done - clear completedAt
+            completedAt = undefined;
+        }
+
+        const updatedTask: Task = {
+            ...task,
+            ...updates,
+            updatedAt: now,
+            completedAt,
+        };
+
+        set(state => ({
+            tasks: state.tasks.map(t => (t.id === id ? updatedTask : t)),
+        }));
+
+        // Persist to IndexedDB
+        updateTaskInDB(updatedTask).catch(console.error);
+
+        // Keep the background copy and other open TabPlex tabs in sync
+        chrome.runtime
+            .sendMessage({
+                type: 'UPDATE_TASK',
+                payload: updatedTask,
+            })
+            .catch(console.error);
+    },
+
+    upsertTaskSilently: task => {
         set(state => {
-            const now = new Date().toISOString();
-            const updatedTasks = state.tasks.map(task => {
-                if (task.id !== id) return task;
+            const exists = state.tasks.some(t => t.id === task.id);
+            return {
+                tasks: exists ? state.tasks.map(t => (t.id === task.id ? task : t)) : [...state.tasks, task],
+            };
+        });
 
-                // Determine completedAt value
-                let completedAt = task.completedAt;
-                if (updates.status === 'done' && task.status !== 'done') {
-                    // Task is being marked as done - set completedAt
-                    completedAt = now;
-                } else if (updates.status && updates.status !== 'done') {
-                    // Task is being unmarked from done - clear completedAt
-                    completedAt = undefined;
-                }
-
-                const updatedTask = {
-                    ...task,
-                    ...updates,
-                    updatedAt: now,
-                    completedAt,
-                };
-
-                // Persist to IndexedDB
-                updateTaskInDB(updatedTask).catch(console.error);
-
-                return updatedTask;
-            });
-
-            return { tasks: updatedTasks };
-        }),
+        updateTaskInDB(task).catch(console.error);
+    },
 
     deleteTask: id => {
         set(state => ({

@@ -50,19 +50,38 @@ const getInitialView = (): ViewType => {
     return (localStorage.getItem('tabboard-active-view') as ViewType) || 'today';
 };
 
+export type ToastType = 'success' | 'error' | 'info';
+
+export interface ToastState {
+    id: number;
+    message: string;
+    type: ToastType;
+}
+
 interface UIState {
     activeView: ViewType;
     isCommandPaletteOpen: boolean;
+    toast: ToastState | null;
+    /** Task whose Park dialog is open (Park & Resume) */
+    parkDialogTaskId: string | null;
     actions: {
         setActiveView: (view: ViewType) => void;
         setCommandPaletteOpen: (isOpen: boolean) => void;
         toggleCommandPalette: () => void;
+        showToast: (message: string, type?: ToastType) => void;
+        clearToast: () => void;
+        openParkDialog: (taskId: string) => void;
+        closeParkDialog: () => void;
     };
 }
+
+let toastCounter = 0;
 
 export const useUIStore = create<UIState>(set => ({
     activeView: getInitialView(),
     isCommandPaletteOpen: false,
+    toast: null,
+    parkDialogTaskId: null,
     actions: {
         setActiveView: view => {
             localStorage.setItem('tabboard-active-view', view);
@@ -70,6 +89,10 @@ export const useUIStore = create<UIState>(set => ({
         },
         setCommandPaletteOpen: isOpen => set({ isCommandPaletteOpen: isOpen }),
         toggleCommandPalette: () => set(state => ({ isCommandPaletteOpen: !state.isCommandPaletteOpen })),
+        showToast: (message, type = 'info') => set({ toast: { id: ++toastCounter, message, type } }),
+        clearToast: () => set({ toast: null }),
+        openParkDialog: taskId => set({ parkDialogTaskId: taskId }),
+        closeParkDialog: () => set({ parkDialogTaskId: null }),
     },
 }));
 

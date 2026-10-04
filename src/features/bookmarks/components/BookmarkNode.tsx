@@ -3,6 +3,7 @@ import { Bookmark } from '../../../types';
 import { formatDate } from '../utils/dateUtils';
 import BookmarkModal from './BookmarkModal';
 import '../BookmarkView.css';
+import { getFaviconUrl } from '../../../utils/favicon';
 
 interface BookmarkNodeProps {
     bookmark: Bookmark;
@@ -28,7 +29,7 @@ const BookmarkNode: React.FC<BookmarkNodeProps> = ({
     onToggleFolder,
     onUpdate,
     onDelete,
-    onMove: _onMove, // Reserved for future drag-and-drop functionality
+    onMove,
     onOpenBookmark,
     onShowToast,
     folders = [],
@@ -39,14 +40,7 @@ const BookmarkNode: React.FC<BookmarkNodeProps> = ({
     // Get favicon for bookmark
     useEffect(() => {
         if (!isFolder && bookmark.url) {
-            try {
-                const url = new URL(bookmark.url);
-                const favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=32`;
-                setFaviconUrl(favicon);
-            } catch {
-                // Invalid URL, use default
-                setFaviconUrl(null);
-            }
+            setFaviconUrl(getFaviconUrl(bookmark.url));
         }
     }, [bookmark.url, isFolder]);
 
@@ -55,6 +49,10 @@ const BookmarkNode: React.FC<BookmarkNodeProps> = ({
             title: data.title,
             url: data.url,
         });
+        // The modal lets you pick another parent folder; it used to be ignored
+        if (data.parentId && data.parentId !== bookmark.parentId) {
+            onMove(bookmark.id, { parentId: data.parentId });
+        }
     };
 
     const handleClick = () => {

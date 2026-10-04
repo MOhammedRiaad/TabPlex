@@ -181,19 +181,3 @@
     flex-direction: column;
     position: relative;
 }
-
-/* Hide tldraw watermark/license message */
-.tlui-license__watermark,
-.tlui-watermark,
-[data-testid='watermark'],
-.tl-watermark {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-}
-
-.tl-watermark_SEE-LICENSE {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-}

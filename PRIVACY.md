@@ -1,6 +1,6 @@
 # Privacy Policy for TabPlex
 
-**Last Updated**: January 2026
+**Last Updated**: October 2026
 
 ## Overview
 
@@ -26,6 +26,7 @@ TabPlex stores the following data **exclusively on your local device**:
     - Completion status
     - Checklists and sub-items
     - Associated tab references
+    - Park & Resume contexts: the titles, addresses and icons of the tabs saved with a task, your "where I left off" note, an optional on-device summary, and a short history of when the task was started, parked and resumed (used for the local analytics)
 
 3. **Notes**
     - Note content (text/markdown)
@@ -50,6 +51,7 @@ TabPlex stores the following data **exclusively on your local device**:
     - Theme selection (light/dark/system)
     - Timer settings (work/break durations)
     - UI preferences
+    - Your name for the Today greeting, only if you type one in Settings → Profile (TabPlex does not read your Google account or email)
 
 ## Data Storage Location
 
@@ -90,25 +92,22 @@ TabPlex requests the following permissions to function:
     - **Usage**: When tasks are due or timer completes
     - **Data Access**: Task titles for notification display
 
-6. **`<all_urls>` (Host Permissions)**
-    - **Purpose**: Capture favicons from any website
-    - **Usage**: Display website icons in tab cards
-    - **Data Access**: Favicon URLs only
-
-7. **`sessions`**
+6. **`sessions`**
     - **Purpose**: Restore recently closed tabs and windows
     - **Usage**: Used in the "Sessions" view to show recent browsing history
     - **Data Access**: Recently closed tab URLs and titles
 
-8. **`bookmarks`**
+7. **`bookmarks`**
     - **Purpose**: Manage and organize your browser bookmarks
     - **Usage**: View, search, and organize bookmarks within the Bookmarks Manager
     - **Data Access**: Read and write access to your browser bookmarks
 
-9. **`identity`** & **`identity.email`**
-    - **Purpose**: Personalize your experience
-    - **Usage**: Display your name in the "Today" dashboard (e.g., "Good Morning, [Name]")
-    - **Data Access**: Your email address and profile name (stored locally, never shared)
+8. **`favicon`**
+    - **Purpose**: Show website icons for tabs, bookmarks and quick links
+    - **Usage**: Icons come from Chrome's own local favicon cache (`chrome-extension://…/_favicon/`)
+    - **Data Access**: None leaves your device; no third-party icon service is contacted
+
+**No website access**: TabPlex requests no host permissions. It cannot read or change the content of the web pages you visit; it only sees tab titles and addresses through the `tabs` permission.
 
 ### How Permissions Are Used
 
@@ -141,6 +140,25 @@ TabPlex requests the following permissions to function:
 - Zero network requests for data storage
 - No API calls to external services
 - No data uploaded or downloaded
+
+### On-device AI summaries (optional, off by default)
+
+If you turn on **On-device AI summaries** in Settings, TabPlex uses Chrome's built-in Summarizer API to write a one-line summary when you park a task. The model (Gemini Nano) runs inside Chrome on your computer:
+
+- The input is the task title and description, your note, and the titles and addresses (host and path only, without query strings) of the parked tabs
+- Nothing is sent to TabPlex, Google or any other server by this feature
+- Chrome downloads the model once, directly from Google, the first time you turn the setting on; that download is managed by Chrome and contains none of your data
+- The summary is stored locally with the task and can be removed by parking again or deleting the task
+
+### On-device AI features (optional)
+
+"Organize tabs" and "New task from tabs" can use Chrome's built-in AI model (Gemini Nano), which runs on your computer:
+
+- TabPlex sends it the titles and addresses (host and path only, without query strings) of the tabs you choose, and any hint you type
+- The model's answer stays in your browser, and nothing changes until you confirm it
+- No tab data is sent to TabPlex, Google or any other server by these features
+- Without the model (another browser, or a device that can't run it) the features use simple local rules instead
+- Turn them off in Settings → On-device AI
 
 ## Your Data Rights
 

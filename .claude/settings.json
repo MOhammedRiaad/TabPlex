@@ -1,0 +1,18 @@
+{
+    "permissions": {
+        "allow": [
+            "Bash(npm run lint:*)",
+            "Bash(npm run build:*)",
+            "Bash(npm run format:*)",
+            "Bash(npm run format:check:*)",
+            "Bash(npm install:*)",
+            "Bash(npx tsc:*)",
+            "Bash(npx prettier:*)",
+            "Bash(npx eslint:*)",
+            "Bash(git status:*)",
+            "Bash(git diff:*)",
+            "Bash(git log:*)"
+        ],
+        "deny": ["Edit(dist/**)", "Write(dist/**)"]
+    }
+}

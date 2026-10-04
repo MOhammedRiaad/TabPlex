@@ -3,6 +3,10 @@ import { useTheme } from '../../hooks/useTheme';
 import { clearAllData } from '../../utils/storage';
 import ThemeToggle from '../ui/components/ThemeToggle';
 import Toast from '../bookmarks/components/Toast';
+import { useParkResumeSettings } from '../tasks/hooks/useParkResumeSettings';
+import AiSummarySetting from './components/AiSummarySetting';
+import AiFeaturesSetting from '../ai/components/AiFeaturesSetting';
+import { DISPLAY_NAME_KEY, DISPLAY_NAME_MAX, saveDisplayName } from './utils/displayName';
 import './SettingsView.css';
 
 interface SettingsViewProps {
@@ -14,6 +18,7 @@ interface SettingsViewProps {
 
 const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, onImportFile, fileInputRef }) => {
     const { theme, resolvedTheme } = useTheme();
+    const { settings: parkSettings, updateSettings: updateParkSettings } = useParkResumeSettings();
 
     // Local state for tldraw settings
     const [canvasMode, setCanvasMode] = useState(localStorage.getItem('tabboard_canvas_mode') || 'custom');
@@ -24,6 +29,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
     const [tldrawRoom, setTldrawRoom] = useState(localStorage.getItem('tabboard_tldraw_room') || '');
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    // As typed (not trimmed), so spaces between words survive; the greeting trims it
+    const [displayName, setDisplayName] = useState(() => localStorage.getItem(DISPLAY_NAME_KEY) ?? '');
 
     const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
         setToast({ message, type });
@@ -102,6 +109,36 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
             </div>
 
             <div className="settings-content">
+                {/* Profile Section */}
+                <section className="settings-section">
+                    <h3 className="section-title">
+                        <span className="section-icon">👤</span>
+                        Profile
+                    </h3>
+                    <div className="section-content">
+                        <div className="setting-item">
+                            <div className="setting-info">
+                                <h4>Your name</h4>
+                                <p>Used in the Today greeting. Stored only in this browser.</p>
+                            </div>
+                            <div className="setting-control">
+                                <input
+                                    type="text"
+                                    className="setting-input"
+                                    aria-label="Your name"
+                                    placeholder="e.g. Ada"
+                                    maxLength={DISPLAY_NAME_MAX}
+                                    value={displayName}
+                                    onChange={e => {
+                                        setDisplayName(e.target.value);
+                                        saveDisplayName(e.target.value);
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Data Management Section */}
                 <section className="settings-section">
                     <h3 className="section-title">
@@ -145,6 +182,82 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                                 🗑️ Clear Data
                             </button>
                         </div>
+                    </div>
+                </section>
+
+                {/* Park & Resume Section */}
+                <section className="settings-section">
+                    <h3 className="section-title">
+                        <span className="section-icon">⏸</span>
+                        Park &amp; Resume
+                    </h3>
+                    <div className="section-content">
+                        <div className="setting-item">
+                            <div className="setting-info">
+                                <h4>Close tabs when parking</h4>
+                                <p>
+                                    Parking saves a task&apos;s tabs and closes them to free memory. Turn off to just
+                                    ungroup them.
+                                </p>
+                            </div>
+                            <div className="setting-control">
+                                <input
+                                    type="checkbox"
+                                    className="setting-checkbox"
+                                    aria-label="Close tabs when parking"
+                                    checked={parkSettings.closeTabsOnPark}
+                                    onChange={e => updateParkSettings({ closeTabsOnPark: e.target.checked })}
+                                />
+                            </div>
+                        </div>
+                        <div className="setting-item">
+                            <div className="setting-info">
+                                <h4>Add new tabs to the active task</h4>
+                                <p>Tabs you open while a task is active join its tab group automatically.</p>
+                            </div>
+                            <div className="setting-control">
+                                <input
+                                    type="checkbox"
+                                    className="setting-checkbox"
+                                    aria-label="Add new tabs to the active task"
+                                    checked={parkSettings.autoAddNewTabs}
+                                    onChange={e => updateParkSettings({ autoAddNewTabs: e.target.checked })}
+                                />
+                            </div>
+                        </div>
+                        <div className="setting-item">
+                            <div className="setting-info">
+                                <h4>Start a Pomodoro when a task starts</h4>
+                                <p>
+                                    Starting or resuming a task links the focus timer to it and starts a work session.
+                                    Parking pauses it.
+                                </p>
+                            </div>
+                            <div className="setting-control">
+                                <input
+                                    type="checkbox"
+                                    className="setting-checkbox"
+                                    aria-label="Start a Pomodoro when a task starts"
+                                    checked={parkSettings.startPomodoroOnStart}
+                                    onChange={e => updateParkSettings({ startPomodoroOnStart: e.target.checked })}
+                                />
+                            </div>
+                        </div>
+                        <AiSummarySetting
+                            enabled={parkSettings.aiSummaries}
+                            onChange={aiSummaries => updateParkSettings({ aiSummaries })}
+                        />
+                    </div>
+                </section>
+
+                {/* On-device AI Section */}
+                <section className="settings-section">
+                    <h3 className="section-title">
+                        <span className="section-icon">✨</span>
+                        On-device AI
+                    </h3>
+                    <div className="section-content">
+                        <AiFeaturesSetting />
                     </div>
                 </section>
 

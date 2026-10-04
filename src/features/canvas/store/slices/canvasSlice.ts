@@ -1,6 +1,7 @@
 import { StateCreator } from 'zustand';
 import { CanvasState, CanvasSettings } from '../../types/canvas';
 import { CanvasStoreState, CanvasSlice } from '../types';
+import { generateId } from '../../../../utils/idGenerator';
 import { storageService } from '../../../../services/storage';
 
 export const DEFAULT_SETTINGS: CanvasSettings = {
@@ -23,7 +24,7 @@ export const createCanvasSlice: StateCreator<CanvasStoreState, [], [], CanvasSli
 
     createCanvas: boardId => {
         const newCanvas: CanvasState = {
-            canvasId: `canvas-${Date.now()}`,
+            canvasId: generateId('canvas'),
             boardId,
             elements: [],
             selectedIds: [],

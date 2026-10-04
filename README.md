@@ -35,6 +35,9 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 - **Kanban-Style Workflow**: To Do, Doing, Done columns for visual progress tracking
 - **Rich Task Details**: Add descriptions, checklists, due dates, and priority levels
 - **Task-Tab Linking**: Associate web resources with specific tasks
+- **Park & Resume**: Each task keeps its own tabs. Start a task to open them in a named Chrome tab group, park it with a "where I left off" note to close them, and resume later in one click — everything stays on your device. Optional: start a Pomodoro with the task, and on-device AI summaries of parked work (Chrome's built-in AI)
+- **On-device AI**: Chrome's built-in AI (Gemini Nano) runs on your computer, never in the cloud. Settings → On-device AI shows whether your device supports it and turns AI features on or off; every feature still works without it
+- **Organize tabs**: One click on Today (or "Organize open tabs" in the command palette) suggests Chrome tab groups for your loose tabs, by what you're working on with on-device AI, or by site without it. Rename, recolour or drop tabs in a preview, then create the groups; Undo or Save to Boards afterwards. Pinned tabs and existing groups (including your active task) are never touched
 
 ### 📝 Note-Taking
 
@@ -131,6 +134,14 @@ src/
 ├── utils/                # Utility functions
 └── types/                # TypeScript type definitions
 ```
+
+### Documentation
+
+For detailed technical documentation, please refer to the `docs/` directory:
+
+- [**Architecture Guide**](docs/ARCHITECTURE.md): Deep dive into the system design, layers, and key decisions.
+- [**Data Flow & Sync**](docs/DATA_FLOW.md): Explanation of the message-based synchronization mechanism.
+- [**Maintenance Guide**](docs/MAINTENANCE_GUIDE.md): Workflows for adding features and releasing updates.
 
 ### Design Patterns
 
@@ -234,6 +245,7 @@ npm run preview      # Preview production build
 - `Ctrl/Cmd + Shift + K` - New task
 - `Ctrl/Cmd + Shift + F` - New folder
 - `Ctrl/Cmd + Shift + E` - Export data
+- `Alt + Shift + P` - Park the active task
 
 #### Canvas (when active)
 
@@ -293,10 +305,9 @@ TabPlex requests the following Chrome permissions:
 - **`history`**: To allow you to import and organize browser history (only when you explicitly request it)
 - **`storage`**: To save your boards, tasks, and notes locally
 - **`notifications`**: To send task reminders and timer notifications
-- **`<all_urls>`**: To capture favicons and tab metadata from any website you visit
 - **`sessions`**: To restore recently closed tabs and windows
 - **`bookmarks`**: To manage and organize your browser bookmarks (read/write access)
-- **`identity`**: To personalize your experience (e.g., "Good Morning, [Name]")
+- **`favicon`**: To show website icons from Chrome's own local icon cache (no third-party icon service)
 
 **Important**: These permissions are used solely for the extension's functionality. We never transmit your data anywhere.
 
@@ -342,6 +353,16 @@ Contributions are welcome! Please follow these guidelines:
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+### Testing
+
+```bash
+npm test               # unit + component tests (Vitest)
+npm run test:coverage  # same, with the 85% coverage gate CI enforces
+npm run build && npm run test:e2e   # end-to-end tests in Chromium (Playwright)
+```
+
+First run of the E2E suite: `npx playwright install chromium`.
 
 ### Code Standards
 

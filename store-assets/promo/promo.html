@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Web Store promo images. Rendered by e2e/screenshots/promo.spec.ts (npm run screenshots):
+     ?size=small → 440×280 (required), ?size=marquee → 1400×560 (optional, used if featured) -->
+
+<head>
+    <meta charset="UTF-8">
+    <title>TabPlex promo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: var(--w);
+            height: var(--h);
+            overflow: hidden;
+        }
+
+        body {
+            --w: 440px;
+            --h: 280px;
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            padding: 0 32px;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: #f8fafc;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.45), transparent 55%),
+                radial-gradient(circle at 90% 90%, rgba(139, 92, 246, 0.35), transparent 50%),
+                #0f172a;
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            flex: none;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            display: grid;
+            place-items: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .name {
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .tagline {
+            max-width: 230px;
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.25;
+            color: #e2e8f0;
+        }
+
+        .tagline span {
+            white-space: nowrap;
+            background: linear-gradient(90deg, #a5b4fc, #c4b5fd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .points {
+            display: none;
+            list-style: none;
+            color: #cbd5e1;
+        }
+
+        .shot {
+            width: 360px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Small tile: little room, so the screenshot bleeds off the right edge */
+        body.small .shot {
+            margin-right: -230px;
+        }
+
+        body.marquee {
+            --w: 1400px;
+            --h: 560px;
+            gap: 64px;
+            padding: 0 80px;
+        }
+
+        body.marquee .logo-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            font-size: 42px;
+        }
+
+        body.marquee .name {
+            font-size: 56px;
+        }
+
+        body.marquee .tagline {
+            max-width: 480px;
+            font-size: 38px;
+        }
+
+        body.marquee .points {
+            display: grid;
+            gap: 10px;
+            font-size: 20px;
+        }
+
+        body.marquee .points li::before {
+            content: '✓  ';
+            color: #a5b4fc;
+            font-weight: 700;
+        }
+
+        body.marquee .shot {
+            width: 720px;
+            border-radius: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="brand">
+        <div class="logo">
+            <div class="logo-icon">T</div>
+            <div class="name">TabPlex</div>
+        </div>
+        <p class="tagline">Give every task<br><span>its own tabs.</span></p>
+        <ul class="points">
+            <li>Park your work with a note, resume in one click</li>
+            <li>Organize tabs into groups</li>
+            <li>Private: everything stays on your device</li>
+        </ul>
+    </div>
+    <img class="shot" src="../../landing-page/images/1-today.png" alt="">
+    <script>
+        document.body.className = new URLSearchParams(location.search).get('size') === 'marquee' ? 'marquee' : 'small';
+    </script>
+</body>
+
+</html>
