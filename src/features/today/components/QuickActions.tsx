@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './QuickActions.css';
 import { startOrganize } from '../../organize/store/organizeStore';
+import { useUIStore } from '../../ui/store/uiStore';
 
 const QuickActions: React.FC = () => {
     const navigate = useNavigate();
@@ -14,9 +15,7 @@ const QuickActions: React.FC = () => {
         navigate('/notes');
     };
 
-    const handleNewTask = () => {
-        navigate('/tasks');
-    };
+    const handleNewTask = () => useUIStore.getState().actions.openNewTaskDialog();
 
     const handleStartFocus = () => {
         navigate('/pomodoro');

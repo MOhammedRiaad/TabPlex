@@ -172,6 +172,64 @@ test.describe('Notes', () => {
     });
 });
 
+test.describe('Tasks', () => {
+    test('Ctrl+Shift+K opens the full task form; the task reaches the background, then can be edited', async ({
+        app,
+        serviceWorker,
+    }) => {
+        await openView(app, 'today');
+        await app.locator('body').press('Control+Shift+K');
+        const dialog = app.getByRole('dialog', { name: 'New task' });
+        await expect(dialog).toBeVisible();
+
+        await dialog.getByLabel('Title').fill('Prepare the v1.1 release');
+        await dialog.getByLabel('Notes').fill('Changelog and store text');
+        await dialog.getByLabel('Priority').selectOption('high');
+        await dialog.getByLabel('Due date').fill('2026-10-20');
+        await dialog.getByLabel('New checklist item').fill('Write the changelog');
+        await dialog.getByLabel('New checklist item').press('Enter');
+        await dialog.getByLabel('New checklist item').fill('Update the store listing');
+        await dialog.getByRole('button', { name: 'Add item' }).click();
+        await dialog.getByRole('button', { name: 'Create task' }).click();
+        await expect(dialog).toHaveCount(0);
+
+        await expect
+            .poll(async () =>
+                (await stored<Task>(serviceWorker, 'tabboard_tasks')).find(t => t.title === 'Prepare the v1.1 release')
+            )
+            .toMatchObject({
+                description: 'Changelog and store text',
+                priority: 'high',
+                dueDate: '2026-10-20',
+                status: 'todo',
+                checklist: [
+                    { text: 'Write the changelog', completed: false },
+                    { text: 'Update the store listing', completed: false },
+                ],
+            });
+
+        // The card editor is the same form (Today lists only today's tasks; this one is due later)
+        await openView(app, 'tasks');
+        await app
+            .locator('.task-card', { hasText: 'Prepare the v1.1 release' })
+            .first()
+            .getByTitle('Edit task')
+            .click();
+        // While editing, the title is in an input, so find the card by its editing state
+        const card = app.locator('.task-card.editing');
+        await expect(card.getByLabel('Title')).toHaveValue('Prepare the v1.1 release');
+        await expect(card.getByLabel('Notes')).toHaveValue('Changelog and store text');
+        await card.getByLabel('Title').fill('');
+        await card.getByRole('button', { name: 'Save' }).click();
+        await expect(card.getByRole('alert')).toHaveText('Title is required');
+        await card.getByLabel('Title').fill('Ship v1.1');
+        await card.getByRole('button', { name: 'Save' }).click();
+        await expect
+            .poll(async () => (await stored<Task>(serviceWorker, 'tabboard_tasks')).map(t => t.title))
+            .toContain('Ship v1.1');
+    });
+});
+
 test.describe('Bookmarks', () => {
     test('lists the browser bookmarks', async ({ app, serviceWorker }) => {
         await serviceWorker.evaluate(() =>

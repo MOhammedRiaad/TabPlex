@@ -64,6 +64,8 @@ interface UIState {
     toast: ToastState | null;
     /** Task whose Park dialog is open (Park & Resume) */
     parkDialogTaskId: string | null;
+    /** The New task dialog (command palette, Ctrl+Shift+K, Today quick action) */
+    newTaskDialogOpen: boolean;
     actions: {
         setActiveView: (view: ViewType) => void;
         setCommandPaletteOpen: (isOpen: boolean) => void;
@@ -72,6 +74,8 @@ interface UIState {
         clearToast: () => void;
         openParkDialog: (taskId: string) => void;
         closeParkDialog: () => void;
+        openNewTaskDialog: () => void;
+        closeNewTaskDialog: () => void;
     };
 }
 
@@ -82,6 +86,7 @@ export const useUIStore = create<UIState>(set => ({
     isCommandPaletteOpen: false,
     toast: null,
     parkDialogTaskId: null,
+    newTaskDialogOpen: false,
     actions: {
         setActiveView: view => {
             localStorage.setItem('tabboard-active-view', view);
@@ -93,6 +98,8 @@ export const useUIStore = create<UIState>(set => ({
         clearToast: () => set({ toast: null }),
         openParkDialog: taskId => set({ parkDialogTaskId: taskId }),
         closeParkDialog: () => set({ parkDialogTaskId: null }),
+        openNewTaskDialog: () => set({ newTaskDialogOpen: true }),
+        closeNewTaskDialog: () => set({ newTaskDialogOpen: false }),
     },
 }));
 

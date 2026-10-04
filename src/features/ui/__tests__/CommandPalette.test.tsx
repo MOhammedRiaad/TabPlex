@@ -38,7 +38,9 @@ describe('CommandPalette', () => {
         items.forEach(item => fireEvent.click(item));
         expect(onNavigate).toHaveBeenCalledWith('today');
         expect(onNavigate).toHaveBeenCalledWith('canvas');
-        expect(useBoardStore.getState().tasks).toHaveLength(3);
+        // "Create New Task" opens the New task dialog instead of adding a placeholder task
+        expect(useUIStore.getState().newTaskDialogOpen).toBe(true);
+        expect(useBoardStore.getState().tasks.some(t => t.title === 'New Task')).toBe(false);
         expect(useBoardStore.getState().notes).toHaveLength(1);
         expect(useBoardStore.getState().folders).toHaveLength(1);
         expect(exportData).toHaveBeenCalled();

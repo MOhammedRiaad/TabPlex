@@ -8,6 +8,7 @@ import TodayNotes from '../components/TodayNotes';
 import HistoryView from '../../history/HistoryView';
 import ErrorBoundary from '../../ui/components/ErrorBoundary';
 import ThemeToggle from '../../ui/components/ThemeToggle';
+import { useUIStore } from '../../ui/store/uiStore';
 import BoardToast from '../../boards/components/BoardToast';
 import Toast from '../../bookmarks/components/Toast';
 import { useBoardStore } from '../../../store/boardStore';
@@ -108,7 +109,6 @@ describe('TodayView', () => {
     it('navigates from quick actions', () => {
         renderAt(<TodayView />);
         const expectations: [string, string][] = [
-            ['.task-action', '/tasks'],
             ['.note-action', '/notes'],
             ['.focus-action', '/pomodoro'],
             ['.canvas-action', '/canvas'],
@@ -118,6 +118,10 @@ describe('TodayView', () => {
             act(() => fireEvent.click(document.querySelector(selector)!));
             expect(screen.getByTestId('location')).toHaveTextContent(path);
         }
+        // New Task opens the New task dialog where you are
+        act(() => fireEvent.click(document.querySelector('.task-action')!));
+        expect(useUIStore.getState().newTaskDialogOpen).toBe(true);
+        useUIStore.setState({ newTaskDialogOpen: false });
     });
 
     it('shows the 6 latest notes and links to all of them when there are more', () => {
