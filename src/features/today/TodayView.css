@@ -439,9 +439,13 @@
 @media (max-width: 1024px) {
     .tasks-columns {
         flex-direction: column;
+        overflow-x: visible;
     }
 
+    /* Stacked: each column takes the height of its cards. The wide layout's `flex: 1 1 0` would give it a zero
+       height here, and `overflow: hidden` would clip every card. */
     .task-column {
+        flex: 0 0 auto;
         min-width: 100%;
         width: 100%;
     }
