@@ -1,6 +1,8 @@
 // Generates the landing-page and Chrome Web Store screenshots from the real built extension with demo data.
 // Run: npm run build && npm run screenshots  (not part of `npm run test:e2e`)
 // Output: store-assets/screenshots/*.png (1280×800) and landing-page/images/*.png
+// Needs a network connection: tabs that TabPlex reopens itself (Resume) bypass Playwright's request interception,
+// so the Park dialog shows the real sites' page titles.
 import { mkdir, copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
