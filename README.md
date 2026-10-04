@@ -306,7 +306,7 @@ TabPlex requests the following Chrome permissions:
 - **`<all_urls>`**: To capture favicons and tab metadata from any website you visit
 - **`sessions`**: To restore recently closed tabs and windows
 - **`bookmarks`**: To manage and organize your browser bookmarks (read/write access)
-- **`identity`**: To personalize your experience (e.g., "Good Morning, [Name]")
+- **`favicon`**: To show website icons from Chrome's own local icon cache (no third-party icon service)
 
 **Important**: These permissions are used solely for the extension's functionality. We never transmit your data anywhere.
 

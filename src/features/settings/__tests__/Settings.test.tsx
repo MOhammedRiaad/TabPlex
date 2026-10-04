@@ -7,6 +7,7 @@ import * as db from '../../../utils/storage';
 import { fakeChrome } from '../../../test/chromeMock';
 import { makeTask } from '../../../test/factories';
 import { PARK_RESUME_SETTINGS_KEY } from '../../../utils/taskContext';
+import { DISPLAY_NAME_KEY, DISPLAY_NAME_MAX, readDisplayName, saveDisplayName } from '../utils/displayName';
 
 const reload = vi.fn();
 
@@ -29,6 +30,36 @@ describe('SettingsView', () => {
         vi.spyOn(window, 'confirm').mockReturnValue(true);
     });
     afterEach(() => vi.useRealTimers());
+
+    it('saves the greeting name as typed and removes it when cleared', () => {
+        localStorage.setItem(DISPLAY_NAME_KEY, 'Ada');
+        renderSettings();
+        const input = screen.getByLabelText('Your name') as HTMLInputElement;
+        expect(input.value).toBe('Ada');
+
+        fireEvent.change(input, { target: { value: 'Grace ' } }); // trailing space kept while typing
+        expect(input.value).toBe('Grace ');
+        expect(localStorage.getItem(DISPLAY_NAME_KEY)).toBe('Grace ');
+        expect(readDisplayName()).toBe('Grace');
+
+        fireEvent.change(input, { target: { value: '   ' } });
+        expect(localStorage.getItem(DISPLAY_NAME_KEY)).toBeNull();
+        expect(readDisplayName()).toBe('');
+    });
+
+    it('caps the name length and survives unavailable storage', () => {
+        saveDisplayName('x'.repeat(DISPLAY_NAME_MAX + 10));
+        expect(localStorage.getItem(DISPLAY_NAME_KEY)).toHaveLength(DISPLAY_NAME_MAX);
+
+        vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw new Error('blocked');
+        });
+        vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+            throw new Error('blocked');
+        });
+        expect(readDisplayName()).toBe('');
+        expect(() => saveDisplayName('Ada')).not.toThrow();
+    });
 
     it('exports and imports through the provided handlers', () => {
         const props = renderSettings();

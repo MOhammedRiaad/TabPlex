@@ -39,23 +39,10 @@ describe('message-handler', () => {
         expect(sendResponse).toHaveBeenCalledWith({ error: 'Unknown message type: WHAT_IS_THIS' });
     });
 
-    it('returns the Chrome profile email', () => {
+    it('no longer reads the Chrome profile (identity permission removed)', () => {
         const { keepOpen, sendResponse } = dispatch({ type: 'GET_USER_INFO' });
-        expect(keepOpen).toBe(true);
-        expect(sendResponse).toHaveBeenCalledWith({ email: 'user@example.com' });
-    });
-
-    it('reports identity errors and missing emails', () => {
-        fakeChrome().identity.getProfileUserInfo.mockImplementationOnce((_o: unknown, cb: (i: any) => void) => {
-            fakeChrome().runtime.lastError = { message: 'not signed in' };
-            cb(undefined);
-            fakeChrome().runtime.lastError = undefined;
-        });
-        expect(dispatch({ type: 'GET_USER_INFO' }).sendResponse).toHaveBeenCalledWith({ error: 'not signed in' });
-        fakeChrome().identity.getProfileUserInfo.mockImplementationOnce((_o: unknown, cb: (i: any) => void) =>
-            cb(undefined)
-        );
-        expect(dispatch({ type: 'GET_USER_INFO' }).sendResponse).toHaveBeenCalledWith({ email: '' });
+        expect(keepOpen).toBe(false);
+        expect(sendResponse).toHaveBeenCalledWith({ error: 'Unknown message type: GET_USER_INFO' });
     });
 
     it('moves a tab to another folder', async () => {

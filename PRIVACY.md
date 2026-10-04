@@ -1,6 +1,6 @@
 # Privacy Policy for TabPlex
 
-**Last Updated**: January 2026
+**Last Updated**: October 2026
 
 ## Overview
 
@@ -51,6 +51,7 @@ TabPlex stores the following data **exclusively on your local device**:
     - Theme selection (light/dark/system)
     - Timer settings (work/break durations)
     - UI preferences
+    - Your name for the Today greeting, only if you type one in Settings → Profile (TabPlex does not read your Google account or email)
 
 ## Data Storage Location
 
@@ -106,12 +107,7 @@ TabPlex requests the following permissions to function:
     - **Usage**: View, search, and organize bookmarks within the Bookmarks Manager
     - **Data Access**: Read and write access to your browser bookmarks
 
-9. **`identity`** & **`identity.email`**
-    - **Purpose**: Personalize your experience
-    - **Usage**: Display your name in the "Today" dashboard (e.g., "Good Morning, [Name]")
-    - **Data Access**: Your email address and profile name (stored locally, never shared)
-
-10. **`favicon`**
+9. **`favicon`**
     - **Purpose**: Show website icons for tabs, bookmarks and quick links
     - **Usage**: Icons come from Chrome's own local favicon cache (`chrome-extension://…/_favicon/`)
     - **Data Access**: None leaves your device; no third-party icon service is contacted
