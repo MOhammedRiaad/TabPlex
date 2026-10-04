@@ -166,6 +166,20 @@ describe('useStorageSync', () => {
         expect(fakeChrome().runtime.onMessage.listeners.size).toBe(0);
     });
 
+    it("ignores tab updates for tabs this page doesn't have (the background tracks every browser tab)", async () => {
+        renderHook(() => useStorageSync());
+        await waitFor(() => expect(fakeChrome().runtime.onMessage.listeners.size).toBeGreaterThan(0));
+        broadcast({ type: 'STORAGE_TAB_ADDED', payload: makeTab({ id: 'saved', title: 'Saved' }) });
+
+        // A browsing tab the background recorded on activation: must not appear in Boards
+        broadcast({ type: 'STORAGE_TAB_UPDATED', payload: makeTab({ id: 'tab_browsed', title: 'Some site' }) });
+        expect(state().tabs.map(t => t.id)).toEqual(['saved']);
+
+        // An edit to a tab this page has still applies
+        broadcast({ type: 'STORAGE_TAB_UPDATED', payload: { id: 'saved', title: 'Renamed' } });
+        expect(state().tabs).toEqual([expect.objectContaining({ id: 'saved', title: 'Renamed' })]);
+    });
+
     it('lets the importing tab reload on its own, after showing its toast', async () => {
         const reload = vi.fn();
         Object.defineProperty(window, 'location', { value: { ...window.location, reload }, configurable: true });
