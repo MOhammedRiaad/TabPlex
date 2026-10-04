@@ -686,7 +686,7 @@ Run the `verify` skill before every commit. Commit 1 touches `src/background/**`
 
 ## 15. Future (not in v1)
 
-- **Create & park:** save the task with its tabs and close them in one click (a OneTab-style "save for later" with context).
+- ~~**Create & park:** save the task with its tabs and close them in one click (a OneTab-style "save for later" with context).~~ Shipped in v1.1 (ROADMAP #13): **⏸ Create & park** in the dialog runs `ADD_TASK` → `TASK_CONTEXT_ADD_TABS` → `TASK_CONTEXT_PARK` with `{ closeTabs: true, chromeTabIds }`. The task is never started, so the active task is untouched. Disabled when no tab is checked. Toast: "Parked “{title}” · {n} tabs saved and closed".
 - Suggest a due date from words like "Friday" or "by the 15th", shown as a suggestion the user must confirm.
 - "Suggest a task for this tab": when a new tab is opened, offer "Add to {task}?" based on similarity with existing contexts (on-device).
 - Draft a task from a **note** (Markdown editor → "Make tasks from this note").
