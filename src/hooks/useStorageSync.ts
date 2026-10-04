@@ -70,9 +70,6 @@ export const useStorageSync = () => {
         sessions,
         addBoardSilently: addBoardSilentlyToStore,
         addFolderSilently: addFolderSilentlyToStore,
-        updateBoard: updateBoardInStore,
-        updateFolder: updateFolderInStore,
-        updateTab: updateTabInStore,
         deleteTabSilently: deleteTabSilentlyFromStore,
         deleteTaskSilently: deleteTaskSilentlyFromStore,
         deleteNoteSilently: deleteNoteSilentlyFromStore,
@@ -307,8 +304,10 @@ export const useStorageSync = () => {
                         // Use silent add to prevent infinite loops (doesn't send message back to background)
                         addBoardSilentlyToStore(event.data.payload);
                         break;
+                    // Updates are applied silently: updateBoard/updateFolder/updateTab would send
+                    // UPDATE_* back to the background and loop forever
                     case 'STORAGE_BOARD_UPDATED':
-                        updateBoardInStore(event.data.payload.id, event.data.payload);
+                        useBoardStore.setState(state => ({ boards: upsertById(state.boards, event.data.payload) }));
                         break;
 
                     case 'STORAGE_BOARD_DELETED':
@@ -320,7 +319,7 @@ export const useStorageSync = () => {
                         addFolderSilentlyToStore(event.data.payload);
                         break;
                     case 'STORAGE_FOLDER_UPDATED':
-                        updateFolderInStore(event.data.payload.id, event.data.payload);
+                        useBoardStore.setState(state => ({ folders: upsertById(state.folders, event.data.payload) }));
                         break;
 
                     case 'STORAGE_TAB_ADDED':
@@ -328,7 +327,7 @@ export const useStorageSync = () => {
                         useBoardStore.setState(state => ({ tabs: upsertById(state.tabs, event.data.payload) }));
                         break;
                     case 'STORAGE_TAB_UPDATED':
-                        updateTabInStore(event.data.payload.id, event.data.payload);
+                        useBoardStore.setState(state => ({ tabs: upsertById(state.tabs, event.data.payload) }));
                         break;
                     case 'STORAGE_TAB_DELETED':
                         deleteTabSilentlyFromStore(event.data.payload.id);

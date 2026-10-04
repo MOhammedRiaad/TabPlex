@@ -66,6 +66,56 @@ test.describe('Boards', () => {
     });
 });
 
+test.describe('Boards sync', () => {
+    test('renaming a folder and a tab reaches the background and other TabPlex tabs', async ({
+        app,
+        context,
+        extensionId,
+        serviceWorker,
+    }) => {
+        await openView(app, 'boards');
+        await app.getByRole('button', { name: 'Create folder' }).click();
+        await app.locator('#board-folder-name').fill('Drafts');
+        await app.getByRole('button', { name: 'Create', exact: true }).click();
+        await app.locator('.board-action-btn-primary', { hasText: /add tab/i }).click();
+        await app.locator('#board-tab-title').fill('Old title');
+        await app.locator('#board-tab-url').fill('example.com/page');
+        await app.locator('#board-tab-folder').selectOption({ label: 'Drafts' });
+        await app.getByRole('button', { name: 'Create', exact: true }).click();
+
+        const other = await context.newPage();
+        await other.goto(`chrome-extension://${extensionId}/index.html#/boards`);
+        await expect(other.getByRole('button', { name: 'Folder: Drafts' })).toBeVisible();
+        await other.getByRole('button', { name: 'Folder: Drafts' }).click(); // expand to see its tab
+        await app.bringToFront();
+
+        // Rename the folder
+        const folderRow = app.getByRole('button', { name: 'Folder: Drafts' });
+        await folderRow.getByRole('button', { name: 'Edit folder' }).click();
+        await app.locator('#board-folder-name').fill('Published');
+        await app.getByRole('button', { name: 'Save', exact: true }).click();
+
+        // Rename the tab
+        await app.getByRole('button', { name: 'Folder: Published' }).click();
+        await app.getByRole('button', { name: 'Edit tab' }).first().click();
+        await app.locator('#board-tab-title').fill('New title');
+        await app.getByRole('button', { name: 'Save', exact: true }).click();
+
+        // (the background also keeps its own Inbox folder and tracks open browser tabs)
+        await expect
+            .poll(async () => (await stored<Folder>(serviceWorker, 'tabboard_folders')).map(f => f.name))
+            .toEqual(expect.arrayContaining(['Published']));
+        expect((await stored<Folder>(serviceWorker, 'tabboard_folders')).map(f => f.name)).not.toContain('Drafts');
+        await expect
+            .poll(async () => (await stored<Tab>(serviceWorker, 'tabboard_tabs')).map(t => t.title))
+            .toEqual(expect.arrayContaining(['New title']));
+        expect((await stored<Tab>(serviceWorker, 'tabboard_tabs')).map(t => t.title)).not.toContain('Old title');
+        // The other TabPlex tab shows both edits without a reload
+        await expect(other.getByRole('button', { name: 'Folder: Published' })).toBeVisible();
+        await expect(other.getByText('New title')).toBeVisible();
+    });
+});
+
 test.describe('Notes', () => {
     test('create and edit a note; the edit reaches the background and other TabPlex tabs', async ({
         app,

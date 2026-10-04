@@ -128,6 +128,10 @@ describe('useStorageSync', () => {
         expect(state().folders[0].name).toBe('F');
         expect(state().tabs).toHaveLength(1);
         expect(state().tabs[0].title).toBe('Updated');
+        // Partial updates keep the fields they don't mention
+        expect(state().boards[0].createdAt).toBe(makeBoard().createdAt);
+        expect(state().folders[0].boardId).toBe(makeFolder().boardId);
+        expect(state().tabs[0].url).toBe(makeTab().url);
         expect(state().tasks[0].title).toBe('Changed');
         expect(state().notes[0].content).toBe('Changed');
         expect(state().sessions[0].name).toBe('Changed');
