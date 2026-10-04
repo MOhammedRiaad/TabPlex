@@ -18,6 +18,10 @@ Versions, tags, `CHANGELOG.md` and GitHub releases are produced automatically by
 5. Merge. The Release workflow syncs the version into `package.json`, `package-lock.json`, `manifest.json`, builds, zips `dist/` to `release/tabplex-vX.Y.Z.zip`, commits `chore(release): X.Y.Z [skip ci]`, tags `vX.Y.Z`, and publishes the GitHub release with the zip attached.
 6. Pull `main` locally afterwards (the bot pushed a commit).
 
+## Microsoft Edge Add-ons (automatic)
+
+After semantic-release, `release.yml` runs `npm run publish:edge` (`scripts/publish-edge.mjs`): upload the new zip, wait, submit for review, wait. It needs the secrets `EDGE_CLIENT_ID`, `EDGE_API_KEY`, `EDGE_PRODUCT_ID` (skipped without them) and only updates an extension already published once by hand. `InProgressSubmission` means the previous version is still in review: re-run the workflow later. API keys expire: renew them in Partner Center → Publish API and update `EDGE_API_KEY`.
+
 ## Chrome Web Store
 
 Store upload stays manual: download `tabplex-vX.Y.Z.zip` from the GitHub release, smoke-test it unpacked (onboarding, add tab to folder, tasks, export/import, session restore, Park & Resume), then upload it in the Web Store dashboard. If `manifest.json` permissions changed, update `PRIVACY.md` and the README "Permissions Explained" first.

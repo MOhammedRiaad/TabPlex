@@ -105,6 +105,8 @@ Privacy policy URL: https://mohammedriaad.github.io/TabPlex/privacy.html
 
 ## Microsoft Edge Add-ons
 
+Updates after the first version are published automatically by the Release workflow (`npm run publish:edge`, see `docs/MAINTENANCE_GUIDE.md` → Release Process). Submit the first version by hand, then add the `EDGE_CLIENT_ID`, `EDGE_API_KEY` and `EDGE_PRODUCT_ID` repository secrets.
+
 Edge may not offer Chrome's built-in AI, so the Edge listing doesn't promise AI features (TabPlex falls back to grouping by site). Reuse the Chrome text with "Chrome" changed to "the browser", and drop the on-device AI lines.
 
 ### Single purpose description

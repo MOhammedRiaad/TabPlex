@@ -18,8 +18,6 @@ permissions:
 jobs:
     release:
         runs-on: ubuntu-latest
-        env:
-            HUSKY: 0 # no git hooks for the bot's release commit
         steps:
             - uses: actions/checkout@v6
               with:
@@ -40,3 +38,14 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: npx semantic-release
+
+            # Sends the new version to Microsoft Edge Add-ons (does nothing when this run released nothing).
+            # Skipped until the EDGE_* repository secrets exist. The first Edge version must be published by hand.
+            - name: Publish to Microsoft Edge Add-ons
+              if: ${{ env.EDGE_PRODUCT_ID != '' }}
+              run: npm run publish:edge
+        env:
+            HUSKY: 0 # no git hooks for the bot's release commit
+            EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+            EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+            EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
