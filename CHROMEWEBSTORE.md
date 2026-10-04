@@ -163,6 +163,8 @@ TabPlex stores data **only on the user's device** and sends nothing to the devel
 
 ## Microsoft Edge Add-ons
 
+**Live** since 2026-10-05: https://microsoftedge.microsoft.com/addons/detail/kaeaniaepejnapfgmkjgjkkgbgkaehed (linked from the landing page and README).
+
 The Release workflow publishes updates after the first version (`npm run publish:edge`; see `docs/MAINTENANCE_GUIDE.md` → Release Process). The first version was submitted by hand in Partner Center. The workflow needs the `EDGE_CLIENT_ID`, `EDGE_API_KEY` and `EDGE_PRODUCT_ID` repository secrets.
 
 Edge may not offer Chrome's built-in AI, so the Edge listing doesn't promise AI features (TabPlex falls back to grouping by site). Reuse the Chrome text with "Chrome" changed to "the browser", and drop the on-device AI lines.
@@ -212,4 +214,4 @@ None yet.
 1. **Developer account**: a Chrome Web Store developer account (one-time registration fee) and a verified contact email.
 2. Run the release-candidate pass (`ROADMAP.md` v1.0 queue #10) and the [pre-publish review checklist](https://github.com/GoogleChrome/modern-web-guidance/blob/main/skills/chrome-extensions/references/webstore/review-checklist.md).
 3. Upload `tabplex-vX.Y.Z.zip` from the GitHub release, fill in the fields above, and submit.
-4. Once published: replace the three `TODO(v1.0.0)` download links in `landing-page/index.html` with the store URL, and add a Version History row.
+4. Once published: add an "Add to Chrome" button next to the Edge one at the two `TODO(chrome-store)` comments in `landing-page/index.html`, link it in the README install section, and add a Version History row.
