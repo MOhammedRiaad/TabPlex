@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "TabPlex",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Give every task its own tabs. Park work with a note, resume it in one click, and organize tabs into groups. Private, on-device.",
     "icons": {
         "16": "assets/icon16.png",
