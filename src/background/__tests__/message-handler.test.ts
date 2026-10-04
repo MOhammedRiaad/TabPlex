@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installChromeMock, ChromeMock, fakeChrome, EXTENSION_BASE } from '../../test/chromeMock';
-import { makeTab, makeTask } from '../../test/factories';
+import { makeBoard, makeFolder, makeTab, makeTask } from '../../test/factories';
 
 let mock: ChromeMock;
 
@@ -26,6 +26,46 @@ describe('message-handler', () => {
         vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     });
     afterEach(() => vi.useRealTimers());
+
+    it.each([
+        ['UPDATE_TAB', 'tabboard_tabs', 'STORAGE_TAB_UPDATED', makeTab({ id: 't1', title: 'Old' }), { title: 'New' }],
+        ['UPDATE_FOLDER', 'tabboard_folders', 'STORAGE_FOLDER_UPDATED', makeFolder({ id: 't1' }), { name: 'New' }],
+        ['UPDATE_BOARD', 'tabboard_boards', 'STORAGE_BOARD_UPDATED', makeBoard({ id: 't1' }), { name: 'New' }],
+    ])('%s saves the edit and tells the other TabPlex tabs', async (type, key, broadcast, existing, change) => {
+        await chrome.storage.local.set({ [key]: [existing, { ...existing, id: 'other' }] });
+        const edited = { ...existing, ...change };
+        const { keepOpen, sendResponse } = dispatch({ type, payload: edited });
+        expect(keepOpen).toBe(true);
+        await flush();
+        expect(sendResponse).toHaveBeenCalledWith({ success: true });
+        expect(store()[key]).toEqual([edited, { ...existing, id: 'other' }]);
+        expect(fakeChrome().runtime.sendMessage).toHaveBeenCalledWith({ type: broadcast, payload: edited });
+    });
+
+    it('UPDATE_* adds an item the background never saw, ignores payloads without an id, and reports errors', async () => {
+        const { sendResponse } = dispatch({ type: 'UPDATE_TAB', payload: makeTab({ id: 'new' }) });
+        await flush();
+        expect(sendResponse).toHaveBeenCalledWith({ success: true });
+        expect(store().tabboard_tabs.map((t: { id: string }) => t.id)).toEqual(['new']);
+
+        const noId = dispatch({ type: 'UPDATE_FOLDER', payload: { name: 'x' } });
+        expect(noId.keepOpen).toBe(false);
+        expect(noId.sendResponse).not.toHaveBeenCalled();
+
+        fakeChrome().storage.local.set.mockRejectedValueOnce(new Error('disk full'));
+        const failed = dispatch({ type: 'UPDATE_BOARD', payload: makeBoard() });
+        await flush();
+        expect(failed.sendResponse).toHaveBeenCalledWith({ error: 'disk full' });
+
+        // A closed response channel is logged, not thrown; no TabPlex tab open is fine too
+        fakeChrome().runtime.sendMessage.mockRejectedValueOnce(new Error('no listener'));
+        const closed = vi.fn(() => {
+            throw new Error('closed');
+        });
+        mock.browser.events.runtimeMessage.emit({ type: 'UPDATE_TAB', payload: makeTab() }, {}, closed);
+        await flush();
+        expect(console.warn).toHaveBeenCalledWith('Failed to send response:', expect.any(Error));
+    });
 
     it('ignores STORAGE_* notifications', () => {
         const { keepOpen, sendResponse } = dispatch({ type: 'STORAGE_TASK_ADDED' });

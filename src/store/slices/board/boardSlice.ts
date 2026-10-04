@@ -1,12 +1,15 @@
 import {
     addBoard as addBoardToDB,
+    updateBoard as updateBoardInDB,
     deleteBoard as deleteBoardFromDB,
     addFolder as addFolderToDB,
+    updateFolder as updateFolderInDB,
     deleteFolder as deleteFolderFromDB,
 } from '../../../utils/storage';
+import { Board, Folder } from '../../../types';
 import { BoardSlice, BoardStoreCreator } from './types';
 
-export const createBoardSlice: BoardStoreCreator<BoardSlice> = set => ({
+export const createBoardSlice: BoardStoreCreator<BoardSlice> = (set, get) => ({
     boards: [],
     folders: [],
 
@@ -40,12 +43,16 @@ export const createBoardSlice: BoardStoreCreator<BoardSlice> = set => ({
         addBoardToDB(board).catch(console.error);
     },
 
-    updateBoard: (id, updates) =>
-        set(state => ({
-            boards: state.boards.map(board =>
-                board.id === id ? { ...board, ...updates, updatedAt: new Date().toISOString() } : board
-            ),
-        })),
+    updateBoard: (id, updates) => {
+        const board = get().boards.find(b => b.id === id);
+        if (!board) return;
+        const updated: Board = { ...board, ...updates, updatedAt: new Date().toISOString() };
+
+        set(state => ({ boards: state.boards.map(b => (b.id === id ? updated : b)) }));
+        updateBoardInDB(updated).catch(console.error);
+        // Keep the background copy and other open TabPlex tabs in sync
+        chrome.runtime.sendMessage({ type: 'UPDATE_BOARD', payload: updated }).catch(console.error);
+    },
 
     deleteBoard: id => {
         set(state => ({
@@ -99,10 +106,15 @@ export const createBoardSlice: BoardStoreCreator<BoardSlice> = set => ({
         addFolderToDB(folder).catch(console.error);
     },
 
-    updateFolder: (id, updates) =>
-        set(state => ({
-            folders: state.folders.map(folder => (folder.id === id ? { ...folder, ...updates } : folder)),
-        })),
+    updateFolder: (id, updates) => {
+        const folder = get().folders.find(f => f.id === id);
+        if (!folder) return;
+        const updated: Folder = { ...folder, ...updates };
+
+        set(state => ({ folders: state.folders.map(f => (f.id === id ? updated : f)) }));
+        updateFolderInDB(updated).catch(console.error);
+        chrome.runtime.sendMessage({ type: 'UPDATE_FOLDER', payload: updated }).catch(console.error);
+    },
 
     deleteFolder: (id, moveTabs = false, targetFolderId = '') => {
         set(state => ({

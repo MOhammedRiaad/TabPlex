@@ -7,8 +7,9 @@ import { handleSessionMessage } from './session-service';
 import { handleDataMessage } from './data-service';
 import { handleBookmarkMessage } from './bookmark-service';
 import { CONTEXT_MESSAGE_TYPES, handleContextMessage } from './context-service';
-import { addBoard, addTab, deleteBoard, deleteTab, getBoard } from './storage';
-import { ExtensionMessage, Tab, Board } from '../types';
+import { addBoard, addTab, deleteBoard, deleteTab, getBoard, updateBoard, updateFolder, updateTab } from './storage';
+import { handleUpdate } from './update-handler';
+import { ExtensionMessage, Tab, Board, Folder } from '../types';
 
 // Helper function to safely send response
 // Helper function to safely send response
@@ -211,6 +212,14 @@ chrome.runtime.onMessage.addListener(
                     return true;
                 }
                 break;
+
+            // Edits made in a TabPlex tab (rename, move, reorder…)
+            case 'UPDATE_TAB':
+                return handleUpdate<Tab>(message, updateTab, 'STORAGE_TAB_UPDATED', _sendResponse);
+            case 'UPDATE_BOARD':
+                return handleUpdate<Board>(message, updateBoard, 'STORAGE_BOARD_UPDATED', _sendResponse);
+            case 'UPDATE_FOLDER':
+                return handleUpdate<Folder>(message, updateFolder, 'STORAGE_FOLDER_UPDATED', _sendResponse);
 
             case 'ADD_FOLDER':
             case 'DELETE_FOLDER':

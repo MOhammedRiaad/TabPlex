@@ -35,6 +35,7 @@ describe('board store', () => {
             store().addBoard({ id: 'b1', name: 'Work' });
             expect(store().boards[0]).toMatchObject({ id: 'b1', createdAt: expect.any(String) });
             store().updateBoard('b1', { name: 'Home' });
+            store().updateBoard('missing', { name: 'x' });
             expect(store().boards[0].name).toBe('Home');
             store().addBoardSilently(makeBoard({ id: 'b2' }));
             store().addBoardSilently(makeBoard({ id: 'b2' }));
@@ -43,7 +44,10 @@ describe('board store', () => {
             store().deleteBoardSilently('b2');
             expect(store().boards).toEqual([]);
             await flushPromises();
-            expect(types(messages)).toEqual(['ADD_BOARD', 'DELETE_BOARD']);
+            // Edits reach the background and other open tabs too
+            expect(types(messages)).toEqual(['ADD_BOARD', 'UPDATE_BOARD', 'DELETE_BOARD']);
+            expect(messages[1].payload).toEqual(expect.objectContaining({ id: 'b1', name: 'Home' }));
+            expect((await db.getAllBoards()).length).toBe(0); // deleted at the end
         });
 
         it('adds folders and deletes them, moving or dropping their tabs', async () => {
@@ -51,6 +55,7 @@ describe('board store', () => {
             store().addFolderSilently(makeFolder({ id: 'f2' }));
             store().addFolderSilently(makeFolder({ id: 'f2' }));
             store().updateFolder('f1', { name: 'Renamed' });
+            store().updateFolder('missing', { name: 'x' });
             expect(store().folders.map(f => f.name)).toEqual(['Renamed', 'Inbox']);
 
             useBoardStore.setState({
@@ -67,8 +72,9 @@ describe('board store', () => {
             store().addFolderSilently(makeFolder({ id: 'f4' }));
             store().deleteFolderSilently('f4', true, 'f9');
             await flushPromises();
-            expect(types(messages)).toEqual(['ADD_FOLDER', 'DELETE_FOLDER', 'DELETE_FOLDER']);
-            expect(messages[1].payload).toEqual({ id: 'f1', moveTabs: true, targetFolderId: 'f2' });
+            expect(types(messages)).toEqual(['ADD_FOLDER', 'UPDATE_FOLDER', 'DELETE_FOLDER', 'DELETE_FOLDER']);
+            expect(messages[1].payload).toEqual(expect.objectContaining({ id: 'f1', name: 'Renamed' }));
+            expect(messages[2].payload).toEqual({ id: 'f1', moveTabs: true, targetFolderId: 'f2' });
         });
     });
 
@@ -103,12 +109,25 @@ describe('board store', () => {
             store().deleteTabSilently('t2');
             expect(store().tabs).toEqual([]);
             await flushPromises();
-            expect(types(messages)).toEqual(['ADD_TAB', 'ADD_TAB', 'DELETE_TAB']);
+            // updateTab, moveTab and moveAllTabsToFolder each sync the changed tab; a missing tab sends nothing
+            expect(types(messages)).toEqual([
+                'ADD_TAB',
+                'ADD_TAB',
+                'UPDATE_TAB',
+                'UPDATE_TAB',
+                'UPDATE_TAB',
+                'DELETE_TAB',
+            ]);
+            expect(messages.slice(2, 5).map(m => m.payload)).toEqual([
+                expect.objectContaining({ id: 't1', title: 'A2', folderId: 'f1' }),
+                expect.objectContaining({ id: 't1', folderId: 'f2' }),
+                expect.objectContaining({ id: 't1', folderId: 'f3' }),
+            ]);
             await flushPromises();
             expect(await db.getAllTabs()).toEqual([]);
         });
 
-        it('reorders tabs within a folder', () => {
+        it('reorders tabs within a folder', async () => {
             useBoardStore.setState({
                 tabs: [
                     makeTab({ id: 'a', order: 0 }),
@@ -118,6 +137,13 @@ describe('board store', () => {
                 ],
             });
             store().reorderTab('c', 0, 'folder_1');
+            await flushPromises();
+            // Only tabs whose order changed are saved and synced
+            expect(messages.filter(m => m.type === 'UPDATE_TAB').map(m => (m.payload as { id: string }).id)).toEqual([
+                'c',
+                'a',
+                'b',
+            ]);
             const inFolder = store().tabs.filter(t => t.folderId === 'folder_1');
             expect(inFolder.map(t => [t.id, t.order])).toEqual([
                 ['c', 0],
