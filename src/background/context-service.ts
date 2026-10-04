@@ -308,19 +308,33 @@ async function addTabsToTask(payload: AddTabsPayload): Promise<ContextResponse> 
     const ctx = getContext(task);
 
     let candidates: chrome.tabs.Tab[];
-    if (payload.chromeTabIds?.length) {
-        candidates = await Promise.all(payload.chromeTabIds.map(id => chrome.tabs.get(id)));
+    const explicit = Boolean(payload.chromeTabIds?.length);
+    if (explicit) {
+        // Tabs closed since the user picked them are skipped, not an error
+        const loaded = await Promise.all(
+            (payload.chromeTabIds as number[]).map(id => chrome.tabs.get(id).catch(() => undefined))
+        );
+        candidates = loaded.filter((tab): tab is chrome.tabs.Tab => tab !== undefined);
     } else {
         const windowId = await resolveWindowId(payload.windowId);
         candidates = await chrome.tabs.query({ windowId });
     }
 
-    // Skip pinned tabs, TabPlex itself, and tabs that belong to some other group
+    // Another task's live group is off limits. Plain groups (e.g. from "Organize tabs") may be taken from
+    // when the user picked the tabs explicitly; "+ Add current tabs" still skips every other group.
+    const active = await getActiveTask();
+    const otherTaskGroup =
+        active && active.id !== task.id ? (getContext(active).chromeGroupId ?? undefined) : undefined;
+
+    // Skip pinned tabs and TabPlex itself
     candidates = candidates.filter(
         tab =>
             !tab.pinned &&
             toContextTab(tab) !== null &&
-            (tab.groupId === undefined || tab.groupId === NO_GROUP || tab.groupId === ctx.chromeGroupId)
+            (tab.groupId === undefined ||
+                tab.groupId === NO_GROUP ||
+                tab.groupId === ctx.chromeGroupId ||
+                (explicit && tab.groupId !== otherTaskGroup))
     );
 
     if (candidates.length === 0) {

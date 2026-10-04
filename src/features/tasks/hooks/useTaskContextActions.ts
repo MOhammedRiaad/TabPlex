@@ -31,6 +31,12 @@ function releaseSummarizer(summarizer?: PendingSummarizer) {
     summarizer?.then(instance => instance.destroy?.()).catch(() => undefined);
 }
 
+/** Start the Pomodoro linked to a just-started task when the setting is on; true if it started */
+async function maybeStartPomodoro(taskId: string): Promise<boolean> {
+    const settings = await readParkResumeSettings();
+    return settings.startPomodoroOnStart && startPomodoroForTask(taskId);
+}
+
 /**
  * Park & Resume actions. All tab work happens in the background service worker; this hook sends the
  * request, applies the returned task(s) to the store, and reports the outcome with a toast.
@@ -61,8 +67,7 @@ export function useTaskContextActions() {
                     windowId: await currentWindowId(),
                 });
                 apply(response);
-                const settings = await readParkResumeSettings();
-                const timerStarted = settings.startPomodoroOnStart && startPomodoroForTask(task.id);
+                const timerStarted = await maybeStartPomodoro(task.id);
                 const timerNote = timerStarted ? ' · 🍅 timer started' : '';
                 if (response.autoParked) {
                     showToast(`Parked "${response.autoParked.title}" · Started "${task.title}"${timerNote}`, 'info');
@@ -170,5 +175,31 @@ export function useTaskContextActions() {
         [apply, showToast]
     );
 
-    return { startOrResume, park, requestPark, addCurrentTabs, removeTab };
+    /** Attach specific browser tabs to a task. Returns the updated task; no toast (the caller reports). */
+    const attachTabs = useCallback(
+        async (task: Task, chromeTabIds: number[]): Promise<Task> => {
+            const response = await sendContextMessage(CONTEXT_MESSAGES.ADD_TABS, { task, chromeTabIds });
+            apply(response);
+            return response.task ?? task;
+        },
+        [apply]
+    );
+
+    /**
+     * Start a task with no toast or confirm (for "Create & start"); starts the linked Pomodoro like
+     * startOrResume. Returns the response, with the started task and any auto-parked one.
+     */
+    const startQuietly = useCallback(
+        async (task: Task): Promise<ContextResponse & { timerStarted: boolean }> => {
+            const response = await sendContextMessage(CONTEXT_MESSAGES.START, {
+                task,
+                windowId: await currentWindowId(),
+            });
+            apply(response);
+            return { ...response, timerStarted: await maybeStartPomodoro(task.id) };
+        },
+        [apply]
+    );
+
+    return { startOrResume, park, requestPark, addCurrentTabs, removeTab, attachTabs, startQuietly };
 }
