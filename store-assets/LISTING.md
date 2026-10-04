@@ -10,7 +10,7 @@ Copy these fields into the [Chrome Web Store developer dashboard](https://chrome
 | Summary      | Give every task its own tabs. Park work with a note, resume it in one click, and organize tabs into groups. Private, on-device. (from `manifest.json` `description`, 127/132 characters) |
 | Category     | Productivity → Workflow & Planning                                                                                                                                                       |
 | Language     | English                                                                                                                                                                                  |
-| Homepage URL | The hosted landing page (see "Open items")                                                                                                                                               |
+| Homepage URL | https://mohammedriaad.github.io/TabPlex/ (GitHub Pages, published from `landing-page/` by `.github/workflows/pages.yml`)                                                                 |
 | Support URL  | https://github.com/MOhammedRiaad/TabPlex/issues                                                                                                                                          |
 
 ### Description
@@ -55,13 +55,14 @@ On-device AI needs a recent desktop Chrome on a device that meets Chrome's requi
 
 ### Graphics
 
-| Asset                       | Size     | File                                                                             |
-| --------------------------- | -------- | -------------------------------------------------------------------------------- |
-| Store icon                  | 128×128  | `assets/icon128.png`                                                             |
-| Screenshots (up to 5)       | 1280×800 | `store-assets/screenshots/1-today.png` … `4-boards.png`, plus `1-today-dark.png` |
-| Small promo tile (required) | 440×280  | **Not made yet** (see "Open items")                                              |
+| Asset                                           | Size     | File                                                                             |
+| ----------------------------------------------- | -------- | -------------------------------------------------------------------------------- |
+| Store icon                                      | 128×128  | `assets/icon128.png`                                                             |
+| Screenshots (up to 5)                           | 1280×800 | `store-assets/screenshots/1-today.png` … `4-boards.png`, plus `1-today-dark.png` |
+| Small promo tile (required)                     | 440×280  | `store-assets/promo/promo-small-440x280.png`                                     |
+| Marquee promo tile (optional, used if featured) | 1400×560 | `store-assets/promo/promo-marquee-1400x560.png`                                  |
 
-Regenerate the screenshots with `npm run build && npm run screenshots` (demo data, light and dark). The Organize tabs screenshot shows an example AI answer, because automated browsers can't run Chrome's built-in model; the screen itself is the real dialog.
+Regenerate the screenshots and promo tiles (from `store-assets/promo/promo.html`) with `npm run build && npm run screenshots` (demo data, light and dark). The Organize tabs screenshot shows an example AI answer, because automated browsers can't run Chrome's built-in model; the screen itself is the real dialog.
 
 ## Privacy practices tab
 
@@ -94,11 +95,10 @@ TabPlex stores data **only on the user's device** and sends nothing to the devel
 - [x] I do not use or transfer user data for purposes that are unrelated to my item's single purpose
 - [x] I do not use or transfer user data to determine creditworthiness or for lending purposes
 
-Privacy policy URL: the hosted `privacy.html` (see "Open items").
+Privacy policy URL: https://mohammedriaad.github.io/TabPlex/privacy.html
 
 ## Open items before submitting
 
-1. **Host the landing page and privacy policy** so they have public URLs. Simplest: GitHub Pages serving `landing-page/` (needs Pages enabled in the repository settings). Alternative: link the policy file on GitHub, https://github.com/MOhammedRiaad/TabPlex/blob/main/PRIVACY.md, once `develop` is merged to `main`.
-2. **Small promo tile** (440×280): not generated yet.
-3. **Developer account**: a Chrome Web Store developer account (one-time registration fee) and a verified contact email.
-4. After v1.0.0 is published: replace the three `TODO(v1.0.0)` download links in `landing-page/index.html` with the store URL.
+1. **Publish the site.** GitHub Pages is enabled with GitHub Actions as the source. `.github/workflows/pages.yml` deploys `landing-page/` when it or `PRIVACY.md` changes on `main`, so the URLs above go live with the v1.0.0 merge. To publish earlier, run the workflow by hand on `main` (Actions → Landing page → Run workflow).
+2. **Developer account**: a Chrome Web Store developer account (one-time registration fee) and a verified contact email.
+3. After v1.0.0 is published: replace the three `TODO(v1.0.0)` download links in `landing-page/index.html` with the store URL.
