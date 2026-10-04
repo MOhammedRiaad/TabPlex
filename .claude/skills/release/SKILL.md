@@ -26,6 +26,16 @@ After semantic-release, `release.yml` runs `npm run publish:edge` (`scripts/publ
 
 Store upload stays manual: download `tabplex-vX.Y.Z.zip` from the GitHub release, smoke-test it unpacked (onboarding, add tab to folder, tasks, export/import, session restore, Park & Resume), then upload it in the Web Store dashboard. If `manifest.json` permissions changed, update `PRIVACY.md` and the README "Permissions Explained" first.
 
+## CHROMEWEBSTORE.md (store listing source of truth)
+
+`CHROMEWEBSTORE.md` at the repo root holds every store field for Chrome and Edge (description, single purpose, permission justifications, data use, assets, version history, review notes), in the format of Chrome's `chrome-extensions` agent skill. It isn't shipped (the zip is `dist/` only).
+
+- Any user-facing, permission or privacy change: update it in the same PR (its "Keep it current" list).
+- Each store submission: add or update its Version History row (Submitted → In Review → Published / Rejected), and bump "Last Updated".
+- A rejection: record it under Review Notes → Rejection History with the fix.
+- Store copy: lead with what it does for the user; no API, library or architecture names. The single purpose names one purpose, not a feature list.
+- Before submitting, run Chrome's [pre-publish review checklist](https://github.com/GoogleChrome/modern-web-guidance/blob/main/skills/chrome-extensions/references/webstore/review-checklist.md) (with the `chrome-extensions` skill installed: `references/webstore/review-checklist.md`).
+
 ## Troubleshooting
 
 - **No release happened**: only `docs/chore/ci/...` commits since the last tag, or the workflow failed — check the Actions tab. semantic-release opens an issue on failure.

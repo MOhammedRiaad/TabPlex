@@ -102,7 +102,8 @@ Message handlers that respond asynchronously must `return true` and guard agains
 - Changes to `manifest.json` or `src/background/**` need a reload of the extension in `chrome://extensions`; UI changes just need a tab refresh.
 - A **newly added permission** may not apply on reload of the unpacked extension (e.g. `favicon` kept failing with `net::ERR_FAILED`). Remove the extension and load `dist/` unpacked again before debugging code.
 - Adding a new view touches several places that each hard-code the view list: `ViewType` (uiStore), `routes.tsx` (ROUTES, ROUTE_METADATA, viewToPath, pathToView, `<Route>`), `AppNav.tsx`, `CommandPalette.tsx`, optionally `useKeyboardShortcuts.ts`.
-- New permissions in `manifest.json` must also be justified in `PRIVACY.md` / README "Permissions Explained".
+- New permissions in `manifest.json` must also be justified in `PRIVACY.md`, README "Permissions Explained" and `CHROMEWEBSTORE.md`.
+- `CHROMEWEBSTORE.md` is the store listing source of truth (Chrome and Edge). Update it with any user-facing, permission or privacy change (see the `release` skill).
 - Repo is edited on Windows; keep LF endings (`endOfLine: lf`).
 
 ## Project skills (`.claude/skills/`)
@@ -117,3 +118,11 @@ Message handlers that respond asynchronously must `return true` and guard agains
 | `debug-extension`  | Something works in dev but not in the loaded extension, data not syncing, SW errors    |
 | `release`          | Shipping a version: how the automated GitHub release works, dry runs, Web Store upload |
 | `commit`           | Writing a commit that passes commitlint/husky                                          |
+| `built-in-ai`      | Anything using Chrome's built-in AI (Prompt API, Summarizer): Organize tabs, summaries |
+
+## Chrome tooling for agents
+
+From Chrome's [Build extensions with coding agents](https://developer.chrome.com/docs/extensions/ai/build-with-ai). Each developer sets these up once; they aren't required to build or test.
+
+- **Chrome's agent skills** `chrome-extensions` (MV3 rules, store publishing) and `modern-web-guidance` (web platform and built-in AI): in Claude Code run `/plugin marketplace add GoogleChrome/modern-web-guidance` then `/plugin install modern-web-guidance@googlechrome`, or `npx modern-web-guidance@latest install --choose`. Consult them for any `chrome.*` API or built-in AI work; where they differ from this file, this file wins for TabPlex conventions.
+- **Chrome DevTools MCP** (load, reload and inspect the extension, its service worker and console from the agent): `claude mcp add chrome-devtools --scope project -- npx chrome-devtools-mcp@latest --categoryExtensions --autoConnect` (on native Windows, put `cmd /c` before `npx`). Allow remote debugging at `chrome://inspect/#remote-debugging` (once per browser session). See the `debug-extension` skill.

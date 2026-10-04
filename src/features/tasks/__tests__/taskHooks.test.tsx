@@ -113,10 +113,32 @@ describe('useTaskContextActions', () => {
                 ? { success: true, task: { ...parked, context: { ...parked.context!, aiSummary: m.payload.summary } } }
                 : { success: true, task: parked };
         const summarize = vi.fn().mockResolvedValue('You were testing.');
-        await act(() => actions().park(makeTask(), {}, Promise.resolve({ summarize })));
+        const destroy = vi.fn();
+        await act(() => actions().park(makeTask(), {}, Promise.resolve({ summarize, destroy })));
         await waitFor(() => expect(useBoardStore.getState().tasks[0].context!.aiSummary).toBe('You were testing.'));
         expect(received[1].payload).toMatchObject({ taskId: 'task_1', parkedAt: parked.context!.parkedAt });
         expect(summarize.mock.calls[0][0]).toContain('Their note: note');
+        await waitFor(() => expect(destroy).toHaveBeenCalledTimes(1));
+    });
+
+    it('destroys the summarizer when no summary is made', async () => {
+        const summarize = vi.fn();
+        const destroy = vi.fn();
+        const summarizer = () => Promise.resolve({ summarize, destroy });
+
+        reply = () => ({ success: true, task: makeTask({ context: makeContext({ tabs: [] }) }) });
+        await act(() => actions().park(makeTask(), {}, summarizer()));
+        await waitFor(() => expect(destroy).toHaveBeenCalledTimes(1));
+
+        reply = () => ({ success: true });
+        await act(() => actions().park(makeTask(), {}, summarizer()));
+        await waitFor(() => expect(destroy).toHaveBeenCalledTimes(2));
+
+        reply = () => ({ error: 'no context' });
+        await act(() => actions().park(makeTask(), {}, summarizer()));
+        await waitFor(() => expect(destroy).toHaveBeenCalledTimes(3));
+        expect(toast()!.message).toBe(`Couldn't park "Write pricing page": no context`);
+        expect(summarize).not.toHaveBeenCalled();
     });
 
     it('skips or tolerates summary problems', async () => {

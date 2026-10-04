@@ -24,6 +24,13 @@ async function sendContextMessage(type: ContextMessageType, payload?: unknown): 
 
 const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
+type PendingSummarizer = Promise<Parameters<typeof summarizeContext>[0]>;
+
+/** Free the on-device model's memory once a summarizer is done (or was never needed) */
+function releaseSummarizer(summarizer?: PendingSummarizer) {
+    summarizer?.then(instance => instance.destroy?.()).catch(() => undefined);
+}
+
 /**
  * Park & Resume actions. All tab work happens in the background service worker; this hook sends the
  * request, applies the returned task(s) to the store, and reports the outcome with a toast.
@@ -76,10 +83,10 @@ export function useTaskContextActions() {
 
     /** Generate and attach an on-device summary of a just-parked context (best effort, silent on failure) */
     const attachSummary = useCallback(
-        async (parked: Task, summarizer: Promise<Parameters<typeof summarizeContext>[0]>) => {
+        async (parked: Task, summarizer: PendingSummarizer) => {
             const ctx = parked.context;
-            if (!ctx?.parkedAt || ctx.tabs.length === 0) return;
             try {
+                if (!ctx?.parkedAt || ctx.tabs.length === 0) return;
                 const summary = await summarizeContext(await summarizer, parked, ctx.tabs, ctx.resumeNote);
                 if (!summary) return;
                 apply(
@@ -91,6 +98,8 @@ export function useTaskContextActions() {
                 );
             } catch (error) {
                 console.warn('On-device summary failed', error);
+            } finally {
+                releaseSummarizer(summarizer);
             }
         },
         [apply]
@@ -101,18 +110,24 @@ export function useTaskContextActions() {
             task: Task,
             options: Omit<ParkContextPayload, 'task'> = {},
             /** Started from the click that triggered the park (Chrome needs user activation) */
-            summarizer?: Promise<Parameters<typeof summarizeContext>[0]>
+            summarizer?: PendingSummarizer
         ) => {
+            let unused = summarizer; // released here unless attachSummary takes it over
             try {
                 const response = await sendContextMessage(CONTEXT_MESSAGES.PARK, { task, ...options });
                 apply(response);
-                if (summarizer && response.task) attachSummary(response.task, summarizer);
+                if (summarizer && response.task) {
+                    unused = undefined;
+                    attachSummary(response.task, summarizer);
+                }
                 const settings = await readParkResumeSettings();
                 if (settings.startPomodoroOnStart) pausePomodoroForTask(task.id);
                 const saved = response.task?.context?.tabs.length ?? 0;
                 showToast(`Parked "${task.title}" · ${pluralizeTabs(saved)} saved`, 'success');
             } catch (error) {
                 showToast(`Couldn't park "${task.title}": ${errorMessage(error)}`, 'error');
+            } finally {
+                releaseSummarizer(unused);
             }
         },
         [apply, attachSummary, showToast]

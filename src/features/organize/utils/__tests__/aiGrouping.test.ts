@@ -48,6 +48,8 @@ describe('organizeSchema', () => {
             maximum: 6,
         });
         expect(schema.properties.groups.items.properties.color.enum).toEqual(GROUP_COLORS);
+        // Length is enforced by cleanGroupName, not the schema (Chrome's built-in AI guidance)
+        expect(schema.properties.groups.items.properties.name).toEqual({ type: 'string', minLength: 1 });
     });
 });
 

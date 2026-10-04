@@ -401,7 +401,9 @@ export function organizeSchema(tabCount: number) {
                 items: {
                     type: 'object',
                     properties: {
-                        name: { type: 'string', minLength: 1, maxLength: GROUP_NAME_MAX },
+                        // No maxLength: a hard limit can make the model squeeze names into emoji or gibberish.
+                        // The prompt asks for short names; the normalizer cuts them to GROUP_NAME_MAX.
+                        name: { type: 'string', minLength: 1 },
                         color: { type: 'string', enum: GROUP_COLORS },
                         tabs: {
                             type: 'array',
