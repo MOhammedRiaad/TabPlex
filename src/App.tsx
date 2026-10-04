@@ -149,9 +149,12 @@ function AppContent() {
                 case 'folder':
                     navigateToView('boards');
                     break;
+                // Today only lists today's work; the full lists have their own views
                 case 'task':
+                    navigateToView('tasks');
+                    break;
                 case 'note':
-                    navigateToView('today');
+                    navigateToView('notes');
                     break;
                 case 'session':
                     navigateToView('sessions');

@@ -97,6 +97,75 @@ describe('App', () => {
         fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
         expect(await screen.findByText('Resume "Parked work"')).toBeInTheDocument();
         fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
+
+        // Header buttons
+        fireEvent.click(screen.getByRole('button', { name: 'Open settings' }));
+        await waitFor(() => expect(window.location.hash).toBe('#/settings'));
+        fireEvent.click(screen.getByRole('button', { name: 'Open command palette' }));
+        expect(await screen.findByText('Resume "Parked work"')).toBeInTheDocument();
+    });
+
+    it.each([
+        ['Parked', '#/tasks'], // tasks open the Tasks view (Today only lists today's work)
+        ['Meeting', '#/notes'], // notes open the Notes view
+        ['Inbox', '#/boards'], // folders open Boards
+        ['Morning', '#/sessions'],
+    ])('opens the right view for a "%s" search result', async (query, hash) => {
+        render(<App />);
+        await screen.findAllByText('Parked work', {}, { timeout: 3000 });
+        await go('#/settings');
+        fireEvent.change(screen.getByPlaceholderText('Search tabs, tasks, notes...'), { target: { value: query } });
+        fireEvent.keyDown(screen.getByPlaceholderText('Search tabs, tasks, notes...'), { key: 'Enter' });
+        await waitFor(() => expect(window.location.hash).toBe(hash));
+    });
+
+    it('exports from the shortcut event and reports success or failure', async () => {
+        Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:x'), revokeObjectURL: vi.fn() });
+        vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        render(<App />);
+        await screen.findAllByText('Parked work', {}, { timeout: 3000 });
+
+        act(() => {
+            window.dispatchEvent(new CustomEvent('exportData'));
+        });
+        expect(await screen.findByText('Data exported successfully!')).toBeInTheDocument();
+
+        vi.spyOn(db, 'getAllBoards').mockRejectedValueOnce(new Error('db down'));
+        act(() => {
+            window.dispatchEvent(new CustomEvent('exportData'));
+        });
+        expect(await screen.findByText('Export failed. Please try again.')).toBeInTheDocument();
+    });
+
+    it('imports a file: success shows a toast then reloads once; a bad file shows an error', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const pick = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => undefined);
+        render(<App />);
+        await screen.findAllByText('Parked work', {}, { timeout: 3000 });
+        await go('#/settings');
+        await screen.findAllByText(/Close tabs when parking/, {}, { timeout: 3000 });
+        // Swap in a reload spy only now: a fake location object would break hash routing
+        const reload = vi.fn();
+        const realLocation = window.location;
+        Object.defineProperty(window, 'location', { value: { ...realLocation, reload }, configurable: true });
+
+        act(() => {
+            window.dispatchEvent(new CustomEvent('importData')); // keyboard shortcut / command palette
+        });
+        expect(pick).toHaveBeenCalled();
+
+        const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+        const json = JSON.stringify({ version: '1.0.0', timestamp: '', data: { tasks: [makeTask({ id: 'imp' })] } });
+        fireEvent.change(input, { target: { files: [new File([json], 'backup.json')] } });
+        expect(await screen.findByText('Data imported successfully! Reloading...')).toBeInTheDocument();
+        await waitFor(() => expect(reload).toHaveBeenCalledTimes(1), { timeout: 5000 }); // reload is scheduled 1.5 s after the toast;
+        expect((await db.getAllTasks()).map(t => t.id)).toEqual(['imp']);
+
+        fireEvent.change(input, { target: { files: [new File(['not json'], 'bad.json')] } });
+        expect(await screen.findByText('Import failed. Please check the file format.')).toBeInTheDocument();
+        fireEvent.change(input, { target: { files: [] } }); // dialog cancelled: nothing happens
+        Object.defineProperty(window, 'location', { value: realLocation, configurable: true });
     });
 
     it('opens the park dialog from the header pill', async () => {
