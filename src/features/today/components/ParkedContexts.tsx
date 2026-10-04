@@ -4,6 +4,7 @@ import { useBoardStore } from '../../../store/boardStore';
 import { formatRelative } from '../../../utils/dateUtils';
 import { useTaskContextActions } from '../../tasks/hooks/useTaskContextActions';
 import { getParkedTasks, pluralizeTabs } from '../../tasks/utils/contextUtils';
+import { cleanSummary } from '../../tasks/utils/aiSummary';
 import './ParkedContexts.css';
 
 const MAX_FAVICONS = 5;
@@ -41,7 +42,7 @@ const ParkedContexts: React.FC = () => {
                                         className="parked-context-ai"
                                         title="Written on your device by Chrome's built-in AI"
                                     >
-                                        <span aria-hidden="true">✨</span> {task.context.aiSummary}
+                                        <span aria-hidden="true">✨</span> {cleanSummary(task.context.aiSummary)}
                                     </p>
                                 )}
                                 <div className="parked-context-favicons" aria-hidden="true">

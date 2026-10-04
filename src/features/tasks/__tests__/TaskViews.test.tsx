@@ -154,6 +154,16 @@ describe('TaskContextStrip', () => {
         fireEvent.click(screen.getByTitle('Hide tabs'));
     });
 
+    it('shows a long, chatty summary saved by v1.0 as two plain sentences', () => {
+        const aiSummary =
+            "Okay, I understand the task. You were fixing **checkout** requests. Then `tests`. Here's a breakdown:\n" +
+            '1. More detail';
+        render(<TaskContextStrip task={makeTask({ context: makeContext({ aiSummary }) })} />);
+        expect(document.querySelector('.task-context-summary-ai')).toHaveTextContent(
+            '✨ You were fixing checkout requests. Then tests.'
+        );
+    });
+
     it('offers Park for an active task and hides edit controls when compact', () => {
         const t = makeTask({ context: makeContext({ state: 'active' }) });
         render(<TaskContextStrip task={t} compact />);
