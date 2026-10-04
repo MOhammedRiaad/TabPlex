@@ -157,6 +157,54 @@ describe('useTaskContextActions', () => {
         await waitFor(() => expect(console.warn).toHaveBeenCalledWith('On-device summary failed', expect.any(Error)));
     });
 
+    it('attaches specific tabs quietly and returns the updated task', async () => {
+        const task = makeTask();
+        const withTabs = { ...task, context: makeContext({ state: 'idle' }) };
+        reply = () => ({ success: true, task: withTabs });
+        let result: Task | undefined;
+        await act(async () => {
+            result = await actions().attachTabs(task, [4, 7]);
+        });
+        expect(received[0]).toMatchObject({ type: CONTEXT_MESSAGES.ADD_TABS, payload: { task, chromeTabIds: [4, 7] } });
+        expect(result).toEqual(withTabs);
+        expect(useBoardStore.getState().tasks).toEqual([withTabs]);
+        expect(toast()).toBeNull();
+
+        reply = () => ({ success: true });
+        await act(async () => {
+            result = await actions().attachTabs(task, [4]);
+        });
+        expect(result).toBe(task);
+
+        reply = () => ({ error: 'no window' });
+        await expect(actions().attachTabs(task, [4])).rejects.toThrow('no window');
+    });
+
+    it('starts quietly, reporting the auto-parked task and the timer', async () => {
+        await setSettings({ startPomodoroOnStart: true });
+        const task = makeTask();
+        const other = makeTask({ id: 'other', title: 'Other' });
+        reply = () => ({
+            success: true,
+            task: { ...task, context: makeContext({ state: 'active' }) },
+            autoParked: other,
+        });
+        let response: Awaited<ReturnType<ReturnType<typeof useTaskContextActions>['startQuietly']>> | undefined;
+        await act(async () => {
+            response = await actions().startQuietly(task);
+        });
+        expect(received[0]).toMatchObject({ type: CONTEXT_MESSAGES.START, payload: { task, windowId: 1 } });
+        expect(response).toMatchObject({ autoParked: other, timerStarted: true });
+        expect(useTimerStore.getState()).toMatchObject({ isRunning: true, linkedTaskId: task.id });
+        expect(
+            useBoardStore
+                .getState()
+                .tasks.map(t => t.id)
+                .sort()
+        ).toEqual(['other', 'task_1']);
+        expect(toast()).toBeNull();
+    });
+
     it('adds current tabs and removes tabs', async () => {
         const task = makeTask();
         reply = () => ({ success: true, task: { ...task, context: makeContext() } });

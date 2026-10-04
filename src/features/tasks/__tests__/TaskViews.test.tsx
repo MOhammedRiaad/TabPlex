@@ -7,6 +7,7 @@ import TaskContextStrip from '../components/TaskContextStrip';
 import ParkDialog from '../components/ParkDialog';
 import { useBoardStore } from '../../../store/boardStore';
 import { useUIStore } from '../../ui/store/uiStore';
+import { useTaskDraftStore } from '../../taskDraft/store/taskDraftStore';
 import { ChromeMock, installChromeMock, respondToMessages } from '../../../test/chromeMock';
 import { makeContext, makeTab, makeTask } from '../../../test/factories';
 import { Task } from '../../../types';
@@ -265,6 +266,14 @@ describe('TasksView', () => {
             </MemoryRouter>
         );
     const visible = () => [...document.querySelectorAll('.task-title')].map(e => e.textContent);
+
+    it('opens "New task from tabs" from the header with no tab ids', () => {
+        const open = vi.spyOn(useTaskDraftStore.getState().actions, 'open').mockImplementation(() => undefined);
+        renderView();
+        fireEvent.click(screen.getByRole('button', { name: '✨ Task from tabs' }));
+        expect(open).toHaveBeenCalledWith(undefined);
+        open.mockRestore();
+    });
 
     it('splits columns and history, and filters by search, date and priority', () => {
         renderView();

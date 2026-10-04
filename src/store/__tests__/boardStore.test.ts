@@ -180,6 +180,23 @@ describe('board store', () => {
             await flushPromises();
             expect(types(messages).slice(-1)[0]).toBe('DELETE_TASK');
         });
+
+        it('addTaskAndSync resolves once the background stored the task, or rejects', async () => {
+            const answers: unknown[] = [{ success: true }, { error: 'storage full' }];
+            respondToMessages(m => (m.type === 'ADD_TASK' ? answers.shift() : undefined));
+
+            const saved = await store().addTaskAndSync({ id: 't1', title: 'T', status: 'todo', priority: 'low' });
+            expect(saved).toMatchObject({ id: 't1', createdAt: expect.any(String), updatedAt: saved.createdAt });
+            expect(store().tasks).toEqual([saved]);
+            expect(await db.getTask('t1')).toEqual(saved);
+            expect(messages.find(m => m.type === 'ADD_TASK')!.payload).toEqual(saved);
+
+            await expect(
+                store().addTaskAndSync({ id: 't2', title: 'U', status: 'todo', priority: 'low' })
+            ).rejects.toThrow('storage full');
+            // Saved locally either way; the background error is for the caller to report
+            expect(store().tasks.map(t => t.id)).toEqual(['t1', 't2']);
+        });
     });
 
     describe('notes', () => {

@@ -50,6 +50,12 @@ ORGANIZE TABS
 • Undo, or save the groups to Boards
 • Pinned tabs and existing groups (including your active task) are never touched
 
+NEW TASK FROM TABS
+• Turn the tabs you're looking at into a task in one step
+• With Chrome's built-in AI, TabPlex drafts the title, priority and next steps; without it, it suggests a title
+• Edit the draft, then create the task, or create and start it: its tabs move into the task's group, nothing reopens
+• Works from the Tasks view, the command palette, or a group you just organized
+
 ALSO INCLUDED
 • Boards: save tabs into coloured folders, search them, drag and drop
 • Tasks: To Do / Doing / Done with priorities, due dates and checklists
@@ -186,6 +192,7 @@ Most recent first. Versions come from semantic-release (`CHANGELOG.md`); a store
 
 | Version | Date       | Changes                                                                         | Status                                                    |
 | ------- | ---------- | ------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| next    | —          | New task from tabs (draft a task from open tabs, create & start it in place)    | Not released yet (on `develop`)                           |
 | 1.0.1   | 2026-10-04 | Landing page fix only; no change to the extension                               | Edge: submitted by hand, in review. Chrome: not submitted |
 | 1.0.0   | 2026-10-04 | First public release: Park & Resume, Organize tabs, boards, tasks, notes, timer | GitHub release only                                       |
 
@@ -193,7 +200,7 @@ Most recent first. Versions come from semantic-release (`CHANGELOG.md`); a store
 
 ### Known Issues / Limitations
 
-- On-device AI (Organize tabs by topic, park summaries) needs desktop Chrome with built-in AI on capable hardware. Without it, Organize tabs groups by site and summaries are off.
+- On-device AI (Organize tabs by topic, task drafts, park summaries) needs desktop Chrome with built-in AI on capable hardware. Without it, Organize tabs groups by site, New task from tabs suggests only a title, and summaries are off.
 - Edge: the AI features are hidden or fall back, because Edge may not offer the same built-in model.
 
 ### Rejection History

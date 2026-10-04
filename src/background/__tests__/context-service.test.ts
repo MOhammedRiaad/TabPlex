@@ -273,6 +273,67 @@ describe('context-service', () => {
             expect(more.task!.context!.tabs).toHaveLength(3);
         });
 
+        describe('explicit tabs (New task from tabs)', () => {
+            const tabByUrl = (url: string) => [...mock.browser.tabs.values()].find(t => t.url === url)!;
+
+            it('skips ids of tabs that were closed instead of failing', async () => {
+                const two = tabByUrl('https://two.dev/');
+                const res = await send(CONTEXT_MESSAGES.ADD_TABS, { task: makeTask(), chromeTabIds: [9999, two.id] });
+                expect(res.success).toBe(true);
+                expect(res.task!.context!.tabs.map(t => t.url)).toEqual(['https://two.dev/']);
+            });
+
+            it('takes tabs from a plain group for an idle task and leaves them in it', async () => {
+                const other = tabByUrl('https://other-group.dev/');
+                const res = await send(CONTEXT_MESSAGES.ADD_TABS, { task: makeTask(), chromeTabIds: [other.id] });
+                expect(res.task!.context!.tabs.map(t => t.url)).toEqual(['https://other-group.dev/']);
+                expect(res.task!.context!.state).toBe('idle');
+                expect(mock.browser.tabs.get(other.id)!.groupId).toBe(other.groupId);
+            });
+
+            it("never takes a tab from another active task's group", async () => {
+                const active = (
+                    await send(CONTEXT_MESSAGES.START, { task: makeTask({ id: 'task_2', title: 'Other task' }) })
+                ).task!;
+                const grouped = await send(CONTEXT_MESSAGES.ADD_TABS, { task: active, windowId: 1 });
+                const theirs = mock.browser.groupTabs(grouped.task!.context!.chromeGroupId!)[0];
+                const plain = tabByUrl('https://other-group.dev/');
+
+                const res = await send(CONTEXT_MESSAGES.ADD_TABS, {
+                    task: makeTask(),
+                    chromeTabIds: [theirs.id, plain.id],
+                });
+                expect(res.task!.context!.tabs.map(t => t.url)).toEqual(['https://other-group.dev/']);
+            });
+
+            it('moves tabs from a plain group into a new task group without parking the task', async () => {
+                const one = tabByUrl('https://one.dev/');
+                const two = tabByUrl('https://two.dev/');
+                const plain = mock.browser.addGroup({ tabIds: [one.id, two.id], title: 'Organized' });
+                const started = (await send(CONTEXT_MESSAGES.START, { task: makeTask() })).task!;
+                expect(started.context!.chromeGroupId).toBeNull();
+
+                const res = await send(CONTEXT_MESSAGES.ADD_TABS, { task: started, chromeTabIds: [one.id, two.id] });
+                const groupId = res.task!.context!.chromeGroupId!;
+                expect(groupId).not.toBe(plain.id);
+                expect(mock.browser.groups.get(groupId)).toMatchObject({
+                    title: 'Write pricing page',
+                    color: 'yellow',
+                });
+                expect(mock.browser.groupTabs(groupId).map(t => t.id)).toEqual([one.id, two.id]);
+                expect(mock.browser.groups.has(plain.id)).toBe(false); // Chrome drops the emptied group
+
+                await settle(2000);
+                expect(storedTask().context!.state).toBe('active');
+                expect(storedTask().context!.tabs).toHaveLength(2);
+            });
+
+            it('still skips tabs in other groups for "+ Add current tabs" (no explicit ids)', async () => {
+                const res = await send(CONTEXT_MESSAGES.ADD_TABS, { task: makeTask(), windowId: 1 });
+                expect(res.task!.context!.tabs.map(t => t.url)).not.toContain('https://other-group.dev/');
+            });
+        });
+
         it('removes a tab from a parked task', async () => {
             const task = makeTask({ context: makeContext() });
             const res = await send(CONTEXT_MESSAGES.REMOVE_TAB, { task, url: 'https://a.example/' });
