@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.1](https://github.com/MOhammedRiaad/TabPlex/compare/v1.0.0...v1.0.1) (2026-10-04)
+
+### 🐛 Bug Fixes
+
+* **landing:** stop squeezing the screenshots and make them sharp ([7bb137c](https://github.com/MOhammedRiaad/TabPlex/commit/7bb137cbc7af6ea36410fad5ac18050fb22874d4))
+
 ## 1.0.0 (2026-10-04)
 
 ### ✨ Features
