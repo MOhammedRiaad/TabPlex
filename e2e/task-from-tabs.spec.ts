@@ -122,6 +122,40 @@ test.describe('New task from tabs', () => {
         expect((await storedTaskByTitle(serviceWorker, 'Research docs.test'))?.context?.state).toBe('active');
     });
 
+    test('Create & park saves the tabs to a parked task and closes them, leaving the active task alone', async ({
+        app,
+        context,
+        serviceWorker,
+    }) => {
+        const OTHER = { id: 'task_busy', title: 'Current work' };
+        await seedTask(app, OTHER);
+        const work = await context.newPage();
+        await work.goto(siteOn('work.test', '1'));
+        await app.bringToFront();
+        const card = app.locator('.task-card', { hasText: OTHER.title }).first();
+        await card.locator('.task-context-btn', { hasText: 'Add current tabs' }).click();
+        await expect.poll(async () => (await storedTask(serviceWorker, OTHER.id))?.context?.tabs.length).toBe(1);
+        await work.close();
+        await card.locator('.task-context-btn-primary').click();
+        await expect.poll(async () => (await storedTask(serviceWorker, OTHER.id))?.context?.state).toBe('active');
+        await serviceWorker.evaluate(() =>
+            chrome.storage.local.set({ tabplex_park_resume_settings: { autoAddNewTabs: false } })
+        );
+
+        await openPages(context, DOCS);
+        const dialog = await openDialog(app);
+        await dialog.getByRole('checkbox', { name: 'Include Page c' }).uncheck();
+        await dialog.getByRole('button', { name: '⏸ Create & park' }).click();
+
+        await expect(app.getByText('Parked “Research docs.test” · 2 tabs saved and closed')).toBeVisible();
+        const parked = await storedTaskByTitle(serviceWorker, 'Research docs.test');
+        expect(parked?.context?.state).toBe('parked');
+        expect(parked?.context?.tabs.map(t => t.url)).toEqual(DOCS.slice(0, 2));
+        // Only the unchecked page is still open, and the other task kept going
+        await expect.poll(async () => (await docsTabs(serviceWorker)).map(t => t.url)).toEqual([DOCS[2]]);
+        expect((await storedTask(serviceWorker, OTHER.id))?.context?.state).toBe('active');
+    });
+
     test('makes a task from a group created by Organize tabs', async ({ app, context, serviceWorker }) => {
         await openPages(context, [...DOCS, siteOn('shop.test', 'a'), siteOn('shop.test', 'b')]);
         await openView(app, 'today');

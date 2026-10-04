@@ -201,5 +201,15 @@ export function useTaskContextActions() {
         [apply]
     );
 
-    return { startOrResume, park, requestPark, addCurrentTabs, removeTab, attachTabs, startQuietly };
+    /** Park with no toast, closing specific tabs of a task that isn't active (Create & park); returns the task */
+    const parkQuietly = useCallback(
+        async (task: Task, chromeTabIds: number[]): Promise<Task> => {
+            const response = await sendContextMessage(CONTEXT_MESSAGES.PARK, { task, closeTabs: true, chromeTabIds });
+            apply(response);
+            return response.task ?? task;
+        },
+        [apply]
+    );
+
+    return { startOrResume, park, requestPark, addCurrentTabs, removeTab, attachTabs, startQuietly, parkQuietly };
 }

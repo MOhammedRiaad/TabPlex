@@ -14,6 +14,8 @@ import { useCreateTaskFromTabs } from '../hooks/useCreateTaskFromTabs';
 import { HINT_MAX, MAX_STEPS, STEP_MAX, TASK_DESCRIPTION_MAX, TASK_TITLE_MAX } from '../types';
 import './TaskFromTabsDialog.css';
 
+type CreateAction = 'create' | 'start' | 'park';
+
 /** Tab lists longer than this start collapsed */
 const EXPANDED_TAB_LIMIT = 8;
 
@@ -42,12 +44,14 @@ const TaskFromTabsDialog: React.FC = () => {
     const state = useTaskDraftStore();
     const { actions, phase, tabs, checkedIds } = state;
     const tasks = useBoardStore(s => s.tasks);
-    const { create, createAndStart } = useCreateTaskFromTabs();
-    const [clicked, setClicked] = useState<'create' | 'start' | null>(null);
+    const { create, createAndStart, createAndPark } = useCreateTaskFromTabs();
+    const [clicked, setClicked] = useState<CreateAction | null>(null);
     const [tabsOpen, setTabsOpen] = useState(true);
     const headingRef = useRef<HTMLHeadingElement>(null);
     const titleRef = useRef<HTMLInputElement>(null);
     const focusedTitle = useRef(false);
+    /** The element that had focus when the dialog opened (e.g. the button), focused again on close */
+    const opener = useRef<HTMLElement | null>(null);
 
     // Keep the store's environment current: the click handler reads it synchronously
     useEffect(() => {
@@ -60,11 +64,17 @@ const TaskFromTabsDialog: React.FC = () => {
         if (tabCount > 0) setTabsOpen(tabCount <= EXPANDED_TAB_LIMIT);
     }, [tabCount]);
 
-    // Focus the heading while drafting, then the title input once (when a draft is shown)
+    // Focus the heading while drafting, then the title input once (when a draft is shown). On close, give
+    // focus back to whatever opened the dialog, if it's still on the page.
     useEffect(() => {
+        if (phase !== 'closed' && opener.current === null) {
+            opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : document.body;
+        }
         if (phase === 'closed') {
             focusedTitle.current = false;
             setClicked(null);
+            if (opener.current?.isConnected) opener.current.focus();
+            opener.current = null;
         } else if (phase === 'drafting') {
             headingRef.current?.focus();
         } else if ((phase === 'ready' || phase === 'error') && !focusedTitle.current) {
@@ -91,9 +101,10 @@ const TaskFromTabsDialog: React.FC = () => {
     const activeTask = getActiveContextTask(tasks);
     const changed = tabsChangedSinceDraft(state);
 
-    const run = (which: 'create' | 'start') => {
+    const run = (which: CreateAction) => {
         setClicked(which);
-        (which === 'create' ? create() : createAndStart()).finally(() => setClicked(null));
+        const action = { create, start: createAndStart, park: createAndPark }[which];
+        action().finally(() => setClicked(null));
     };
 
     return (
@@ -120,7 +131,8 @@ const TaskFromTabsDialog: React.FC = () => {
                             <p className="task-from-tabs-note" role="status">
                                 Drafting from {checkedIds.length} {checkedIds.length === 1 ? 'tab' : 'tabs'}…
                             </p>
-                            {state.downloadProgress !== null && (
+                            {/* Chrome reports 100% even when the model was already installed: show real downloads only */}
+                            {state.downloadProgress !== null && state.downloadProgress < 1 && (
                                 <ModelStatus availability={availability} progress={state.downloadProgress} />
                             )}
                         </>
@@ -289,6 +301,15 @@ const TaskFromTabsDialog: React.FC = () => {
                         disabled={!canCreate}
                     >
                         {creating && clicked === 'create' ? 'Creating…' : 'Create task'}
+                    </button>
+                    <button
+                        type="button"
+                        className="task-from-tabs-btn"
+                        onClick={() => run('park')}
+                        disabled={!canCreate || checkedIds.length === 0}
+                        title="Save the checked tabs to a new task and close them, for later"
+                    >
+                        {creating && clicked === 'park' ? 'Parking…' : '⏸ Create & park'}
                     </button>
                     <button
                         type="button"

@@ -26,6 +26,11 @@ export interface ParkContextPayload {
     closeTabs?: boolean;
     /** URLs the user chose to leave open; they are detached from the context */
     keepOpenUrls?: string[];
+    /**
+     * Browser tabs to close when the task isn't active (Create & park). Only tabs whose URL is saved in the
+     * context are closed. Ignored for an active task, whose group is closed instead.
+     */
+    chromeTabIds?: number[];
 }
 
 export interface AddTabsPayload {
