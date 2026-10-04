@@ -199,8 +199,23 @@
     transition: opacity var(--transition-fast);
 }
 
-.task-card:hover .task-actions {
+.task-card:hover .task-actions,
+.task-card:focus-within .task-actions {
     opacity: 1;
+}
+
+/* Pinned: the pin stays visible; edit and delete still appear on hover or keyboard focus */
+.task-card.is-pinned .task-actions {
+    opacity: 1;
+}
+
+.task-card.is-pinned:not(:hover):not(:focus-within) .task-actions button:not(.pin-btn) {
+    visibility: hidden;
+}
+
+.task-actions .pin-btn.active {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
 }
 
 .task-actions button {

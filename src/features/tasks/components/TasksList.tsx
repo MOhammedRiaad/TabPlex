@@ -2,6 +2,7 @@ import React from 'react';
 import TaskCard from './TaskCard';
 import AddTaskForm from './AddTaskForm';
 import { Task } from '../../../types';
+import { pinnedFirst } from '../../../utils/pinned';
 import '../TasksView.css';
 
 interface TasksListProps {
@@ -20,7 +21,7 @@ const TasksList: React.FC<TasksListProps> = ({ todoTasks, doingTasks, doneTasks 
                         <span className="task-count">{todoTasks.length}</span>
                     </h3>
                     <div className="tasks-list">
-                        {todoTasks.map(task => (
+                        {pinnedFirst(todoTasks).map(task => (
                             <TaskCard key={task.id} task={task} />
                         ))}
                         <AddTaskForm status="todo" />
@@ -33,7 +34,7 @@ const TasksList: React.FC<TasksListProps> = ({ todoTasks, doingTasks, doneTasks 
                         <span className="task-count">{doingTasks.length}</span>
                     </h3>
                     <div className="tasks-list">
-                        {doingTasks.map(task => (
+                        {pinnedFirst(doingTasks).map(task => (
                             <TaskCard key={task.id} task={task} />
                         ))}
                         <AddTaskForm status="doing" />
@@ -46,7 +47,7 @@ const TasksList: React.FC<TasksListProps> = ({ todoTasks, doingTasks, doneTasks 
                         <span className="task-count">{doneTasks.length}</span>
                     </h3>
                     <div className="tasks-list">
-                        {doneTasks.map(task => (
+                        {pinnedFirst(doneTasks).map(task => (
                             <TaskCard key={task.id} task={task} />
                         ))}
                         <AddTaskForm status="done" />

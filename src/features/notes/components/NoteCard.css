@@ -124,6 +124,7 @@
     margin-top: var(--spacing-xs);
 }
 
+.note-card .pin-btn,
 .note-card .edit-btn,
 .note-card .delete-btn {
     background: none;
@@ -136,8 +137,14 @@
     transition: all var(--transition-fast);
 }
 
+.note-card .pin-btn:hover,
 .note-card .edit-btn:hover,
 .note-card .delete-btn:hover {
+    opacity: 1;
+    background-color: var(--color-bg-tertiary);
+}
+
+.note-card .pin-btn.active {
     opacity: 1;
     background-color: var(--color-bg-tertiary);
 }

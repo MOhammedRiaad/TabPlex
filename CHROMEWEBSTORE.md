@@ -58,7 +58,7 @@ NEW TASK FROM TABS
 
 ALSO INCLUDED
 • Boards: save tabs into coloured folders, search them, drag and drop
-• Tasks: To Do / Doing / Done with priorities, due dates and checklists
+• Tasks: To Do / Doing / Done with priorities, due dates and checklists; pin tasks and notes to the top
 • Markdown notes, a Pomodoro focus timer and a whiteboard canvas
 • Bookmarks manager and saved browsing sessions
 • Local insights: how often you switched context and how many tabs parking closed

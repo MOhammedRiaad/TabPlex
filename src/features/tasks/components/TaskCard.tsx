@@ -104,7 +104,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
 
     return (
         <div
-            className={`task-card ${isAnimatingCard ? 'animate-card-jump' : ''}`}
+            className={`task-card ${isAnimatingCard ? 'animate-card-jump' : ''} ${task.pinned ? 'is-pinned' : ''}`}
             style={
                 {
                     '--priority-color': getPriorityColor(),
@@ -114,6 +114,15 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             <div className="task-header">
                 <h3 className="task-title">{task.title}</h3>
                 <div className="task-actions">
+                    <button
+                        className={`pin-btn ${task.pinned ? 'active' : ''}`}
+                        onClick={() => updateTask(task.id, { pinned: !task.pinned })}
+                        aria-pressed={Boolean(task.pinned)}
+                        aria-label={task.pinned ? 'Unpin task' : 'Pin task'}
+                        title={task.pinned ? 'Unpin task' : 'Pin task to the top'}
+                    >
+                        📌
+                    </button>
                     <button className="edit-btn" onClick={startEditing} title="Edit task">
                         ✏️
                     </button>
