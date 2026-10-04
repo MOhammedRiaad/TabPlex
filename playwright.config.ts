@@ -4,6 +4,7 @@ import { defineConfig } from '@playwright/test';
 // Run `npm run build` first. CI installs the browser with `npx playwright install --with-deps chromium`.
 export default defineConfig({
     testDir: 'e2e',
+    testIgnore: 'screenshots/**', // npm run screenshots
     timeout: 60_000,
     fullyParallel: false, // each test gets its own browser profile, but keep CI load predictable
     workers: 1,

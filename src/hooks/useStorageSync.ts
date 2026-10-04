@@ -327,7 +327,13 @@ export const useStorageSync = () => {
                         useBoardStore.setState(state => ({ tabs: upsertById(state.tabs, event.data.payload) }));
                         break;
                     case 'STORAGE_TAB_UPDATED':
-                        useBoardStore.setState(state => ({ tabs: upsertById(state.tabs, event.data.payload) }));
+                        // Update only: the background also tracks every browser tab and broadcasts on
+                        // activation; adding unknown ones would fill Boards with the user's browsing
+                        useBoardStore.setState(state => ({
+                            tabs: state.tabs.map(t =>
+                                t.id === event.data.payload.id ? { ...t, ...event.data.payload } : t
+                            ),
+                        }));
                         break;
                     case 'STORAGE_TAB_DELETED':
                         deleteTabSilentlyFromStore(event.data.payload.id);

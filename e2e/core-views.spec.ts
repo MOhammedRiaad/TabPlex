@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import type { Page, Worker } from '@playwright/test';
 import type { Folder, Note, Tab, Task } from '../src/types';
-import { expect, seedTask, storedTask, test } from './fixtures';
+import { expect, seedTask, site, storedTask, test } from './fixtures';
 
 /** Open a TabPlex view in the same tab (the fixture starts on #/tasks) */
 const openView = (page: Page, route: string) => page.goto(page.url().replace(/#\/.*$/, `#/${route}`));
@@ -63,6 +63,22 @@ test.describe('Boards', () => {
         await app.reload();
         await app.getByRole('button', { name: 'Folder: Research' }).click();
         await expect(app.getByText('Stripe pricing').first()).toBeVisible();
+    });
+});
+
+test.describe('Boards and browsing', () => {
+    test("browsing and switching tabs doesn't add anything to Boards", async ({ app, context }) => {
+        await openView(app, 'boards');
+        for (const name of ['one', 'two']) {
+            const page = await context.newPage();
+            await page.goto(site(name));
+            await page.bringToFront(); // activation makes the background broadcast the tab
+        }
+        await app.bringToFront();
+        await app.waitForTimeout(1000);
+        await expect(app.getByText('Page one')).toHaveCount(0);
+        await expect(app.getByText('Page two')).toHaveCount(0);
+        await expect(app.locator('main').getByText('TabPlex', { exact: true })).toHaveCount(0); // its own page
     });
 });
 
