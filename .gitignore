@@ -26,3 +26,10 @@ Thumbs.db
 coverage
 playwright-report
 test-results
+
+# Per-developer agent tooling (see CLAUDE.md -> Chrome tooling for agents)
+.agents/
+.claude/skills/chrome-extensions
+.claude/skills/modern-web-guidance
+skills-lock.json
+.mcp.json
