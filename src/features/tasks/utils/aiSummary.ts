@@ -2,6 +2,7 @@
 // Runs locally: nothing is sent to a server. Chrome 138+, desktop only, with hardware requirements —
 // always feature-detect and treat the summary as optional. https://developer.chrome.com/docs/ai/summarizer-api
 import { ContextTab, Task } from '../../../types';
+import { describeTabForAi } from '../../ai/utils/tabText';
 
 type Availability = 'unavailable' | 'downloadable' | 'downloading' | 'available';
 
@@ -74,18 +75,6 @@ export function createSummarizer(onDownloadProgress?: (fraction: number) => void
     });
 }
 
-function describeTab(tab: ContextTab): string {
-    let where = tab.url;
-    try {
-        const url = new URL(tab.url);
-        // Host + path is enough context; query strings can hold tokens and personal data
-        where = `${url.hostname.replace(/^www\./, '')}${url.pathname === '/' ? '' : url.pathname}`;
-    } catch {
-        // keep the raw value
-    }
-    return `- ${tab.title} (${where})`;
-}
-
 export function buildSummaryInput(
     task: Pick<Task, 'title' | 'description'>,
     tabs: ContextTab[],
@@ -94,7 +83,8 @@ export function buildSummaryInput(
     const lines = [`Task: ${task.title}`];
     if (task.description) lines.push(`Task description: ${task.description}`);
     if (note) lines.push(`Their note: ${note}`);
-    lines.push('Open tabs:', ...tabs.map(describeTab));
+    // Host + path only: query strings can hold tokens and personal data
+    lines.push('Open tabs:', ...tabs.map(tab => `- ${describeTabForAi(tab)}`));
     const text = lines.join('\n');
     return text.length > MAX_INPUT_CHARS ? `${text.slice(0, MAX_INPUT_CHARS)}…` : text;
 }

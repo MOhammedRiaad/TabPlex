@@ -13,14 +13,7 @@ import { pluralizeTabs } from '../utils/contextUtils';
 import { pausePomodoroForTask, startPomodoroForTask } from '../utils/pomodoroLink';
 import { readParkResumeSettings } from './useParkResumeSettings';
 import { summarizeContext } from '../utils/aiSummary';
-
-async function currentWindowId(): Promise<number | undefined> {
-    try {
-        return (await chrome.windows.getCurrent()).id;
-    } catch {
-        return undefined;
-    }
-}
+import { currentWindowId } from '../../ai/utils/collectTabs';
 
 async function sendContextMessage(type: ContextMessageType, payload?: unknown): Promise<ContextResponse> {
     const response = (await chrome.runtime.sendMessage({ type, payload })) as ContextResponse | undefined;
