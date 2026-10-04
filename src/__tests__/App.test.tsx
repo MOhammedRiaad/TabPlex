@@ -87,7 +87,7 @@ describe('App', () => {
             await go(hash);
             expect((await screen.findAllByText(text, {}, { timeout: 3000 })).length).toBeGreaterThan(0);
         }
-    });
+    }, 20_000); // visits all 11 lazy-loaded views; ~5 s under coverage instrumentation
 
     it('navigates with the nav bar and opens the command palette', async () => {
         render(<App />);
