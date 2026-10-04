@@ -15,7 +15,7 @@
     },
     "action": {},
     "permissions": ["tabs", "tabGroups", "history", "sessions", "storage", "notifications", "bookmarks", "favicon"],
-    "host_permissions": ["<all_urls>"],
+
     "commands": {
         "_execute_action": {
             "suggested_key": {

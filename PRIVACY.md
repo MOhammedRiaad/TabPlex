@@ -92,25 +92,22 @@ TabPlex requests the following permissions to function:
     - **Usage**: When tasks are due or timer completes
     - **Data Access**: Task titles for notification display
 
-6. **`<all_urls>` (Host Permissions)**
-    - **Purpose**: Capture favicons from any website
-    - **Usage**: Display website icons in tab cards
-    - **Data Access**: Favicon URLs only
-
-7. **`sessions`**
+6. **`sessions`**
     - **Purpose**: Restore recently closed tabs and windows
     - **Usage**: Used in the "Sessions" view to show recent browsing history
     - **Data Access**: Recently closed tab URLs and titles
 
-8. **`bookmarks`**
+7. **`bookmarks`**
     - **Purpose**: Manage and organize your browser bookmarks
     - **Usage**: View, search, and organize bookmarks within the Bookmarks Manager
     - **Data Access**: Read and write access to your browser bookmarks
 
-9. **`favicon`**
+8. **`favicon`**
     - **Purpose**: Show website icons for tabs, bookmarks and quick links
     - **Usage**: Icons come from Chrome's own local favicon cache (`chrome-extension://…/_favicon/`)
     - **Data Access**: None leaves your device; no third-party icon service is contacted
+
+**No website access**: TabPlex requests no host permissions. It cannot read or change the content of the web pages you visit; it only sees tab titles and addresses through the `tabs` permission.
 
 ### How Permissions Are Used
 
