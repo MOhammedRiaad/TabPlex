@@ -397,6 +397,17 @@ p {
     margin-right: auto;
 }
 
+.cta-card p a {
+    color: var(--text-primary);
+    text-decoration-color: var(--accent-secondary);
+    text-underline-offset: 3px;
+}
+
+.cta-card p a:hover,
+.cta-card p a:focus-visible {
+    color: var(--accent-secondary);
+}
+
 /* How it works */
 .steps {
     display: grid;

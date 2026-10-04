@@ -168,9 +168,12 @@ The application uses Zustand with a modular slice architecture:
 
 ## 🚀 Installation
 
-### For Users (Chrome Web Store)
+### For Users
 
-_Coming soon - Extension will be published to Chrome Web Store_
+- **Microsoft Edge:** [install TabPlex from Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/kaeaniaepejnapfgmkjgjkkgbgkaehed)
+- **Chrome:** coming to the Chrome Web Store. Until then, download `tabplex-vX.Y.Z.zip` from the [latest GitHub release](https://github.com/MOhammedRiaad/TabPlex/releases), unzip it, open `chrome://extensions`, turn on **Developer mode** and click **Load unpacked** on the unzipped folder.
+
+On Edge, the on-device AI features may not be available; TabPlex then groups tabs by site and suggests task titles without AI.
 
 ### For Developers
 
