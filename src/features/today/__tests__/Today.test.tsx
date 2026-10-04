@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import TodayView from '../TodayView';
 import TodayHeader from '../components/TodayHeader';
+import TodayNotes from '../components/TodayNotes';
 import HistoryView from '../../history/HistoryView';
 import ErrorBoundary from '../../ui/components/ErrorBoundary';
 import ThemeToggle from '../../ui/components/ThemeToggle';
@@ -117,6 +118,29 @@ describe('TodayView', () => {
             act(() => fireEvent.click(document.querySelector(selector)!));
             expect(screen.getByTestId('location')).toHaveTextContent(path);
         }
+    });
+
+    it('shows the 6 latest notes and links to all of them when there are more', () => {
+        const notes = Array.from({ length: 7 }, (_, i) =>
+            makeNote({ id: `n${i}`, title: `Note ${i}`, content: `Note ${i}`, createdAt: `2026-10-03T0${i}:00:00` })
+        );
+        renderAt(<TodayNotes notes={notes} />);
+        expect(screen.getAllByText(/^Note \d$/, { selector: '.note-markdown' }).map(e => e.textContent)).toEqual([
+            'Note 6',
+            'Note 5',
+            'Note 4',
+            'Note 3',
+            'Note 2',
+            'Note 1',
+        ]);
+        act(() => fireEvent.click(screen.getByRole('button', { name: 'View All Notes (7)' })));
+        expect(screen.getByTestId('location')).toHaveTextContent('/notes');
+    });
+
+    it('says when there are no notes for today', () => {
+        renderAt(<TodayNotes notes={[]} />);
+        expect(screen.getByText('No notes for today')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /View All Notes/ })).toBeNull();
     });
 });
 

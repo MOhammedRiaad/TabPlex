@@ -237,4 +237,39 @@ describe('FolderDeleteModal', () => {
         );
         expect(screen.queryByText('Delete Folder')).toBeNull();
     });
+
+    it('moves the tabs to another folder before deleting', () => {
+        const onForceDelete = vi.fn();
+        const onMoveAndDelete = vi.fn();
+        const onClose = vi.fn();
+        render(
+            <FolderDeleteModal
+                isOpen
+                folder={makeFolder({ id: 'f1', name: 'Doomed' })}
+                availableFolders={[makeFolder({ id: 'f2', name: 'Keep' })]}
+                folderTabCount={3}
+                onClose={onClose}
+                onMoveAndDelete={onMoveAndDelete}
+                onForceDelete={onForceDelete}
+            />
+        );
+        const submit = screen.getByRole('button', { name: 'Move & Delete Folder' });
+        expect(submit).toBeDisabled(); // no target folder yet
+
+        // Switching to "delete everything" and back via the option cards and radios
+        fireEvent.click(screen.getByText('Delete folder and all tabs'));
+        expect(screen.getByText('This will permanently delete all 3 tabs')).toBeInTheDocument();
+        fireEvent.click(document.querySelector('input[value="move"]')!);
+        fireEvent.click(document.querySelector('.delete-option-card')!);
+
+        // Picking a folder doesn't toggle the option card
+        const select = screen.getByRole('combobox');
+        fireEvent.click(select);
+        fireEvent.change(select, { target: { value: 'f2' } });
+        expect(submit).toBeEnabled();
+        fireEvent.click(submit);
+        expect(onMoveAndDelete).toHaveBeenCalledWith('f2');
+        expect(onForceDelete).not.toHaveBeenCalled();
+        expect(onClose).toHaveBeenCalled();
+    });
 });

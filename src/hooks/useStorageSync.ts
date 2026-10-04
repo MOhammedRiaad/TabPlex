@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useBoardStore } from '../store/boardStore';
 import { Task } from '../types';
 import { BACKGROUND_TASKS_KEY } from '../utils/taskContext';
+import { isImportInThisTab } from '../utils/exportImport';
 import {
     initDB,
     getAllBoards,
@@ -366,8 +367,9 @@ export const useStorageSync = () => {
                         break;
 
                     case 'STORAGE_DATA_IMPORTED':
-                        // When data is imported, we need to refresh all data
-                        window.location.reload();
+                        // Another tab imported data: reload to show it. The importing tab reloads itself
+                        // after its success toast (App.tsx), so it would otherwise reload twice.
+                        if (!isImportInThisTab()) window.location.reload();
                         break;
                 }
             }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useBoardStore } from '../../../store/boardStore';
 import MarkdownEditor from '../../ui/components/MarkdownEditor';
 import { generateNoteId } from '../../../utils/idGenerator';
+import { deriveNoteTitle } from '../../../utils/noteTitle';
 import './AddNoteForm.css';
 
 interface AddNoteFormProps {
@@ -20,7 +21,7 @@ const AddNoteForm: React.FC<AddNoteFormProps> = ({ folderId, boardId }) => {
         if (content.trim()) {
             addNote({
                 id: generateNoteId(),
-                title: content.trim().split('\n')[0].substring(0, 50) || 'Untitled Note',
+                title: deriveNoteTitle(content),
                 content: content.trim(),
                 folderId,
                 boardId,

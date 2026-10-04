@@ -167,7 +167,30 @@ describe('board store', () => {
             store().deleteNoteSilently('note_1');
             expect(store().notes).toEqual([]);
             await flushPromises();
-            expect(types(messages)).toEqual(['ADD_NOTE', 'DELETE_NOTE']);
+            // An edit reaches the background (and other open tabs); a missing note sends nothing
+            expect(types(messages)).toEqual(['ADD_NOTE', 'UPDATE_NOTE', 'DELETE_NOTE']);
+            expect(messages[1].payload).toEqual(expect.objectContaining({ id: 'n1', content: 'changed' }));
+        });
+
+        it('keeps the title in step with the first line when the content changes', async () => {
+            store().addNote({ id: 'n1', title: 'Old idea', content: 'Old idea', format: 'markdown' });
+            store().updateNote('n1', { content: '\n  # Q4 pricing plan  \nDetails' });
+            expect(store().notes[0].title).toBe('Q4 pricing plan');
+
+            store().updateNote('n1', { content: '   ' });
+            expect(store().notes[0].title).toBe('Untitled Note');
+
+            store().updateNote('n1', { content: 'x'.repeat(80) });
+            expect(store().notes[0].title).toHaveLength(50);
+
+            // An explicit title wins; changes that don't touch the content keep the title
+            store().updateNote('n1', { content: 'Body', title: 'Chosen' });
+            expect(store().notes[0].title).toBe('Chosen');
+            store().updateNote('n1', { pinned: true });
+            expect(store().notes[0].title).toBe('Chosen');
+
+            await flushPromises();
+            expect((await db.getAllNotes())[0]).toEqual(expect.objectContaining({ title: 'Chosen', pinned: true }));
         });
     });
 
