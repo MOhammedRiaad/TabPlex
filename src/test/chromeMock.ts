@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // An in-memory fake of the chrome.* APIs TabPlex uses: storage, runtime messaging, tabs, tab groups,
-// windows, bookmarks, history, sessions, identity and action. It keeps real state (tabs live in
+// windows, bookmarks, history, sessions and action. It keeps real state (tabs live in
 // windows, groups disappear when empty, events fire) so background services can be tested end to end.
 import { vi } from 'vitest';
 
@@ -316,11 +316,6 @@ export function createChromeMock() {
         tabGroups: tabGroupsApi,
         windows: windowsApi,
         action: { onClicked: events.actionClicked },
-        identity: {
-            getProfileUserInfo: vi.fn((_options: unknown, callback: (info: any) => void) =>
-                callback({ email: 'user@example.com', id: '1' })
-            ),
-        },
         history: {
             search: vi.fn(async () => [] as unknown[]),
         },

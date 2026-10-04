@@ -5,6 +5,7 @@ import ThemeToggle from '../ui/components/ThemeToggle';
 import Toast from '../bookmarks/components/Toast';
 import { useParkResumeSettings } from '../tasks/hooks/useParkResumeSettings';
 import AiSummarySetting from './components/AiSummarySetting';
+import { DISPLAY_NAME_KEY, DISPLAY_NAME_MAX, saveDisplayName } from './utils/displayName';
 import './SettingsView.css';
 
 interface SettingsViewProps {
@@ -27,6 +28,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
     const [tldrawRoom, setTldrawRoom] = useState(localStorage.getItem('tabboard_tldraw_room') || '');
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    // As typed (not trimmed), so spaces between words survive; the greeting trims it
+    const [displayName, setDisplayName] = useState(() => localStorage.getItem(DISPLAY_NAME_KEY) ?? '');
 
     const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
         setToast({ message, type });
@@ -105,6 +108,36 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
             </div>
 
             <div className="settings-content">
+                {/* Profile Section */}
+                <section className="settings-section">
+                    <h3 className="section-title">
+                        <span className="section-icon">👤</span>
+                        Profile
+                    </h3>
+                    <div className="section-content">
+                        <div className="setting-item">
+                            <div className="setting-info">
+                                <h4>Your name</h4>
+                                <p>Used in the Today greeting. Stored only in this browser.</p>
+                            </div>
+                            <div className="setting-control">
+                                <input
+                                    type="text"
+                                    className="setting-input"
+                                    aria-label="Your name"
+                                    placeholder="e.g. Ada"
+                                    maxLength={DISPLAY_NAME_MAX}
+                                    value={displayName}
+                                    onChange={e => {
+                                        setDisplayName(e.target.value);
+                                        saveDisplayName(e.target.value);
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Data Management Section */}
                 <section className="settings-section">
                     <h3 className="section-title">

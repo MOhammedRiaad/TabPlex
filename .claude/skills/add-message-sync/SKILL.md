@@ -9,7 +9,7 @@ description: Add or change a chrome.runtime message between the TabPlex UI and t
 
 `ExtensionMessage { type: string; payload?: unknown }` in `src/types/index.ts`.
 
-- UI → background: verb form, `ADD_X`, `UPDATE_X`, `DELETE_X`, `MOVE_TAB`, `GET_USER_INFO`…
+- UI → background: verb form, `ADD_X`, `UPDATE_X`, `DELETE_X`, `MOVE_TAB`, `GET_BOOKMARKS`…
 - Background → UI broadcast: `STORAGE_X_ADDED | STORAGE_X_UPDATED | STORAGE_X_DELETED | STORAGE_DATA_IMPORTED`.
 - The background ignores any type starting with `STORAGE_` — never use that prefix for a request.
 

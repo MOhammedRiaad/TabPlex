@@ -12,6 +12,7 @@ import Toast from '../../bookmarks/components/Toast';
 import { useBoardStore } from '../../../store/boardStore';
 import { fakeChrome, respondToMessages } from '../../../test/chromeMock';
 import { makeContext, makeFolder, makeNote, makeTask } from '../../../test/factories';
+import { DISPLAY_NAME_KEY } from '../../settings/utils/displayName';
 
 function Location() {
     return <span data-testid="location">{useLocation().pathname}</span>;
@@ -68,9 +69,8 @@ describe('TodayView', () => {
                 { id: 'f', title: 'Folder' },
             ] as never,
         });
-        respondToMessages(m =>
-            m.type === 'GET_USER_INFO' ? { email: 'ada@example.com' } : m.type === 'GET_BOOKMARKS' ? [] : undefined
-        );
+        localStorage.setItem(DISPLAY_NAME_KEY, 'Ada');
+        respondToMessages(m => (m.type === 'GET_BOOKMARKS' ? [] : undefined));
     });
     afterEach(() => vi.useRealTimers());
 
@@ -133,31 +133,40 @@ describe('TodayHeader', () => {
         expect(screen.getByText(greeting)).toBeInTheDocument();
     });
 
-    it('falls back to the identity API, and handles its errors', async () => {
-        vi.spyOn(console, 'log').mockImplementation(() => undefined);
-        fakeChrome().runtime.sendMessage.mockRejectedValueOnce(new Error('no background'));
-        fakeChrome().identity.getProfileUserInfo.mockImplementationOnce(
-            (_o: unknown, cb: (i: { email: string }) => void) => cb({ email: 'grace@x.dev' })
-        );
-        const { unmount } = render(<TodayHeader />);
-        expect(await screen.findByText(/, Grace/)).toBeInTheDocument();
-        unmount();
-
-        fakeChrome().identity.getProfileUserInfo.mockImplementationOnce((_o: unknown, cb: (i: unknown) => void) => {
-            fakeChrome().runtime.lastError = { message: 'signed out' };
-            cb(undefined);
-            fakeChrome().runtime.lastError = undefined;
-        });
+    it('greets without a name when none is saved, and never asks Chrome for the profile', () => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-03T09:00:00'));
+        localStorage.removeItem(DISPLAY_NAME_KEY);
         render(<TodayHeader />);
-        await waitFor(() => expect(console.log).toHaveBeenCalledWith('Identity API error:', expect.anything()));
-
-        fakeChrome().identity.getProfileUserInfo.mockImplementationOnce(() => {
-            throw new Error('boom');
-        });
-        render(<TodayHeader />);
-        await waitFor(() =>
-            expect(console.log).toHaveBeenCalledWith('Direct identity call failed:', expect.any(Error))
+        expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(/^Good Morning$/);
+        expect(fakeChrome().runtime.sendMessage).not.toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'GET_USER_INFO' })
         );
+    });
+
+    it('uses the trimmed saved name and follows changes from other tabs', () => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-03T09:00:00'));
+        localStorage.setItem(DISPLAY_NAME_KEY, '  Grace   Hopper ');
+        render(<TodayHeader />);
+        expect(screen.getByText('Good Morning, Grace Hopper')).toBeInTheDocument();
+
+        localStorage.setItem(DISPLAY_NAME_KEY, 'Ada');
+        act(() => {
+            window.dispatchEvent(new StorageEvent('storage', { key: DISPLAY_NAME_KEY }));
+        });
+        expect(screen.getByText('Good Morning, Ada')).toBeInTheDocument();
+
+        localStorage.clear();
+        act(() => {
+            window.dispatchEvent(new StorageEvent('storage', { key: null })); // "clear all data" in another tab
+        });
+        expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(/^Good Morning$/);
+
+        act(() => {
+            window.dispatchEvent(new StorageEvent('storage', { key: 'something-else' }));
+        });
+        expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(/^Good Morning$/);
     });
 });
 

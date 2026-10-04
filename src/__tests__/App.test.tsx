@@ -57,7 +57,6 @@ describe('App', () => {
                     },
                 ];
             if (m.type === 'GET_HISTORY' || m.type === 'GET_BROWSER_HISTORY') return [];
-            if (m.type === 'GET_USER_INFO') return { email: 'me@example.com' };
             return undefined;
         });
         vi.spyOn(console, 'log').mockImplementation(() => undefined);
