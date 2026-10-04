@@ -39,17 +39,7 @@ const TldrawContainer: React.FC = () => {
                 height: '100%',
             }}
         >
-            <style>{`
-                /* Hide tldraw watermark/license message */
-                .tlui-license__watermark,
-                .tlui-watermark,
-                [data-testid="watermark"],
-                .tl-watermark,
-                .tl-watermark_SEE-LICENSE {
-                    display: none !important;
-                    visibility: hidden !important;
-                }
-            `}</style>
+            {/* tldraw's watermark stays visible: we have no licence key (ROADMAP decision D13) */}
             <Tldraw persistenceKey={persistenceMode !== 'memory' ? persistenceKey : undefined} autoFocus />
         </div>
     );
