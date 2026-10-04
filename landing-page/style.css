@@ -272,6 +272,8 @@ p {
 
 .glass-card img {
     width: 100%;
+    /* Keep the image's own shape: the width/height attributes only reserve space while loading */
+    height: auto;
     border-radius: 1rem;
     display: block;
 }
