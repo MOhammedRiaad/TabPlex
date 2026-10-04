@@ -9,5 +9,5 @@
         "noEmit": true,
         "types": ["node", "chrome"]
     },
-    "include": ["e2e", "playwright.config.ts"]
+    "include": ["e2e", "playwright.config.ts", "playwright.screenshots.config.ts"]
 }

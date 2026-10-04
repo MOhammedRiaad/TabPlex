@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "TabPlex",
     "version": "1.0.0",
-    "description": "Organize browser tabs, tasks, and work context in a Trello-like workspace with AI-assisted intelligence",
+    "description": "Give every task its own tabs. Park work with a note, resume it in one click, and organize tabs into groups. Private, on-device.",
     "icons": {
         "16": "assets/icon16.png",
         "32": "assets/icon32.png",
