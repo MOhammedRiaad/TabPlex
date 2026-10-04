@@ -63,7 +63,10 @@ export const useTaskNotifications = () => {
                 return taskDueDate.getTime() <= today.getTime();
             });
 
-            // Send notifications for due tasks with delays between each
+            // Send notifications for due tasks with delays between each.
+            // Mark them as notified now: the store changing during the delay re-runs this check,
+            // which used to schedule the same notification again.
+            dueTasks.forEach(task => notifiedTasksRef.current.add(task.id));
             dueTasks.forEach((task: Task, index: number) => {
                 // Add a 2-second delay between each notification
                 setTimeout(() => {
@@ -92,9 +95,6 @@ export const useTaskNotifications = () => {
                             tag: `task-${task.id}`, // Prevent duplicate notifications
                             requireInteraction: task.priority === 'high', // Keep high priority notifications visible
                         });
-
-                        // Mark as notified
-                        notifiedTasksRef.current.add(task.id);
 
                         // Auto-close notification after 10 seconds (unless high priority)
                         // Increased from 5 to 10 seconds for better user visibility

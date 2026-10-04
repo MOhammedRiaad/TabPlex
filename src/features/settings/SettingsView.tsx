@@ -3,6 +3,8 @@ import { useTheme } from '../../hooks/useTheme';
 import { clearAllData } from '../../utils/storage';
 import ThemeToggle from '../ui/components/ThemeToggle';
 import Toast from '../bookmarks/components/Toast';
+import { useParkResumeSettings } from '../tasks/hooks/useParkResumeSettings';
+import AiSummarySetting from './components/AiSummarySetting';
 import './SettingsView.css';
 
 interface SettingsViewProps {
@@ -14,6 +16,7 @@ interface SettingsViewProps {
 
 const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, onImportFile, fileInputRef }) => {
     const { theme, resolvedTheme } = useTheme();
+    const { settings: parkSettings, updateSettings: updateParkSettings } = useParkResumeSettings();
 
     // Local state for tldraw settings
     const [canvasMode, setCanvasMode] = useState(localStorage.getItem('tabboard_canvas_mode') || 'custom');
@@ -145,6 +148,71 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                                 🗑️ Clear Data
                             </button>
                         </div>
+                    </div>
+                </section>
+
+                {/* Park & Resume Section */}
+                <section className="settings-section">
+                    <h3 className="section-title">
+                        <span className="section-icon">⏸</span>
+                        Park &amp; Resume
+                    </h3>
+                    <div className="section-content">
+                        <div className="setting-item">
+                            <div className="setting-info">
+                                <h4>Close tabs when parking</h4>
+                                <p>
+                                    Parking saves a task&apos;s tabs and closes them to free memory. Turn off to just
+                                    ungroup them.
+                                </p>
+                            </div>
+                            <div className="setting-control">
+                                <input
+                                    type="checkbox"
+                                    className="setting-checkbox"
+                                    aria-label="Close tabs when parking"
+                                    checked={parkSettings.closeTabsOnPark}
+                                    onChange={e => updateParkSettings({ closeTabsOnPark: e.target.checked })}
+                                />
+                            </div>
+                        </div>
+                        <div className="setting-item">
+                            <div className="setting-info">
+                                <h4>Add new tabs to the active task</h4>
+                                <p>Tabs you open while a task is active join its tab group automatically.</p>
+                            </div>
+                            <div className="setting-control">
+                                <input
+                                    type="checkbox"
+                                    className="setting-checkbox"
+                                    aria-label="Add new tabs to the active task"
+                                    checked={parkSettings.autoAddNewTabs}
+                                    onChange={e => updateParkSettings({ autoAddNewTabs: e.target.checked })}
+                                />
+                            </div>
+                        </div>
+                        <div className="setting-item">
+                            <div className="setting-info">
+                                <h4>Start a Pomodoro when a task starts</h4>
+                                <p>
+                                    Starting or resuming a task links the focus timer to it and starts a work session.
+                                    Parking pauses it.
+                                </p>
+                            </div>
+                            <div className="setting-control">
+                                <input
+                                    type="checkbox"
+                                    className="setting-checkbox"
+                                    aria-label="Start a Pomodoro when a task starts"
+                                    checked={parkSettings.startPomodoroOnStart}
+                                    onChange={e => updateParkSettings({ startPomodoroOnStart: e.target.checked })}
+                                />
+                            </div>
+                        </div>
+                        <AiSummarySetting
+                            enabled={parkSettings.aiSummaries}
+                            onChange={aiSummaries => updateParkSettings({ aiSummaries })}
+                        />
                     </div>
                 </section>
 

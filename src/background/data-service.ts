@@ -1,4 +1,7 @@
 import { ExtensionMessage, Board, Folder, Tab, Task, Note, Session, HistoryItem } from '../types';
+import { STORAGE_KEYS } from './storage';
+
+const COLLECTIONS = ['boards', 'folders', 'tabs', 'tasks', 'notes', 'sessions', 'history'] as const;
 
 // Helper function to safely send response
 // Helper function to safely send response
@@ -30,15 +33,13 @@ export function handleDataMessage(message: ExtensionMessage, _sendResponse: (res
 
             let exportAllResponseSent = false;
 
-            Promise.all([
-                chrome.storage.local.get(['tabboard_boards']).then(result => result['tabboard_boards'] || []),
-                chrome.storage.local.get(['tabboard_folders']).then(result => result['tabboard_folders'] || []),
-                chrome.storage.local.get(['tabboard_tabs']).then(result => result['tabboard_tabs'] || []),
-                chrome.storage.local.get(['tabboard_tasks']).then(result => result['tabboard_tasks'] || []),
-                chrome.storage.local.get(['tabboard_notes']).then(result => result['tabboard_notes'] || []),
-                chrome.storage.local.get(['tabboard_sessions']).then(result => result['tabboard_sessions'] || []),
-                chrome.storage.local.get(['tabboard_history']).then(result => result['tabboard_history'] || []),
-            ])
+            // Read every collection by its real key (history lives under 'history_items', not
+            // 'tabboard_history', so exports used to drop it)
+            Promise.all(
+                COLLECTIONS.map(name =>
+                    chrome.storage.local.get([STORAGE_KEYS[name]]).then(result => result[STORAGE_KEYS[name]] || [])
+                )
+            )
                 .then(([boards, folders, tabs, tasks, notes, sessions, history]) => {
                     if (!exportAllResponseSent) {
                         exportAllResponseSent = true;
@@ -74,18 +75,12 @@ export function handleDataMessage(message: ExtensionMessage, _sendResponse: (res
             if (message.payload) {
                 let importAllResponseSent = false;
 
-                const { boards, folders, tabs, tasks, notes, sessions, history } = message.payload as ImportPayload;
-
                 // Save all data to storage
-                Promise.all([
-                    chrome.storage.local.set({ tabboard_boards: boards }),
-                    chrome.storage.local.set({ tabboard_folders: folders }),
-                    chrome.storage.local.set({ tabboard_tabs: tabs }),
-                    chrome.storage.local.set({ tabboard_tasks: tasks }),
-                    chrome.storage.local.set({ tabboard_notes: notes }),
-                    chrome.storage.local.set({ tabboard_sessions: sessions }),
-                    chrome.storage.local.set({ tabboard_history: history }),
-                ])
+                const payload = message.payload as ImportPayload;
+                // Missing collections are written as empty lists
+                Promise.all(
+                    COLLECTIONS.map(name => chrome.storage.local.set({ [STORAGE_KEYS[name]]: payload[name] ?? [] }))
+                )
                     .then(() => {
                         // Notify the UI about the import completion
                         chrome.runtime

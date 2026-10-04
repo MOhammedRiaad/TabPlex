@@ -1,5 +1,5 @@
 // React is used for JSX compilation
-import React, { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { HashRouter, useNavigate, useLocation } from 'react-router-dom';
 import TimerManager from './features/sessions/components/TimerManager';
 import CommandPalette from './features/ui/components/CommandPalette';
@@ -14,12 +14,15 @@ import { useShallow } from 'zustand/react/shallow';
 import { downloadExportFile, importFromFile } from './utils/exportImport';
 import { SearchResult } from './types';
 import BoardToast from './features/boards/components/BoardToast';
+import ParkDialog from './features/tasks/components/ParkDialog';
+import { useParkShortcut } from './features/tasks/hooks/useParkShortcut';
 import './App.css';
 
 // Inner App component that uses router hooks
 function AppContent() {
     useStorageSync(); // Initialize storage sync
     useTheme(); // Initialize theme
+    useParkShortcut(); // Alt+Shift+P: park the active task
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -30,11 +33,9 @@ function AppContent() {
     const { setActiveView, setCommandPaletteOpen } = useUIActions();
 
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
-
-    const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
-        setToast({ message, type });
-    }, []);
+    // Toasts live in the UI store so any feature can show one (e.g. Park & Resume)
+    const toast = useUIStore(state => state.toast);
+    const { showToast, clearToast } = useUIActions();
 
     // Use refs to track navigation source and prevent infinite loops
     const isNavigatingFromState = useRef(false);
@@ -221,7 +222,10 @@ function AppContent() {
                 }}
             />
 
-            {toast && <BoardToast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+            <ParkDialog />
+
+            {/* key restarts the auto-dismiss timer for each new toast; clearToast is stable so re-renders don't */}
+            {toast && <BoardToast key={toast.id} message={toast.message} type={toast.type} onClose={clearToast} />}
         </div>
     );
 }

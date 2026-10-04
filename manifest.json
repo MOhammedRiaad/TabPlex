@@ -10,7 +10,8 @@
         "128": "assets/icon128.png"
     },
     "background": {
-        "service_worker": "src/background/background.js"
+        "service_worker": "src/background/background.js",
+        "type": "module"
     },
     "action": {},
     "permissions": [
@@ -21,6 +22,7 @@
         "storage",
         "notifications",
         "bookmarks",
+        "favicon",
         "identity",
         "identity.email"
     ],

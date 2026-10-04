@@ -248,7 +248,7 @@ const BookmarkView: React.FC = () => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Ctrl+F or Cmd+F to focus search
             if ((e.ctrlKey || e.metaKey) && e.key === 'f' && !e.shiftKey) {
-                const searchInput = document.querySelector('.bookmark-search-input') as HTMLInputElement;
+                const searchInput = document.querySelector('.bookmark-search-input-modern') as HTMLInputElement;
                 if (searchInput) {
                     e.preventDefault();
                     searchInput.focus();

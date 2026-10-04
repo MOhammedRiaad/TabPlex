@@ -26,13 +26,14 @@ export async function initDB(): Promise<IDBPDatabase<DBSchema>> {
 
     db = await openDB<DBSchema>(DB_NAME, DB_VERSION, {
         upgrade(database) {
-            // Create object stores
-            database.createObjectStore(BOARDS_STORE, { keyPath: 'id' });
-            database.createObjectStore(FOLDERS_STORE, { keyPath: 'id' });
-            database.createObjectStore(TABS_STORE, { keyPath: 'id' });
-            database.createObjectStore(TASKS_STORE, { keyPath: 'id' });
-            database.createObjectStore(NOTES_STORE, { keyPath: 'id' });
-            database.createObjectStore(SESSIONS_STORE, { keyPath: 'id' });
+            // Create any missing object stores. Guarded so bumping DB_VERSION never throws
+            // "object store already exists" for users upgrading from an older version.
+            const stores = [BOARDS_STORE, FOLDERS_STORE, TABS_STORE, TASKS_STORE, NOTES_STORE, SESSIONS_STORE] as const;
+            for (const store of stores) {
+                if (!database.objectStoreNames.contains(store)) {
+                    database.createObjectStore(store, { keyPath: 'id' });
+                }
+            }
         },
     });
 

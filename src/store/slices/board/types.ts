@@ -34,6 +34,8 @@ export interface TaskSlice {
     updateTask: (id: string, updates: Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>>) => void;
     deleteTask: (id: string) => void;
     deleteTaskSilently: (id: string) => void;
+    /** Insert or replace a task as-is (no timestamp changes, no message to background). For applying remote changes. */
+    upsertTaskSilently: (task: Task) => void;
 }
 
 export interface NoteSlice {

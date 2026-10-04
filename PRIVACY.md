@@ -26,6 +26,7 @@ TabPlex stores the following data **exclusively on your local device**:
     - Completion status
     - Checklists and sub-items
     - Associated tab references
+    - Park & Resume contexts: the titles, addresses and icons of the tabs saved with a task, your "where I left off" note, an optional on-device summary, and a short history of when the task was started, parked and resumed (used for the local analytics)
 
 3. **Notes**
     - Note content (text/markdown)
@@ -110,6 +111,11 @@ TabPlex requests the following permissions to function:
     - **Usage**: Display your name in the "Today" dashboard (e.g., "Good Morning, [Name]")
     - **Data Access**: Your email address and profile name (stored locally, never shared)
 
+10. **`favicon`**
+    - **Purpose**: Show website icons for tabs, bookmarks and quick links
+    - **Usage**: Icons come from Chrome's own local favicon cache (`chrome-extension://…/_favicon/`)
+    - **Data Access**: None leaves your device; no third-party icon service is contacted
+
 ### How Permissions Are Used
 
 - **No Background Tracking**: TabPlex does not monitor your browsing
@@ -141,6 +147,15 @@ TabPlex requests the following permissions to function:
 - Zero network requests for data storage
 - No API calls to external services
 - No data uploaded or downloaded
+
+### On-device AI summaries (optional, off by default)
+
+If you turn on **On-device AI summaries** in Settings, TabPlex uses Chrome's built-in Summarizer API to write a one-line summary when you park a task. The model (Gemini Nano) runs inside Chrome on your computer:
+
+- The input is the task title and description, your note, and the titles and addresses (host and path only, without query strings) of the parked tabs
+- Nothing is sent to TabPlex, Google or any other server by this feature
+- Chrome downloads the model once, directly from Google, the first time you turn the setting on; that download is managed by Chrome and contains none of your data
+- The summary is stored locally with the task and can be removed by parking again or deleting the task
 
 ## Your Data Rights
 

@@ -79,7 +79,8 @@ export const importData = async (jsonData: string): Promise<void> => {
         // Clear existing data in IndexedDB
         await clearAllData();
 
-        const { boards, folders, tabs, tasks, notes, sessions } = parsedData.data;
+        // Older or hand-edited exports may omit collections; treat them as empty
+        const { boards = [], folders = [], tabs = [], tasks = [], notes = [], sessions = [] } = parsedData.data ?? {};
 
         // Import data into IndexedDB
         await Promise.all([
