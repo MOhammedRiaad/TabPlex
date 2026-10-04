@@ -89,7 +89,7 @@ Message handlers that respond asynchronously must `return true` and guard agains
 - IDs via `src/utils/idGenerator.ts`; timestamps as ISO strings (`new Date().toISOString()`).
 - Feature-first folders; co-locate a component's `.css` next to it. No CSS framework.
 - Commits: **Conventional Commits** enforced by commitlint (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`…). Husky pre-commit runs lint-staged (prettier + eslint --fix).
-- Branches: `feature/<name>`, merged to `main` via PR.
+- Branches: `feature/<name>`, merged via PR into **`develop`** (not `main`) until v1.0.0 ships. Every push to `main` publishes a release, so `main` only receives `develop` once the v1.0 queue in `ROADMAP.md` is done. After launch: back to feature → `main`.
 - Versions are set by semantic-release on merge to `main` (see `docs/MAINTENANCE_GUIDE.md` → Release Process). Never edit `version` by hand; the commit type decides the bump (`feat` → minor, `fix`/`perf`/`refactor` → patch, `!` → major).
 
 ## Gotchas
@@ -100,6 +100,7 @@ Message handlers that respond asynchronously must `return true` and guard agains
 
 - `utils/storage.ts` `upgrade()` calls `createObjectStore` unconditionally. Before bumping `DB_VERSION` or adding a store, guard with `if (!database.objectStoreNames.contains(STORE))` or existing users' upgrade will throw.
 - Changes to `manifest.json` or `src/background/**` need a reload of the extension in `chrome://extensions`; UI changes just need a tab refresh.
+- A **newly added permission** may not apply on reload of the unpacked extension (e.g. `favicon` kept failing with `net::ERR_FAILED`). Remove the extension and load `dist/` unpacked again before debugging code.
 - Adding a new view touches several places that each hard-code the view list: `ViewType` (uiStore), `routes.tsx` (ROUTES, ROUTE_METADATA, viewToPath, pathToView, `<Route>`), `AppNav.tsx`, `CommandPalette.tsx`, optionally `useKeyboardShortcuts.ts`.
 - New permissions in `manifest.json` must also be justified in `PRIVACY.md` / README "Permissions Explained".
 - Repo is edited on Windows; keep LF endings (`endOfLine: lf`).
