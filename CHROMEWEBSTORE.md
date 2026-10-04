@@ -1,19 +1,34 @@
-# Chrome Web Store listing: TabPlex
+# Chrome Web Store Listing — TabPlex
 
-Copy these fields into the [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole). Keep them in step with the code: every claim here must be true of the shipped build.
+> Last Updated: 2026-10-04
 
-## Store listing tab
+The single source of truth for the store listings (Chrome Web Store and Microsoft Edge Add-ons). It follows the `CHROMEWEBSTORE.md` format of Chrome's `chrome-extensions` agent skill. Copy fields from here into the [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole) and Partner Center. Every claim must be true of the shipped build.
 
-| Field        | Value                                                                                                                                                                                    |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Name         | TabPlex (from `manifest.json`)                                                                                                                                                           |
-| Summary      | Give every task its own tabs. Park work with a note, resume it in one click, and organize tabs into groups. Private, on-device. (from `manifest.json` `description`, 127/132 characters) |
-| Category     | Productivity → Workflow & Planning                                                                                                                                                       |
-| Language     | English                                                                                                                                                                                  |
-| Homepage URL | https://mohammedriaad.github.io/TabPlex/ (GitHub Pages, published from `landing-page/` by `.github/workflows/pages.yml`)                                                                 |
-| Support URL  | https://github.com/MOhammedRiaad/TabPlex/issues                                                                                                                                          |
+**Keep it current.** Update this file in the same PR when:
 
-### Description
+- a user-facing feature changes: the description, Last Updated and Version History
+- `manifest.json` permissions change: Permissions Justification, plus `PRIVACY.md` and the README "Permissions Explained"
+- data handling changes: Privacy & Data Use and `PRIVACY.md`
+- the UI changes: regenerate the screenshots (`npm run build && npm run screenshots`)
+- a store rejects a submission: Review Notes
+
+This file isn't shipped: the store zip holds only `dist/`.
+
+## Store Listing
+
+**Extension Name**
+
+TabPlex (from `manifest.json` `name`)
+
+**Short Description**
+
+Give every task its own tabs. Park work with a note, resume it in one click, and organize tabs into groups. Private, on-device.
+
+(`manifest.json` `description`, 127/132 characters)
+
+**Detailed Description**
+
+The store strips Markdown: paste as plain text.
 
 ```
 Close your tabs without losing your train of thought.
@@ -44,72 +59,109 @@ ALSO INCLUDED
 • Command palette (Ctrl+K), keyboard shortcuts, light and dark themes
 • Export and import all your data as a file
 
+HOW TO USE
+1. Click the TabPlex icon in the toolbar to open your workspace in a tab.
+2. Create a task, add the tabs you need, and press Start: they open in a tab group named after the task.
+3. Switching to something else? Press Park, write where you left off, and the tabs close.
+4. Press Resume on the Today view to get the tabs and your note back.
+
 PRIVATE BY DESIGN
 • Everything is stored in your browser on this device. No account, no TabPlex server, no analytics.
-• AI features use Chrome's built-in model (Gemini Nano) on your computer. Tab titles and addresses never leave it.
+• AI features use Chrome's built-in model on your computer. Tab titles and addresses never leave it.
 • TabPlex has no access to the content of the websites you visit; it only sees tab titles and addresses.
 • Website icons come from Chrome's own local cache, not a third-party service.
 
 On-device AI needs a recent desktop Chrome on a device that meets Chrome's requirements for built-in AI. Every feature works without it.
+
+SUPPORT
+Found a bug or have an idea? Open an issue at https://github.com/MOhammedRiaad/TabPlex/issues
 ```
 
-### Graphics
+**Category**
 
-| Asset                                           | Size     | File                                                                             |
-| ----------------------------------------------- | -------- | -------------------------------------------------------------------------------- |
-| Store icon                                      | 128×128  | `assets/icon128.png`                                                             |
-| Screenshots (up to 5)                           | 1280×800 | `store-assets/screenshots/1-today.png` … `4-boards.png`, plus `1-today-dark.png` |
-| Small promo tile (required)                     | 440×280  | `store-assets/promo/promo-small-440x280.png`                                     |
-| Marquee promo tile (optional, used if featured) | 1400×560 | `store-assets/promo/promo-marquee-1400x560.png`                                  |
+Productivity → Workflow & Planning
 
-Regenerate the screenshots and promo tiles (from `store-assets/promo/promo.html`) with `npm run build && npm run screenshots` (demo data, light and dark). The Organize tabs screenshot shows an example AI answer, because automated browsers can't run Chrome's built-in model; the screen itself is the real dialog.
+**Single Purpose**
 
-## Privacy practices tab
-
-### Single purpose
+The review team rejects a purpose that lists several features, so this names only the main one. The description covers the rest.
 
 ```
-TabPlex organizes your browser work: tasks that own their tabs (park and resume them), tab groups, boards of saved tabs, notes and a focus timer, in one workspace.
+Organizes browser tabs by task: each task keeps its own tabs, which the user can close with a short note and reopen later in one click.
 ```
 
-### Permission justifications
+**Primary Language**
 
-| Permission      | Justification                                                                                                                                                                                                                         |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tabs`          | Read the titles and addresses of open tabs so the user can save them to a task or board, and open, close and focus a task's tabs when it starts, parks or resumes.                                                                    |
-| `tabGroups`     | Create and name the Chrome tab group for an active task, and the groups the user confirms in "Organize tabs"; notice when the user closes a task's group.                                                                             |
-| `history`       | Show recent browser history in the History view and the Boards side panel so the user can add pages to folders, and suggest work sessions from recent history in the Sessions view. Read only by those views; it stays on the device. |
-| `sessions`      | List recently closed tabs and windows in the Sessions view so the user can restore them.                                                                                                                                              |
-| `storage`       | Save the user's tasks, tabs, notes, boards and settings locally in the browser.                                                                                                                                                       |
-| `notifications` | Show task due reminders and focus-timer alerts.                                                                                                                                                                                       |
-| `bookmarks`     | Show, search, create, edit and organize the user's bookmarks in the Bookmarks view.                                                                                                                                                   |
-| `favicon`       | Show website icons from Chrome's local favicon cache next to saved tabs, bookmarks and links, without contacting a third-party icon service.                                                                                          |
+English
+
+## Graphics & Assets
+
+| Asset              | Dimensions | Status   | Filename                                                             |
+| ------------------ | ---------- | -------- | -------------------------------------------------------------------- |
+| Store Icon         | 128×128    | ✅ Ready | `assets/icon128.png`                                                 |
+| Screenshot 1       | 1280×800   | ✅ Ready | `store-assets/screenshots/1-today.png`                               |
+| Screenshot 2       | 1280×800   | ✅ Ready | `store-assets/screenshots/2-park-resume.png`                         |
+| Screenshot 3       | 1280×800   | ✅ Ready | `store-assets/screenshots/3-organize-tabs.png`                       |
+| Screenshot 4       | 1280×800   | ✅ Ready | `store-assets/screenshots/4-boards.png`                              |
+| Screenshot 5       | 1280×800   | ✅ Ready | `store-assets/screenshots/1-today-dark.png` (or `5-settings-ai.png`) |
+| Small Promo Tile   | 440×280    | ✅ Ready | `store-assets/promo/promo-small-440x280.png`                         |
+| Marquee Promo Tile | 1400×560   | ✅ Ready | `store-assets/promo/promo-marquee-1400x560.png`                      |
+
+### Screenshot Notes
+
+Regenerate the screenshots and promo tiles (from `store-assets/promo/promo.html`) with `npm run build && npm run screenshots`. They use demo data, in light and dark. The Organize tabs screenshot shows an example AI answer, because automated browsers can't run Chrome's built-in model; the dialog itself is the real one.
+
+## Permissions Justification
+
+| Permission      | Type        | Justification                                                                                                                                                                                                                         |
+| --------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tabs`          | permissions | Read the titles and addresses of open tabs so the user can save them to a task or board, and open, close and focus a task's tabs when it starts, parks or resumes.                                                                    |
+| `tabGroups`     | permissions | Create and name the Chrome tab group for an active task, and the groups the user confirms in "Organize tabs"; notice when the user closes a task's group.                                                                             |
+| `history`       | permissions | Show recent browser history in the History view and the Boards side panel so the user can add pages to folders, and suggest work sessions from recent history in the Sessions view. Read only by those views; it stays on the device. |
+| `sessions`      | permissions | List recently closed tabs and windows in the Sessions view so the user can restore them.                                                                                                                                              |
+| `storage`       | permissions | Save the user's tasks, tabs, notes, boards and settings locally in the browser.                                                                                                                                                       |
+| `notifications` | permissions | Show task due reminders and focus-timer alerts.                                                                                                                                                                                       |
+| `bookmarks`     | permissions | Show, search, create, edit and organize the user's bookmarks in the Bookmarks view.                                                                                                                                                   |
+| `favicon`       | permissions | Show website icons from Chrome's local favicon cache next to saved tabs, bookmarks and links, without contacting a third-party icon service.                                                                                          |
 
 No host permissions. No remote code: all JavaScript is in the package.
 
-### Data usage
+## Privacy & Data Use
 
-TabPlex stores data **only on the user's device** and sends nothing to the developer or third parties, so no data types are "collected" in the Web Store's sense (data handled only locally is not collection). Check none of the data-type boxes, and certify:
+### Data Collection
+
+**Does the extension collect user data?** No.
+
+TabPlex stores data **only on the user's device** and sends nothing to the developer or third parties. Data handled only on the device is not "collection" in the Web Store's sense, so check none of the data-type boxes. It reads web history and tab titles/addresses for its own features, and that data never leaves the device. It doesn't use `chrome.storage.sync`.
+
+### Data Use Certification
 
 - [x] I do not sell or transfer user data to third parties, outside of the approved use cases
 - [x] I do not use or transfer user data for purposes that are unrelated to my item's single purpose
 - [x] I do not use or transfer user data to determine creditworthiness or for lending purposes
 
-Privacy policy URL: https://mohammedriaad.github.io/TabPlex/privacy.html
+## Privacy Policy
 
-## Open items before submitting
+**Privacy Policy URL**: https://mohammedriaad.github.io/TabPlex/privacy.html (generated from `PRIVACY.md` by `npm run build:privacy`, published by `.github/workflows/pages.yml`)
 
-1. **Publish the site.** GitHub Pages is enabled with GitHub Actions as the source. `.github/workflows/pages.yml` deploys `landing-page/` when it or `PRIVACY.md` changes on `main`, so the URLs above go live with the v1.0.0 merge. To publish earlier, run the workflow by hand on `main` (Actions → Landing page → Run workflow).
-2. **Developer account**: a Chrome Web Store developer account (one-time registration fee) and a verified contact email.
-3. After v1.0.0 is published: replace the three `TODO(v1.0.0)` download links in `landing-page/index.html` with the store URL.
+## Distribution
+
+**Visibility**: Public
+**Regions**: All regions
+
+## Developer Info
+
+**Publisher Name**: set in the developer dashboard
+**Contact Email**: set and verified in the developer dashboard (it is shown publicly; Google sends policy notices there)
+**Support URL**: https://github.com/MOhammedRiaad/TabPlex/issues
+**Homepage URL**: https://mohammedriaad.github.io/TabPlex/
 
 ## Microsoft Edge Add-ons
 
-Updates after the first version are published automatically by the Release workflow (`npm run publish:edge`, see `docs/MAINTENANCE_GUIDE.md` → Release Process). Submit the first version by hand, then add the `EDGE_CLIENT_ID`, `EDGE_API_KEY` and `EDGE_PRODUCT_ID` repository secrets.
+The Release workflow publishes updates after the first version (`npm run publish:edge`; see `docs/MAINTENANCE_GUIDE.md` → Release Process). The first version was submitted by hand in Partner Center. The workflow needs the `EDGE_CLIENT_ID`, `EDGE_API_KEY` and `EDGE_PRODUCT_ID` repository secrets.
 
 Edge may not offer Chrome's built-in AI, so the Edge listing doesn't promise AI features (TabPlex falls back to grouping by site). Reuse the Chrome text with "Chrome" changed to "the browser", and drop the on-device AI lines.
 
-### Single purpose description
+### Single purpose description (as submitted)
 
 ```
 TabPlex organizes your browser work around tasks. Each task can own a set of tabs: start it to open them in a named tab group, park it with a short "where I left off" note to close them, and resume it later in one click. Everything else in TabPlex supports that purpose: organizing open tabs into groups, boards of saved tabs, task lists, notes and a focus timer, all in one workspace. All data stays on the user's device.
@@ -127,3 +179,30 @@ TabPlex organizes your browser work around tasks. Each task can own a set of tab
 | Screenshot 4           | 1280×800 | `store-assets/screenshots/4-boards.png`                             |
 | Screenshot 5           | 1280×800 | `store-assets/screenshots/edge/1-today-dark.png`                    |
 | Screenshot 6           | 1280×800 | `store-assets/screenshots/2-park-resume-dark.png`                   |
+
+## Version History
+
+Most recent first. Versions come from semantic-release (`CHANGELOG.md`); a store row changes when the version is uploaded or reviewed.
+
+| Version | Date       | Changes                                                                         | Status                                                    |
+| ------- | ---------- | ------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| 1.0.1   | 2026-10-04 | Landing page fix only; no change to the extension                               | Edge: submitted by hand, in review. Chrome: not submitted |
+| 1.0.0   | 2026-10-04 | First public release: Park & Resume, Organize tabs, boards, tasks, notes, timer | GitHub release only                                       |
+
+## Review Notes
+
+### Known Issues / Limitations
+
+- On-device AI (Organize tabs by topic, park summaries) needs desktop Chrome with built-in AI on capable hardware. Without it, Organize tabs groups by site and summaries are off.
+- Edge: the AI features are hidden or fall back, because Edge may not offer the same built-in model.
+
+### Rejection History
+
+None yet.
+
+## Before submitting to the Chrome Web Store
+
+1. **Developer account**: a Chrome Web Store developer account (one-time registration fee) and a verified contact email.
+2. Run the release-candidate pass (`ROADMAP.md` v1.0 queue #10) and the [pre-publish review checklist](https://github.com/GoogleChrome/modern-web-guidance/blob/main/skills/chrome-extensions/references/webstore/review-checklist.md).
+3. Upload `tabplex-vX.Y.Z.zip` from the GitHub release, fill in the fields above, and submit.
+4. Once published: replace the three `TODO(v1.0.0)` download links in `landing-page/index.html` with the store URL, and add a Version History row.
