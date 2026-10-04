@@ -3,6 +3,7 @@ import { useBoardStore } from '../../../store/boardStore';
 import { Command } from '../../../types';
 import { generateTaskId, generateNoteId, generateFolderId } from '../../../utils/idGenerator';
 import { useTaskContextActions } from '../../tasks/hooks/useTaskContextActions';
+import { startOrganize } from '../../organize/store/organizeStore';
 import { getActiveContextTask, getParkedTasks } from '../../tasks/utils/contextUtils';
 import './CommandPalette.css';
 
@@ -185,6 +186,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                       },
                   ]
                 : []),
+            {
+                id: 'organize-tabs',
+                name: 'Organize open tabs',
+                icon: '✨',
+                action: () => startOrganize(),
+                category: 'action' as const,
+            },
             // Action commands
             {
                 id: 'export-data',
