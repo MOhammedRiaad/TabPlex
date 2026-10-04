@@ -4,6 +4,7 @@ import { Command } from '../../../types';
 import { generateTaskId, generateNoteId, generateFolderId } from '../../../utils/idGenerator';
 import { useTaskContextActions } from '../../tasks/hooks/useTaskContextActions';
 import { startOrganize } from '../../organize/store/organizeStore';
+import { openTaskFromTabs } from '../../taskDraft/store/taskDraftStore';
 import { getActiveContextTask, getParkedTasks } from '../../tasks/utils/contextUtils';
 import './CommandPalette.css';
 
@@ -105,6 +106,14 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                         boardId: boards[0]?.id,
                     });
                 },
+                category: 'creation',
+            },
+            {
+                id: 'task-from-tabs',
+                name: 'New task from open tabs',
+                icon: '✨',
+                // Synchronous in the click/Enter: the on-device model session must start there
+                action: () => openTaskFromTabs(),
                 category: 'creation',
             },
             {

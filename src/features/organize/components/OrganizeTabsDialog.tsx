@@ -6,6 +6,7 @@ import ModelStatus from '../../ai/components/ModelStatus';
 import { aiErrorMessage, isAiError } from '../../ai/utils/promptApi';
 import { shortUrlForAi } from '../../ai/utils/tabText';
 import { getFaviconUrl } from '../../../utils/favicon';
+import { openTaskFromTabs } from '../../taskDraft/store/taskDraftStore';
 import { GROUP_NAME_MAX, MIN_TABS_PER_GROUP } from '../../../utils/organizeTabs';
 import { OrganizableTab } from '../../ai/types';
 import { ProposedGroup } from '../types';
@@ -259,6 +260,18 @@ const OrganizeTabsDialog: React.FC = () => {
                                     <li key={g.groupId}>
                                         <span className="organize-dot" style={{ background: DOT[g.color] }} />
                                         {g.title} ({g.tabIds.length})
+                                        <button
+                                            type="button"
+                                            className="organize-link organize-make-task"
+                                            onClick={() => {
+                                                // Synchronous in the click: the model session must start there
+                                                actions.close();
+                                                openTaskFromTabs(g.tabIds);
+                                            }}
+                                            aria-label={`Make a task from ${g.title}`}
+                                        >
+                                            Make a task
+                                        </button>
                                     </li>
                                 ))}
                             </ul>
