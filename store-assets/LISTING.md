@@ -102,3 +102,26 @@ Privacy policy URL: https://mohammedriaad.github.io/TabPlex/privacy.html
 1. **Publish the site.** GitHub Pages is enabled with GitHub Actions as the source. `.github/workflows/pages.yml` deploys `landing-page/` when it or `PRIVACY.md` changes on `main`, so the URLs above go live with the v1.0.0 merge. To publish earlier, run the workflow by hand on `main` (Actions → Landing page → Run workflow).
 2. **Developer account**: a Chrome Web Store developer account (one-time registration fee) and a verified contact email.
 3. After v1.0.0 is published: replace the three `TODO(v1.0.0)` download links in `landing-page/index.html` with the store URL.
+
+## Microsoft Edge Add-ons
+
+Edge may not offer Chrome's built-in AI, so the Edge listing doesn't promise AI features (TabPlex falls back to grouping by site). Reuse the Chrome text with "Chrome" changed to "the browser", and drop the on-device AI lines.
+
+### Single purpose description
+
+```
+TabPlex organizes your browser work around tasks. Each task can own a set of tabs: start it to open them in a named tab group, park it with a short "where I left off" note to close them, and resume it later in one click. Everything else in TabPlex supports that purpose: organizing open tabs into groups, boards of saved tabs, task lists, notes and a focus timer, all in one workspace. All data stays on the user's device.
+```
+
+### Graphics
+
+| Asset                  | Size     | File                                                                |
+| ---------------------- | -------- | ------------------------------------------------------------------- |
+| Small promotional tile | 440×280  | `store-assets/promo/promo-small-440x280.png`                        |
+| Large promotional tile | 1400×560 | `store-assets/promo/promo-marquee-1400x560.png`                     |
+| Screenshot 1           | 1280×800 | `store-assets/screenshots/edge/1-today.png` (no AI summary)         |
+| Screenshot 2           | 1280×800 | `store-assets/screenshots/2-park-resume.png`                        |
+| Screenshot 3           | 1280×800 | `store-assets/screenshots/edge/3-organize-tabs-by-site.png` (no AI) |
+| Screenshot 4           | 1280×800 | `store-assets/screenshots/4-boards.png`                             |
+| Screenshot 5           | 1280×800 | `store-assets/screenshots/edge/1-today-dark.png`                    |
+| Screenshot 6           | 1280×800 | `store-assets/screenshots/2-park-resume-dark.png`                   |
