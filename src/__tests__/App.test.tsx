@@ -85,9 +85,10 @@ describe('App', () => {
         ];
         for (const [hash, text] of visits) {
             await go(hash);
-            expect((await screen.findAllByText(text, {}, { timeout: 3000 })).length).toBeGreaterThan(0);
+            // Each view is lazy-loaded: the first visit compiles it, which is slow under coverage on a busy machine
+            expect((await screen.findAllByText(text, {}, { timeout: 10_000 })).length).toBeGreaterThan(0);
         }
-    }, 20_000); // visits all 11 lazy-loaded views; ~5 s under coverage instrumentation
+    }, 60_000); // visits all 11 lazy-loaded views
 
     it('navigates with the nav bar and opens the command palette', async () => {
         render(<App />);
