@@ -17,6 +17,7 @@
         "preview": "vite preview",
         "prepare": "husky",
         "package": "node scripts/package-extension.mjs",
+        "publish:edge": "node scripts/publish-edge.mjs",
         "release:dry": "semantic-release --dry-run --no-ci",
         "test": "vitest run",
         "test:watch": "vitest",

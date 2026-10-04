@@ -107,7 +107,8 @@ Every push to `main` publishes a release, and the first one will be **v1.0.0** (
     - updates `CHANGELOG.md`, commits `chore(release): X.Y.Z [skip ci]` and tags `vX.Y.Z`
     - publishes a GitHub release with the notes and the zip attached
 
-3. Download the zip from the GitHub release and upload it to the Chrome Web Store dashboard. Store publishing stays manual.
+3. **Microsoft Edge Add-ons is automatic:** the same workflow then runs `npm run publish:edge`, which uploads the zip with the [Edge Add-ons Update API](https://learn.microsoft.com/microsoft-edge/extensions/update/api/using-addons-api) and submits it for review. It needs the repository secrets `EDGE_CLIENT_ID`, `EDGE_API_KEY` (Partner Center → Microsoft Edge → Publish API) and `EDGE_PRODUCT_ID` (the extension's overview page); without them the step is skipped. The first Edge version must be published by hand in Partner Center. If a previous version is still in review, the step fails with `InProgressSubmission`: wait for the review, then re-run the workflow (`workflow_dispatch`).
+4. **Chrome Web Store stays manual:** download the zip from the GitHub release and upload it in the Chrome Web Store dashboard.
 
 ### Useful commands
 
