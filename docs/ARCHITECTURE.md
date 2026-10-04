@@ -43,8 +43,15 @@ We use **Zustand** for state management, split into focused "slices" to keep cod
 The background service worker acts as the "Engine" of the extension. It handles Chrome API events, context menus, and keeps data in sync between multiple TabPlex windows.
 
 - **Message Handler**: Central router for incoming messages (`message-handler.ts`).
-- **Services**: Specialized modules (e.g., `tab-service.ts`) for specific domains.
+- **Services**: Specialized modules (e.g., `tab-service.ts`) for specific domains. Tab and tab-group changes always run here, never in the UI page:
+    - `context-service.ts`: Park & Resume (task-bound tab groups)
+    - `organize-service.ts`: Organize tabs (create and undo the groups the user confirmed)
+    - `update-handler.ts`: shared `UPDATE_*` handling (save, broadcast `STORAGE_*_UPDATED`, reply)
 - **Storage**: Independent access to `chrome.storage.local` for background persistence.
+
+### 3a. On-device AI (`src/features/ai`)
+
+Chrome's built-in AI (Gemini Nano) runs on the device; nothing is sent to a server. `promptApi.ts` wraps the Prompt API (availability, session creation inside the user's click, schema-constrained JSON with validation, timeouts, fitting tabs into the context window). AI runs in the UI page only, and every AI feature has a non-AI fallback (e.g. Organize tabs groups by site). Nothing in `src/background` imports this module.
 
 ### 4. Data Layer (`src/utils/storage.ts`)
 

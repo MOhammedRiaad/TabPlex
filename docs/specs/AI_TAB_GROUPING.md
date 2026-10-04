@@ -2,7 +2,7 @@
 
 |                  |                                                                                              |
 | ---------------- | -------------------------------------------------------------------------------------------- |
-| **Status**       | Ready to implement · milestone v1.0 (ROADMAP queue #7)                                       |
+| **Status**       | Implemented (ROADMAP queue #7) · see Implementation notes                                    |
 | **Owner**        | Mohamed                                                                                      |
 | **Created**      | 2026-10-03                                                                                   |
 | **Branch**       | `feature/ai-organize`                                                                        |
@@ -20,6 +20,16 @@
 - Names in `code` (files, exports, CSS classes, message types, storage keys) are **decided**. Don't rename them: other specs and tests refer to them.
 - All user-facing text is in the tables. Use it verbatim.
 - When this spec and the code disagree about existing behaviour, the code wins. Update this spec in the same PR.
+
+## Implementation notes (2026-10-04)
+
+- **Save to Boards instead of Save as board.** TabPlex shows a single board (`BoardView` always uses `boards[0]`, no switcher), so a new board would never be visible. The groups are saved as folders in that board (`src/features/organize/utils/saveToBoards.ts`), or in a new default board if none exists. Labels: **Save to Boards** → **Open Boards**; toast "Saved N folders with M tabs to Boards". A board switcher is in the ROADMAP backlog.
+- A suggested group dropped for having fewer than 2 tabs releases its tabs, so a later group in the same answer can still use them (spec §6.4 said they become ungrouped; releasing never loses a tab).
+- **Make a task** buttons in the done phase are not rendered yet: they arrive with [AI_TASK_FROM_TABS.md](AI_TASK_FROM_TABS.md) (v1.1).
+- Playwright init scripts do run in `chrome-extension://` pages, so the stubbed-model E2E test (§13.5 #4) runs.
+- The store tracks `tabs` (in tab-strip order) instead of `tabsById`; the dialog builds the lookup itself.
+
+---
 
 ## 1. Problem
 
