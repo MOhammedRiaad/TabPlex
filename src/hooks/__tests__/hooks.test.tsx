@@ -4,6 +4,7 @@ import { useTheme } from '../useTheme';
 import { useKeyboardShortcuts } from '../useKeyboardShortcuts';
 import { useTaskNotifications } from '../useTaskNotifications';
 import { useBoardStore } from '../../store/boardStore';
+import { useUIStore } from '../../features/ui/store/uiStore';
 import { makeBoard, makeFolder, makeTask } from '../../test/factories';
 
 const press = (key: string, opts: KeyboardEventInit = {}, target: EventTarget = window) =>
@@ -101,9 +102,12 @@ describe('useKeyboardShortcuts', () => {
         press('n');
         press('n');
         expect(useBoardStore.getState().notes).toHaveLength(1);
+        // Ctrl+Shift+K opens the New task dialog (once, however often it's pressed); it creates nothing itself
         press('k');
         press('k');
-        expect(useBoardStore.getState().tasks).toHaveLength(1);
+        expect(useUIStore.getState().newTaskDialogOpen).toBe(true);
+        expect(useBoardStore.getState().tasks).toHaveLength(0);
+        useUIStore.setState({ newTaskDialogOpen: false });
         press('f');
         press('f');
         expect(useBoardStore.getState().folders).toHaveLength(2);

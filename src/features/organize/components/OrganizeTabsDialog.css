@@ -212,6 +212,14 @@
     gap: var(--spacing-sm);
 }
 
+.organize-created li + li {
+    margin-top: var(--spacing-xs);
+}
+
+.organize-make-task {
+    margin-left: auto;
+}
+
 .organize-dot {
     width: 10px;
     height: 10px;

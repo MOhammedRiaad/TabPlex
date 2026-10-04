@@ -2,6 +2,7 @@ import React from 'react';
 import NoteCard from './NoteCard';
 import AddNoteForm from './AddNoteForm';
 import { Note } from '../../../types';
+import { pinnedFirst } from '../../../utils/pinned';
 import '../NotesView.css';
 
 interface NotesListProps {
@@ -13,7 +14,7 @@ const NotesList: React.FC<NotesListProps> = ({ notes, viewMode }) => {
     return (
         <div className={`notes-view-content ${viewMode}-view`}>
             {notes.length > 0 ? (
-                notes.map(note => <NoteCard key={note.id} note={note} />)
+                pinnedFirst(notes).map(note => <NoteCard key={note.id} note={note} />)
             ) : (
                 <div className="notes-empty-state">
                     <span className="empty-icon">📝</span>

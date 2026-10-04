@@ -31,6 +31,8 @@ export interface TabSlice {
 export interface TaskSlice {
     tasks: Task[];
     addTask: (task: Omit<Task, 'createdAt' | 'updatedAt'>) => void;
+    /** Like addTask, but resolves once the background has stored the task. Rejects on a background error. */
+    addTaskAndSync: (task: Omit<Task, 'createdAt' | 'updatedAt'>) => Promise<Task>;
     updateTask: (id: string, updates: Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>>) => void;
     deleteTask: (id: string) => void;
     deleteTaskSilently: (id: string) => void;

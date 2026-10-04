@@ -164,6 +164,8 @@ interface ParkOptions {
     note?: string;
     closeTabs: boolean;
     keepOpenUrls?: string[];
+    /** Tabs to close for a task that isn't active (see ParkContextPayload.chromeTabIds) */
+    chromeTabIds?: number[];
     /** Parked without the user asking (another task started, group closed, restart) */
     auto?: boolean;
 }
@@ -173,6 +175,7 @@ async function parkTask(task: Task, options: ParkOptions): Promise<Task> {
     let tabs = ctx.tabs;
     const closeIds: number[] = [];
     const detachIds: number[] = [];
+    let closeWindowId = ctx.windowId;
 
     if (ctx.state === 'active' && (await groupExists(ctx.chromeGroupId))) {
         const live = await getGroupTabs(ctx.chromeGroupId as number);
@@ -187,6 +190,16 @@ async function parkTask(task: Task, options: ParkOptions): Promise<Task> {
             const url = tab.url || tab.pendingUrl || '';
             if (keep.has(url)) detachIds.push(tab.id);
             else closeIds.push(tab.id);
+        }
+    } else if (ctx.state !== 'active' && options.chromeTabIds?.length) {
+        // Create & park: the tabs were attached (not grouped) a moment ago. Close only tabs saved in the context.
+        const saved = new Set(ctx.tabs.map(tab => tab.url));
+        const loaded = await Promise.all(options.chromeTabIds.map(id => chrome.tabs.get(id).catch(() => undefined)));
+        for (const tab of loaded) {
+            if (tab?.id !== undefined && saved.has(tab.url || tab.pendingUrl || '')) {
+                closeIds.push(tab.id);
+                closeWindowId ??= tab.windowId;
+            }
         }
     }
 
@@ -222,7 +235,7 @@ async function parkTask(task: Task, options: ParkOptions): Promise<Task> {
         try {
             if (detachIds.length) await chrome.tabs.ungroup(ids(detachIds));
             if (options.closeTabs) {
-                await closeTabsSafely(ctx.windowId, closeIds);
+                await closeTabsSafely(closeWindowId, closeIds);
             } else if (closeIds.length) {
                 await chrome.tabs.ungroup(ids(closeIds));
             }
@@ -308,19 +321,33 @@ async function addTabsToTask(payload: AddTabsPayload): Promise<ContextResponse> 
     const ctx = getContext(task);
 
     let candidates: chrome.tabs.Tab[];
-    if (payload.chromeTabIds?.length) {
-        candidates = await Promise.all(payload.chromeTabIds.map(id => chrome.tabs.get(id)));
+    const explicit = Boolean(payload.chromeTabIds?.length);
+    if (explicit) {
+        // Tabs closed since the user picked them are skipped, not an error
+        const loaded = await Promise.all(
+            (payload.chromeTabIds as number[]).map(id => chrome.tabs.get(id).catch(() => undefined))
+        );
+        candidates = loaded.filter((tab): tab is chrome.tabs.Tab => tab !== undefined);
     } else {
         const windowId = await resolveWindowId(payload.windowId);
         candidates = await chrome.tabs.query({ windowId });
     }
 
-    // Skip pinned tabs, TabPlex itself, and tabs that belong to some other group
+    // Another task's live group is off limits. Plain groups (e.g. from "Organize tabs") may be taken from
+    // when the user picked the tabs explicitly; "+ Add current tabs" still skips every other group.
+    const active = await getActiveTask();
+    const otherTaskGroup =
+        active && active.id !== task.id ? (getContext(active).chromeGroupId ?? undefined) : undefined;
+
+    // Skip pinned tabs and TabPlex itself
     candidates = candidates.filter(
         tab =>
             !tab.pinned &&
             toContextTab(tab) !== null &&
-            (tab.groupId === undefined || tab.groupId === NO_GROUP || tab.groupId === ctx.chromeGroupId)
+            (tab.groupId === undefined ||
+                tab.groupId === NO_GROUP ||
+                tab.groupId === ctx.chromeGroupId ||
+                (explicit && tab.groupId !== otherTaskGroup))
     );
 
     if (candidates.length === 0) {
@@ -550,6 +577,7 @@ export function handleContextMessage(message: ExtensionMessage, sendResponse: (r
                     note: payload.note,
                     closeTabs: payload.closeTabs ?? settings.closeTabsOnPark,
                     keepOpenUrls: payload.keepOpenUrls,
+                    chromeTabIds: payload.chromeTabIds,
                 });
                 return { success: true, task };
             }

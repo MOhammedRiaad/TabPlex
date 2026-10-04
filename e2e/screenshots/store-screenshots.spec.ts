@@ -300,3 +300,45 @@ for (const scheme of ['light', 'dark'] as const) {
         await shoot(app, `5-settings-ai${suffix}`);
     });
 }
+
+// Edge Add-ons listing: Organize tabs without on-device AI (grouped by site), since Edge may not offer Chrome's model
+test('edge screenshot: organize tabs by site', async ({ app, context }) => {
+    await serveDemoPages(context);
+    await app.setViewportSize(SIZE);
+    await app.emulateMedia({ colorScheme: 'light' });
+    const { boards: _boards, folders: _folders, tabs: _tabs, ...work } = demoData();
+    // No on-device AI summary: the Edge listing doesn't promise AI features
+    for (const task of work.tasks as { context?: { aiSummary?: string } }[]) delete task.context?.aiSummary;
+    await seed(app, work);
+
+    await mkdir(path.join(STORE_DIR, 'edge'), { recursive: true });
+    for (const scheme of ['light', 'dark'] as const) {
+        await app.emulateMedia({ colorScheme: scheme });
+        await openView(app, 'today');
+        await app.reload();
+        await expect(app.getByText('Pick up where you left off')).toBeVisible();
+        await app.waitForTimeout(400);
+        const file = scheme === 'dark' ? '1-today-dark.png' : '1-today.png';
+        await app.screenshot({ path: path.join(STORE_DIR, 'edge', file) });
+    }
+    await app.emulateMedia({ colorScheme: 'light' });
+
+    for (const url of [
+        'https://react.dev/reference/react/useEffect',
+        'https://react.dev/learn/you-might-not-need-an-effect',
+        'https://stripe.com/pricing',
+        'https://docs.stripe.com/tax',
+        'https://www.google.com/travel/flights/lisbon',
+        'https://www.booking.com/city/pt/lisbon.html',
+    ]) {
+        const page = await context.newPage();
+        await page.goto(url);
+    }
+    await openView(app, 'today');
+    await app.reload();
+    await app.bringToFront();
+    await app.getByRole('button', { name: /Organize tabs/ }).click();
+    await expect(app.getByText('Grouped by site')).toBeVisible();
+    await app.waitForTimeout(400);
+    await app.screenshot({ path: path.join(STORE_DIR, 'edge', '3-organize-tabs-by-site.png') });
+});

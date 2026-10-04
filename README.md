@@ -34,10 +34,12 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 - **Today View**: Consolidated dashboard with personalized greetings, daily focus, and tasks
 - **Kanban-Style Workflow**: To Do, Doing, Done columns for visual progress tracking
 - **Rich Task Details**: Add descriptions, checklists, due dates, and priority levels
+- **Pinning**: Pin a task or note (📌) to keep it at the top of its column or list, on Today too
 - **Task-Tab Linking**: Associate web resources with specific tasks
 - **Park & Resume**: Each task keeps its own tabs. Start a task to open them in a named Chrome tab group, park it with a "where I left off" note to close them, and resume later in one click — everything stays on your device. Optional: start a Pomodoro with the task, and on-device AI summaries of parked work (Chrome's built-in AI)
 - **On-device AI**: Chrome's built-in AI (Gemini Nano) runs on your computer, never in the cloud. Settings → On-device AI shows whether your device supports it and turns AI features on or off; every feature still works without it
 - **Organize tabs**: One click on Today (or "Organize open tabs" in the command palette) suggests Chrome tab groups for your loose tabs, by what you're working on with on-device AI, or by site without it. Rename, recolour or drop tabs in a preview, then create the groups; Undo or Save to Boards afterwards. Pinned tabs and existing groups (including your active task) are never touched
+- **✨ New task from tabs**: drafts a task (title, priority, steps) from the tabs you pick, on-device. Start it from the Tasks view, the command palette ("New task from open tabs") or **Make a task** on a group you just organized; edit the draft, then **Create task** or **▶ Create & start** to group those tabs under the task right away, or **⏸ Create & park** to save them to the task and close them for later. Without on-device AI you get a suggested title and fill in the rest
 
 ### 📝 Note-Taking
 
@@ -167,9 +169,12 @@ The application uses Zustand with a modular slice architecture:
 
 ## 🚀 Installation
 
-### For Users (Chrome Web Store)
+### For Users
 
-_Coming soon - Extension will be published to Chrome Web Store_
+- **Microsoft Edge:** [install TabPlex from Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/kaeaniaepejnapfgmkjgjkkgbgkaehed)
+- **Chrome:** coming to the Chrome Web Store. Until then, download `tabplex-vX.Y.Z.zip` from the [latest GitHub release](https://github.com/MOhammedRiaad/TabPlex/releases), unzip it, open `chrome://extensions`, turn on **Developer mode** and click **Load unpacked** on the unzipped folder.
+
+On Edge, the on-device AI features may not be available; TabPlex then groups tabs by site and suggests task titles without AI.
 
 ### For Developers
 

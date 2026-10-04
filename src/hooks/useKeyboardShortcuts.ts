@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useBoardStore } from '../store/boardStore';
+import { useUIStore } from '../features/ui/store/uiStore';
 
 export const useKeyboardShortcuts = (
     activeView: 'boards' | 'history' | 'sessions' | 'today' | 'bookmarks',
@@ -7,7 +8,6 @@ export const useKeyboardShortcuts = (
 ) => {
     // Only get the action functions from the store, not the data arrays
     const addTab = useBoardStore(state => state.addTab);
-    const addTask = useBoardStore(state => state.addTask);
     const addNote = useBoardStore(state => state.addNote);
     const addFolder = useBoardStore(state => state.addFolder);
 
@@ -15,7 +15,6 @@ export const useKeyboardShortcuts = (
     const isProcessingFolderRef = useRef<boolean>(false);
     const isProcessingTabRef = useRef<boolean>(false);
     const isProcessingNoteRef = useRef<boolean>(false);
-    const isProcessingTaskRef = useRef<boolean>(false);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -128,35 +127,10 @@ export const useKeyboardShortcuts = (
                     isProcessingNoteRef.current = false;
                 }, 300);
             }
-            // Ctrl/Cmd + Shift + K: Add a new task
+            // Ctrl/Cmd + Shift + K: open the New task dialog (pressing it again keeps the one dialog open)
             else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
-
-                // Check if we're already processing a task addition
-                if (isProcessingTaskRef.current) {
-                    return; // Prevent multiple simultaneous additions
-                }
-
-                // Set processing flag
-                isProcessingTaskRef.current = true;
-
-                // Get current state inside the handler to avoid dependency issues
-                const state = useBoardStore.getState();
-
-                addTask({
-                    id: `task_${Date.now()}`,
-                    title: 'New task',
-                    status: 'todo',
-                    priority: 'medium',
-                    boardId: state.boards[0]?.id,
-                    folderId: undefined,
-                    tabIds: [],
-                });
-
-                // Reset the processing flag after a short delay
-                setTimeout(() => {
-                    isProcessingTaskRef.current = false;
-                }, 300);
+                useUIStore.getState().actions.openNewTaskDialog();
             }
             // Ctrl/Cmd + Shift + F: Add a new folder
             else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
@@ -208,7 +182,7 @@ export const useKeyboardShortcuts = (
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [activeView, setActiveView, addTab, addTask, addNote, addFolder]);
+    }, [activeView, setActiveView, addTab, addNote, addFolder]);
 };
 
 export default useKeyboardShortcuts;

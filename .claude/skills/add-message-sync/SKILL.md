@@ -42,6 +42,18 @@ case 'UPDATE_X': {
 
 Cast `payload` to a shared type; don't use `any`.
 
+For a plain upsert + broadcast (`UPDATE_X`), use the shared helper instead of writing the block above:
+
+```ts
+case 'UPDATE_X':
+    return handleUpdate<X>(message, updateX, 'STORAGE_X_UPDATED', _sendResponse); // background/update-handler.ts
+```
+
+The service worker is stopped after ~30 s idle and restarted on the next event, so module-level variables are lost.
+Read and write state through `chrome.storage` (`background/storage.ts`) inside each handler; never cache it in a
+variable between messages. Register `chrome.*` listeners at the top level of the module (synchronously at import),
+or Chrome won't wake the worker for them.
+
 ## Receiver — `src/hooks/useStorageSync.ts`
 
 Add a case in `handleStorageChange`. It must **not** send a message back:

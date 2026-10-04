@@ -25,7 +25,7 @@
 
 - **Save to Boards instead of Save as board.** TabPlex shows a single board (`BoardView` always uses `boards[0]`, no switcher), so a new board would never be visible. The groups are saved as folders in that board (`src/features/organize/utils/saveToBoards.ts`), or in a new default board if none exists. Labels: **Save to Boards** → **Open Boards**; toast "Saved N folders with M tabs to Boards". A board switcher is in the ROADMAP backlog.
 - A suggested group dropped for having fewer than 2 tabs releases its tabs, so a later group in the same answer can still use them (spec §6.4 said they become ungrouped; releasing never loses a tab).
-- **Make a task** buttons in the done phase are not rendered yet: they arrive with [AI_TASK_FROM_TABS.md](AI_TASK_FROM_TABS.md) (v1.1).
+- **Make a task** buttons in the done phase shipped with [AI_TASK_FROM_TABS.md](AI_TASK_FROM_TABS.md) (v1.1): one per created group, right of its name. It closes this dialog and opens New task from tabs with that group's tabs.
 - Playwright init scripts do run in `chrome-extension://` pages, so the stubbed-model E2E test (§13.5 #4) runs.
 - The store tracks `tabs` (in tab-strip order) instead of `tabsById`; the dialog builds the lookup itself.
 
@@ -401,7 +401,9 @@ export function organizeSchema(tabCount: number) {
                 items: {
                     type: 'object',
                     properties: {
-                        name: { type: 'string', minLength: 1, maxLength: GROUP_NAME_MAX },
+                        // No maxLength: a hard limit can make the model squeeze names into emoji or gibberish.
+                        // The prompt asks for short names; the normalizer cuts them to GROUP_NAME_MAX.
+                        name: { type: 'string', minLength: 1 },
                         color: { type: 'string', enum: GROUP_COLORS },
                         tabs: {
                             type: 'array',

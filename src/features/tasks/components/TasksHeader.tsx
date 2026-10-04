@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { openTaskFromTabs } from '../../taskDraft/store/taskDraftStore';
 import '../TasksView.css';
 
 interface TasksHeaderProps {
@@ -53,6 +54,10 @@ const TasksHeader: React.FC<TasksHeaderProps> = ({
                         </span>
                     )}
                 </div>
+                {/* Synchronous in the click: the on-device model session must start there */}
+                <button className="tasks-from-tabs-btn" type="button" onClick={() => openTaskFromTabs()}>
+                    ✨ Task from tabs
+                </button>
             </div>
 
             {/* Filter Controls */}

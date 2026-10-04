@@ -7,6 +7,7 @@ import TaskContextStrip from '../components/TaskContextStrip';
 import ParkDialog from '../components/ParkDialog';
 import { useBoardStore } from '../../../store/boardStore';
 import { useUIStore } from '../../ui/store/uiStore';
+import { useTaskDraftStore } from '../../taskDraft/store/taskDraftStore';
 import { ChromeMock, installChromeMock, respondToMessages } from '../../../test/chromeMock';
 import { makeContext, makeTab, makeTask } from '../../../test/factories';
 import { Task } from '../../../types';
@@ -48,10 +49,10 @@ describe('TaskCard', () => {
         fireEvent.click(screen.getByRole('checkbox'));
         fireEvent.change(screen.getByPlaceholderText('Add item...'), { target: { value: 'Second' } });
         fireEvent.keyDown(screen.getByPlaceholderText('Add item...'), { key: 'Enter' });
-        fireEvent.click(screen.getByText('Add')); // empty: ignored
+        fireEvent.click(screen.getByText('Add item')); // empty: ignored
         fireEvent.change(screen.getByPlaceholderText('Add item...'), { target: { value: 'Third' } });
-        fireEvent.click(screen.getByText('Add'));
-        fireEvent.click(screen.getAllByRole('button', { name: '×' })[2]); // remove "Third"
+        fireEvent.click(screen.getByText('Add item'));
+        fireEvent.click(screen.getByRole('button', { name: 'Remove Third' }));
         fireEvent.click(screen.getByText('Save'));
         expect(task()).toMatchObject({
             title: 'New title',
@@ -151,6 +152,16 @@ describe('TaskContextStrip', () => {
         fireEvent.click(screen.getByRole('button', { name: '▶ Resume' }));
         await waitFor(() => expect(received[1].type).toBe(CONTEXT_MESSAGES.RESUME));
         fireEvent.click(screen.getByTitle('Hide tabs'));
+    });
+
+    it('shows a long, chatty summary saved by v1.0 as two plain sentences', () => {
+        const aiSummary =
+            "Okay, I understand the task. You were fixing **checkout** requests. Then `tests`. Here's a breakdown:\n" +
+            '1. More detail';
+        render(<TaskContextStrip task={makeTask({ context: makeContext({ aiSummary }) })} />);
+        expect(document.querySelector('.task-context-summary-ai')).toHaveTextContent(
+            '✨ You were fixing checkout requests. Then tests.'
+        );
     });
 
     it('offers Park for an active task and hides edit controls when compact', () => {
@@ -265,6 +276,14 @@ describe('TasksView', () => {
             </MemoryRouter>
         );
     const visible = () => [...document.querySelectorAll('.task-title')].map(e => e.textContent);
+
+    it('opens "New task from tabs" from the header with no tab ids', () => {
+        const open = vi.spyOn(useTaskDraftStore.getState().actions, 'open').mockImplementation(() => undefined);
+        renderView();
+        fireEvent.click(screen.getByRole('button', { name: '✨ Task from tabs' }));
+        expect(open).toHaveBeenCalledWith(undefined);
+        open.mockRestore();
+    });
 
     it('splits columns and history, and filters by search, date and priority', () => {
         renderView();

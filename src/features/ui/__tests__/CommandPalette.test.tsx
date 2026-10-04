@@ -4,6 +4,7 @@ import CommandPalette from '../components/CommandPalette';
 import { useBoardStore } from '../../../store/boardStore';
 import { useUIStore } from '../store/uiStore';
 import { useOrganizeStore } from '../../organize/store/organizeStore';
+import { useTaskDraftStore } from '../../taskDraft/store/taskDraftStore';
 import { respondToMessages } from '../../../test/chromeMock';
 import { makeBoard, makeContext, makeTask } from '../../../test/factories';
 
@@ -37,7 +38,9 @@ describe('CommandPalette', () => {
         items.forEach(item => fireEvent.click(item));
         expect(onNavigate).toHaveBeenCalledWith('today');
         expect(onNavigate).toHaveBeenCalledWith('canvas');
-        expect(useBoardStore.getState().tasks).toHaveLength(3);
+        // "Create New Task" opens the New task dialog instead of adding a placeholder task
+        expect(useUIStore.getState().newTaskDialogOpen).toBe(true);
+        expect(useBoardStore.getState().tasks.some(t => t.title === 'New Task')).toBe(false);
         expect(useBoardStore.getState().notes).toHaveLength(1);
         expect(useBoardStore.getState().folders).toHaveLength(1);
         expect(exportData).toHaveBeenCalled();
@@ -58,6 +61,16 @@ describe('CommandPalette', () => {
         render(<CommandPalette isOpen onClose={vi.fn()} onNavigate={vi.fn()} />);
         fireEvent.click(screen.getByText('Organize open tabs'));
         expect(start).toHaveBeenCalled();
+    });
+
+    it('opens "New task from open tabs" right after "Create New Task"', () => {
+        const open = vi.spyOn(useTaskDraftStore.getState().actions, 'open').mockImplementation(() => undefined);
+        render(<CommandPalette isOpen onClose={vi.fn()} onNavigate={vi.fn()} />);
+        const names = [...document.querySelectorAll('.command-name')].map(e => e.textContent);
+        expect(names[names.indexOf('Create New Task') + 1]).toBe('New task from open tabs');
+        fireEvent.click(screen.getByText('New task from open tabs'));
+        expect(open).toHaveBeenCalledWith(undefined);
+        open.mockRestore();
     });
 
     it('filters, navigates with the keyboard and closes', () => {

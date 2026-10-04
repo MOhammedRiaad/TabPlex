@@ -199,8 +199,23 @@
     transition: opacity var(--transition-fast);
 }
 
-.task-card:hover .task-actions {
+.task-card:hover .task-actions,
+.task-card:focus-within .task-actions {
     opacity: 1;
+}
+
+/* Pinned: the pin stays visible; edit and delete still appear on hover or keyboard focus */
+.task-card.is-pinned .task-actions {
+    opacity: 1;
+}
+
+.task-card.is-pinned:not(:hover):not(:focus-within) .task-actions button:not(.pin-btn) {
+    visibility: hidden;
+}
+
+.task-actions .pin-btn.active {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
 }
 
 .task-actions button {
@@ -327,49 +342,6 @@
     box-shadow: 0 0 0 1px var(--color-primary, #3b82f6);
 }
 
-.edit-title {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    margin-bottom: var(--spacing-sm);
-    font-size: var(--font-sm);
-    background-color: var(--color-bg-primary);
-    color: var(--color-text-primary);
-}
-
-.edit-title:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-
-.edit-fields {
-    display: flex;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-sm);
-}
-
-.edit-date,
-.edit-priority {
-    padding: 6px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    font-size: 12px;
-    background-color: var(--color-bg-primary);
-    color: var(--color-text-primary);
-}
-
-.edit-date {
-    flex: 1;
-}
-
-.edit-actions {
-    display: flex;
-    gap: var(--spacing-sm);
-    justify-content: flex-end;
-}
-
 /* Task Description */
 .task-description {
     font-size: 13px;
@@ -377,18 +349,6 @@
     white-space: pre-wrap;
     margin-top: var(--spacing-xs);
     margin-bottom: var(--spacing-sm);
-}
-
-.edit-description {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    margin-bottom: var(--spacing-sm);
-    font-size: var(--font-sm);
-    background-color: var(--color-bg-primary);
-    color: var(--color-text-primary);
-    resize: vertical;
 }
 
 /* Task Links */
@@ -470,84 +430,6 @@
 }
 
 /* Edit Checklist */
-.edit-checklist {
-    margin-bottom: var(--spacing-sm);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    padding: 8px;
-    background-color: var(--color-bg-tertiary);
-    /* Distinct background for checklist edit area */
-}
-
-.checklist-heading {
-    margin: 0 0 8px 0;
-    font-size: 12px;
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.checklist-items {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 8px;
-}
-
-.checklist-item-edit {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: var(--color-text-primary);
-}
-
-.checklist-item-edit span {
-    flex: 1;
-    word-break: break-all;
-}
-
-.delete-item-btn {
-    background: transparent;
-    border: none;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    padding: 0 4px;
-    font-size: 16px;
-}
-
-.delete-item-btn:hover {
-    color: var(--color-danger);
-}
-
-.add-checklist-item {
-    display: flex;
-    gap: 8px;
-}
-
-.add-checklist-item input {
-    flex: 1;
-    padding: 4px 8px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    font-size: 12px;
-    background-color: var(--color-bg-primary);
-    color: var(--color-text-primary);
-}
-
-.add-checklist-item button {
-    padding: 4px 8px;
-    background-color: var(--color-bg-secondary);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    font-size: 11px;
-    cursor: pointer;
-    color: var(--color-text-primary);
-}
-
-.add-checklist-item button:hover {
-    background-color: var(--color-bg-tertiary);
-}
 
 .save-btn {
     background-color: var(--color-primary);
@@ -653,64 +535,6 @@
 /* Editing state */
 .task-card.editing {
     padding: var(--spacing-md);
-}
-
-.edit-title {
-    width: 100%;
-    padding: var(--spacing-sm);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    margin-bottom: var(--spacing-sm);
-    font-size: var(--font-sm);
-    background-color: var(--color-bg-primary);
-    color: var(--color-text-primary);
-}
-
-.edit-title:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
-}
-
-.edit-fields {
-    display: flex;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-sm);
-    flex-wrap: wrap;
-}
-
-.edit-date,
-.edit-priority {
-    padding: var(--spacing-xs);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    font-size: var(--font-xs);
-    background-color: var(--color-bg-primary);
-    color: var(--color-text-primary);
-}
-
-.edit-date {
-    flex: 1;
-    min-width: 120px;
-}
-
-.edit-priority {
-    min-width: 80px;
-}
-
-.edit-actions {
-    display: flex;
-    gap: var(--spacing-sm);
-    justify-content: flex-end;
-}
-
-.edit-actions button {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-size: var(--font-xs);
-    transition: all var(--transition-fast);
 }
 
 .save-btn {

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import OrganizeTabsDialog from '../components/OrganizeTabsDialog';
 import QuickActions from '../../today/components/QuickActions';
 import { useOrganizeStore } from '../store/organizeStore';
+import { useTaskDraftStore } from '../../taskDraft/store/taskDraftStore';
 import { AiError } from '../../ai/types';
 import { OrganizableTab } from '../../ai/types';
 import { GroupProposal } from '../types';
@@ -222,6 +223,24 @@ describe('OrganizeTabsDialog', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Open Boards' }));
         expect(screen.getByTestId('location')).toHaveTextContent('/boards');
         expect(useOrganizeStore.getState().phase).toBe('closed');
+    });
+
+    it('done: "Make a task" closes and opens New task from tabs with that group\'s tabs', () => {
+        const open = vi.spyOn(useTaskDraftStore.getState().actions, 'open').mockImplementation(() => undefined);
+        renderDialog();
+        setState({
+            phase: 'done',
+            tabs,
+            created: [
+                { groupId: 1, title: 'Pair', color: 'green', tabIds: [101, 102] },
+                { groupId: 2, title: 'Trio', color: 'blue', tabIds: [103, 104, 105] },
+            ],
+            skippedTabIds: [],
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Make a task from Trio' }));
+        expect(useOrganizeStore.getState().phase).toBe('closed');
+        expect(open).toHaveBeenCalledWith([103, 104, 105]);
+        open.mockRestore();
     });
 
     it('done with nothing created: only Done', () => {

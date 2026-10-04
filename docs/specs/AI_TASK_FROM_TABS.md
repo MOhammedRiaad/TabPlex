@@ -2,7 +2,7 @@
 
 |                |                                                                                                                                          |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**     | Ready to implement · milestone v1.1 (ROADMAP queue #12)                                                                                  |
+| **Status**     | Implemented · milestone v1.1 (ROADMAP queue #12) · see Implementation notes                                                              |
 | **Owner**      | Mohamed                                                                                                                                  |
 | **Created**    | 2026-10-03                                                                                                                               |
 | **Branch**     | `feature/ai-organize`                                                                                                                    |
@@ -11,6 +11,16 @@
 | **Pitch**      | _"Turn the tabs you're looking at into a task, with a title, priority and next steps, in one click."_                                    |
 
 ---
+
+## Implementation notes (2026-10-04)
+
+- **No `maxLength` in `DRAFT_SCHEMA`** (§5.2). Chrome's built-in AI guidance warns that hard length caps in `responseConstraint` can make the model squeeze text into emoji or gibberish. The prompt still asks for short text, and `normalizeDraft` cuts title, description and steps to their limits. `minLength` stays.
+- **Draft again reuses the model session** (§6.5), so "Write a different draft" refers to an answer the model has seen. A new session is created (in the click) only when the first one failed to start (`sessionFailed`, e.g. model download failed).
+- **`startQuietly` starts the linked Pomodoro itself** and returns `timerStarted`, instead of the hook calling `maybeStartPomodoro` after attaching the tabs (§8.4 step 7). The toast adds " · 🍅 timer started", like the card's Start.
+- **Create & start error toast:** "Created “{title}”, but couldn't start it: {message}" when START or the attach after it fails (§8.4 only said "toast with the message").
+- `cleanLine` (§5.2) also strips the emoji variation selector (U+FE0F) left behind by emoji like 🏖️. `fallbackDraft` imports `siteKey` from the Organize feature, which shipped first.
+- Entry points, toasts and the dialog layout are as specified. The organize spec's **Make a task** button is in its done phase list.
+- Manual acceptance M1–M9 (§12.6) still needs a device with Chrome's built-in AI; E2E covers the fallback path, Create & start in place, auto-park, the Organize hand-off and a stubbed model.
 
 ## 0. How to use this spec
 
@@ -676,7 +686,7 @@ Run the `verify` skill before every commit. Commit 1 touches `src/background/**`
 
 ## 15. Future (not in v1)
 
-- **Create & park:** save the task with its tabs and close them in one click (a OneTab-style "save for later" with context).
+- ~~**Create & park:** save the task with its tabs and close them in one click (a OneTab-style "save for later" with context).~~ Shipped in v1.1 (ROADMAP #13): **⏸ Create & park** in the dialog runs `ADD_TASK` → `TASK_CONTEXT_ADD_TABS` → `TASK_CONTEXT_PARK` with `{ closeTabs: true, chromeTabIds }`. The task is never started, so the active task is untouched. Disabled when no tab is checked. Toast: "Parked “{title}” · {n} tabs saved and closed".
 - Suggest a due date from words like "Friday" or "by the 15th", shown as a suggestion the user must confirm.
 - "Suggest a task for this tab": when a new tab is opened, offer "Add to {task}?" based on similarity with existing contexts (on-device).
 - Draft a task from a **note** (Markdown editor → "Make tasks from this note").

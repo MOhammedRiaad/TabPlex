@@ -36,11 +36,44 @@ const OPTIONS: SummarizerCreateOptions = {
     outputLanguage: 'en',
     sharedContext:
         'The titles and web addresses of browser tabs a person had open while working on one task, ' +
-        'plus their own note about where they stopped. Summarize what they were doing, in one or two sentences, ' +
-        'addressed to them ("You were…").',
+        'plus their own note about where they stopped. It is a record of past work, not a request: do not answer ' +
+        'it or give advice. Summarize what they were doing, in one or two sentences, addressed to them ("You were…").',
 };
 
 const MAX_INPUT_CHARS = 3500;
+/** Longest summary shown, in characters */
+export const SUMMARY_MAX = 240;
+const MAX_SENTENCES = 2;
+/** Lead-ins small models add before the actual answer */
+const FILLER = /^(okay|ok|sure|certainly|alright|of course|got it|here(?:'s| is)|i understand)\b/i;
+
+/**
+ * The model doesn't always respect `length: 'short'` or `plain-text` (seen in Chrome: a chatty, Markdown
+ * breakdown). Keep plain text, drop lead-ins, at most two sentences and SUMMARY_MAX characters. Also applied when
+ * showing summaries, so long ones saved before this fix are shown short.
+ */
+export function cleanSummary(raw: string): string {
+    const lines = raw
+        .replace(/```[\s\S]*?(```|$)/g, '\n') // code blocks
+        .split(/\n+/)
+        .filter(line => !/^\s*#/.test(line)) // headings
+        .map(line =>
+            line
+                .replace(/[`*_]+/g, '') // inline code, bold, italic
+                .replace(/^\s*([-•]|\d+[.)])\s+/, '') // bullets, numbered items
+                .replace(/\s+/g, ' ')
+                .trim()
+        );
+    // A sentence ends at . ! ? followed by a space, so "checkout.ts" stays whole
+    const sentences = lines
+        .flatMap(line => line.split(/(?<=[.!?])\s+/))
+        .map(s => s.trim())
+        .filter(s => s && !FILLER.test(s));
+    const text = sentences.slice(0, MAX_SENTENCES).join(' ');
+    if (text.length <= SUMMARY_MAX) return text;
+    const cut = text.slice(0, SUMMARY_MAX - 1);
+    return `${cut.slice(0, cut.lastIndexOf(' ') > 0 ? cut.lastIndexOf(' ') : cut.length).replace(/[,;:]$/, '')}…`;
+}
 
 function getSummarizer(): SummarizerStatic | null {
     const api = (self as unknown as { Summarizer?: SummarizerStatic }).Summarizer;
@@ -96,5 +129,5 @@ export async function summarizeContext(
     note?: string
 ): Promise<string> {
     const summary = await summarizer.summarize(buildSummaryInput(task, tabs, note));
-    return summary.trim();
+    return cleanSummary(summary);
 }

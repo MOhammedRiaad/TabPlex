@@ -113,10 +113,32 @@ describe('useTaskContextActions', () => {
                 ? { success: true, task: { ...parked, context: { ...parked.context!, aiSummary: m.payload.summary } } }
                 : { success: true, task: parked };
         const summarize = vi.fn().mockResolvedValue('You were testing.');
-        await act(() => actions().park(makeTask(), {}, Promise.resolve({ summarize })));
+        const destroy = vi.fn();
+        await act(() => actions().park(makeTask(), {}, Promise.resolve({ summarize, destroy })));
         await waitFor(() => expect(useBoardStore.getState().tasks[0].context!.aiSummary).toBe('You were testing.'));
         expect(received[1].payload).toMatchObject({ taskId: 'task_1', parkedAt: parked.context!.parkedAt });
         expect(summarize.mock.calls[0][0]).toContain('Their note: note');
+        await waitFor(() => expect(destroy).toHaveBeenCalledTimes(1));
+    });
+
+    it('destroys the summarizer when no summary is made', async () => {
+        const summarize = vi.fn();
+        const destroy = vi.fn();
+        const summarizer = () => Promise.resolve({ summarize, destroy });
+
+        reply = () => ({ success: true, task: makeTask({ context: makeContext({ tabs: [] }) }) });
+        await act(() => actions().park(makeTask(), {}, summarizer()));
+        await waitFor(() => expect(destroy).toHaveBeenCalledTimes(1));
+
+        reply = () => ({ success: true });
+        await act(() => actions().park(makeTask(), {}, summarizer()));
+        await waitFor(() => expect(destroy).toHaveBeenCalledTimes(2));
+
+        reply = () => ({ error: 'no context' });
+        await act(() => actions().park(makeTask(), {}, summarizer()));
+        await waitFor(() => expect(destroy).toHaveBeenCalledTimes(3));
+        expect(toast()!.message).toBe(`Couldn't park "Write pricing page": no context`);
+        expect(summarize).not.toHaveBeenCalled();
     });
 
     it('skips or tolerates summary problems', async () => {
@@ -133,6 +155,54 @@ describe('useTaskContextActions', () => {
 
         await act(() => actions().park(makeTask(), {}, Promise.reject(new Error('model failed'))));
         await waitFor(() => expect(console.warn).toHaveBeenCalledWith('On-device summary failed', expect.any(Error)));
+    });
+
+    it('attaches specific tabs quietly and returns the updated task', async () => {
+        const task = makeTask();
+        const withTabs = { ...task, context: makeContext({ state: 'idle' }) };
+        reply = () => ({ success: true, task: withTabs });
+        let result: Task | undefined;
+        await act(async () => {
+            result = await actions().attachTabs(task, [4, 7]);
+        });
+        expect(received[0]).toMatchObject({ type: CONTEXT_MESSAGES.ADD_TABS, payload: { task, chromeTabIds: [4, 7] } });
+        expect(result).toEqual(withTabs);
+        expect(useBoardStore.getState().tasks).toEqual([withTabs]);
+        expect(toast()).toBeNull();
+
+        reply = () => ({ success: true });
+        await act(async () => {
+            result = await actions().attachTabs(task, [4]);
+        });
+        expect(result).toBe(task);
+
+        reply = () => ({ error: 'no window' });
+        await expect(actions().attachTabs(task, [4])).rejects.toThrow('no window');
+    });
+
+    it('starts quietly, reporting the auto-parked task and the timer', async () => {
+        await setSettings({ startPomodoroOnStart: true });
+        const task = makeTask();
+        const other = makeTask({ id: 'other', title: 'Other' });
+        reply = () => ({
+            success: true,
+            task: { ...task, context: makeContext({ state: 'active' }) },
+            autoParked: other,
+        });
+        let response: Awaited<ReturnType<ReturnType<typeof useTaskContextActions>['startQuietly']>> | undefined;
+        await act(async () => {
+            response = await actions().startQuietly(task);
+        });
+        expect(received[0]).toMatchObject({ type: CONTEXT_MESSAGES.START, payload: { task, windowId: 1 } });
+        expect(response).toMatchObject({ autoParked: other, timerStarted: true });
+        expect(useTimerStore.getState()).toMatchObject({ isRunning: true, linkedTaskId: task.id });
+        expect(
+            useBoardStore
+                .getState()
+                .tasks.map(t => t.id)
+                .sort()
+        ).toEqual(['other', 'task_1']);
+        expect(toast()).toBeNull();
     });
 
     it('adds current tabs and removes tabs', async () => {
