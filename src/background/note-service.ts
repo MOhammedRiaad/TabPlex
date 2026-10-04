@@ -1,4 +1,4 @@
-import { addNote, deleteNote } from './storage';
+import { addNote, deleteNote, updateNote } from './storage';
 import { ExtensionMessage, Note } from '../types';
 
 // Helper function to safely send response
@@ -46,6 +46,43 @@ export function handleNoteMessage(message: ExtensionMessage, _sendResponse: (res
                 setTimeout(() => {
                     if (!addNoteResponseSent) {
                         addNoteResponseSent = true;
+                    }
+                }, 1000);
+
+                return true;
+            }
+            break;
+
+        case 'UPDATE_NOTE':
+            // Update a note (upsert) and let other open TabPlex tabs know
+            if (message.payload && (message.payload as Note).id) {
+                let updateNoteResponseSent = false;
+                const note = message.payload as Note;
+
+                updateNote(note)
+                    .then(() => {
+                        chrome.runtime
+                            .sendMessage({
+                                type: 'STORAGE_NOTE_UPDATED',
+                                payload: note,
+                            })
+                            .catch(() => {}); // No listener open — nothing to sync
+
+                        if (!updateNoteResponseSent) {
+                            updateNoteResponseSent = true;
+                            safeSendResponse(_sendResponse, { success: true });
+                        }
+                    })
+                    .catch((error: unknown) => {
+                        if (!updateNoteResponseSent) {
+                            updateNoteResponseSent = true;
+                            safeSendResponse(_sendResponse, { error: (error as Error).message });
+                        }
+                    });
+
+                setTimeout(() => {
+                    if (!updateNoteResponseSent) {
+                        updateNoteResponseSent = true;
                     }
                 }, 1000);
 

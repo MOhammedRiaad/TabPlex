@@ -224,6 +224,7 @@ chrome.runtime.onMessage.addListener(
 
             // Handle note messages
             case 'ADD_NOTE':
+            case 'UPDATE_NOTE':
             case 'DELETE_NOTE':
                 return handleNoteMessage(message, _sendResponse);
 

@@ -187,6 +187,7 @@ describe('message-handler', () => {
         ['UPDATE_TASK', makeTask()],
         ['DELETE_TASK', { id: 'task_1' }],
         ['ADD_NOTE', { id: 'n' }],
+        ['UPDATE_NOTE', { id: 'n' }],
         ['DELETE_NOTE', { id: 'n' }],
         ['GET_HISTORY', undefined],
         ['GET_SESSIONS', undefined],

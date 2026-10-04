@@ -102,6 +102,19 @@ const cases: Case[] = [
     },
     {
         handler: 'note',
+        type: 'UPDATE_NOTE',
+        payload: makeNote({ title: 'Edited', content: 'Edited' }),
+        arrange: () => chrome.storage.local.set({ tabboard_notes: [makeNote()] }),
+        expected: { success: true },
+        after: () => {
+            expect(store().tabboard_notes).toEqual([expect.objectContaining({ id: 'note_1', content: 'Edited' })]);
+            expect(broadcasts()).toContain('STORAGE_NOTE_UPDATED');
+        },
+        api: storageGet,
+        timeoutMs: 1000,
+    },
+    {
+        handler: 'note',
         type: 'DELETE_NOTE',
         payload: { id: 'note_1' },
         arrange: () => chrome.storage.local.set({ tabboard_notes: [makeNote()] }),
@@ -434,6 +447,7 @@ describe('message validation', () => {
         ['task', 'UPDATE_TASK'],
         ['task', 'DELETE_TASK'],
         ['note', 'ADD_NOTE'],
+        ['note', 'UPDATE_NOTE'],
         ['note', 'DELETE_NOTE'],
         ['folder', 'ADD_FOLDER'],
         ['folder', 'DELETE_FOLDER'],
