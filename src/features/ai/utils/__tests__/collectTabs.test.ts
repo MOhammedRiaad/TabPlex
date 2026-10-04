@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { currentWindowId, getOrganizableTabs } from '../collectTabs';
+import { currentWindowId, getOrganizableTabs, getTabsByIds } from '../collectTabs';
 import { EXTENSION_BASE, fakeChrome } from '../../../../test/chromeMock';
 
 describe('getOrganizableTabs', () => {
@@ -33,6 +33,23 @@ describe('getOrganizableTabs', () => {
         expect(await getOrganizableTabs(tab.windowId)).toEqual([
             { id: tab.id, windowId: tab.windowId, title: 'Loading', url: 'https://loading.dev/', favicon: 'f.png' },
         ]);
+    });
+});
+
+describe('getTabsByIds', () => {
+    it('returns the given tabs in order, grouped ones included, skipping closed, pinned and browser tabs', async () => {
+        const grouped = await chrome.tabs.create({ url: 'https://grouped.dev' });
+        await chrome.tabs.group({ tabIds: grouped.id! });
+        const plain = await chrome.tabs.create({ url: 'https://plain.dev' });
+        const pinned = await chrome.tabs.create({
+            url: 'https://pinned.dev',
+            pinned: true,
+        } as chrome.tabs.CreateProperties);
+        const browser = await chrome.tabs.create({ url: 'chrome://settings/' });
+
+        const tabs = await getTabsByIds([plain.id!, 9999, grouped.id!, pinned.id!, browser.id!]);
+        expect(tabs.map(t => t.url)).toEqual(['https://plain.dev', 'https://grouped.dev']);
+        expect(await getTabsByIds([])).toEqual([]);
     });
 });
 
