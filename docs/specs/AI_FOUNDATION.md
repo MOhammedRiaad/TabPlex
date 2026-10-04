@@ -2,7 +2,7 @@
 
 |                   |                                                                                            |
 | ----------------- | ------------------------------------------------------------------------------------------ |
-| **Status**        | Ready to implement · milestone v1.0 (ROADMAP queue #6)                                     |
+| **Status**        | Implemented (ROADMAP queue #6) · see Implementation notes                                  |
 | **Owner**         | Mohamed                                                                                    |
 | **Created**       | 2026-10-03                                                                                 |
 | **Branch**        | `feature/ai-organize` (shared with the two specs below)                                    |
@@ -19,6 +19,15 @@
 - Code blocks marked **"shape"** show the structure. Fill in the details.
 - Finish with §9 (tests) and §10 (definition of done) before starting either feature spec.
 - Chrome's built-in AI APIs change between Chrome versions. Before writing §4, open https://developer.chrome.com/docs/ai/prompt-api and check that the names in §3 still match. If they differ, follow the docs and update §3 of this file in the same commit.
+
+## Implementation notes (2026-10-04)
+
+- **Prompt API names checked against https://developer.chrome.com/docs/ai/prompt-api.** The context size is now `contextWindow` / `contextUsage` (older builds: `inputQuota` / `measureInputUsage`). `fitInput` uses `contextWindow ?? inputQuota` and `measureContextUsage ?? measureInputUsage`, and the character budget when it can't measure. Availability values are unchanged (`available`, `downloadable`, `downloading`, `unavailable`).
+- `QuotaExceededError` is detected by `name`, not `instanceof Error`: a `DOMException` isn't an `Error` instance in every environment.
+- `getOrganizableTabs(windowId)` accepts `undefined` (no current window) and returns `[]`.
+- The Settings section is `src/features/ai/components/AiFeaturesSetting.tsx`, placed after Park & Resume.
+
+---
 
 ## 1. Problem
 
@@ -47,18 +56,18 @@ Without a shared layer, each feature would repeat feature detection, the model d
 
 ### 3.1 Facts the implementation relies on
 
-| Fact                                                                                                                                                    | Consequence for us                                                                                                                            |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Global `LanguageModel` exists only in Chrome 138+ desktop (Windows, macOS, Linux, ChromeOS on Chromebook Plus), and is available to **extension pages** | Feature-detect with `'LanguageModel' in self`. Mobile and other browsers: `unsupported`.                                                      |
-| `LanguageModel.availability(options)` resolves to `'unavailable' \| 'downloadable' \| 'downloading' \| 'available'`                                     | Map to our `ModelAvailability` type, adding `'unsupported'` for "no API".                                                                     |
-| `LanguageModel.create(options)` creates a session. If the model isn't downloaded, **creating starts the download**                                      | Pass a `monitor` to get `downloadprogress` events (`event.loaded` is 0..1).                                                                   |
-| Starting a download **requires user activation** (a click or key press in the last few seconds)                                                         | Call `createSession()` **synchronously inside the click handler**, before any `await`. Same rule as `createSummarizer()` in `ParkDialog.tsx`. |
-| `session.prompt(input, { responseConstraint, omitResponseConstraintInput, signal })` resolves to a string                                               | With `responseConstraint` (a JSON Schema), the string is JSON that matches the schema. We still validate it (§4.5).                           |
-| `session.inputQuota` (number) and `session.measureInputUsage(input)` (Promise&lt;number&gt;)                                                            | Use these to make input fit (§4.6). Treat both as optional (older builds).                                                                    |
-| `initialPrompts: [{ role: 'system', content }]` sets the system prompt                                                                                  | Each feature passes its own system prompt.                                                                                                    |
-| `expectedInputs` / `expectedOutputs` declare languages, e.g. `[{ type: 'text', languages: ['en'] }]`                                                    | Pass English for both. Chrome may warn or refuse without them.                                                                                |
-| `session.destroy()` frees memory                                                                                                                        | Always destroy in a `finally`.                                                                                                                |
-| Hardware requirement: roughly 16 GB RAM or a GPU with more than 4 GB VRAM, about 22 GB free disk; the model download is about 2 GB or more              | Many users get `unavailable`. Features must have a non-AI path.                                                                               |
+| Fact                                                                                                                                                    | Consequence for us                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Global `LanguageModel` exists only in Chrome 138+ desktop (Windows, macOS, Linux, ChromeOS on Chromebook Plus), and is available to **extension pages** | Feature-detect with `'LanguageModel' in self`. Mobile and other browsers: `unsupported`.                                                                                       |
+| `LanguageModel.availability(options)` resolves to `'unavailable' \| 'downloadable' \| 'downloading' \| 'available'`                                     | Map to our `ModelAvailability` type, adding `'unsupported'` for "no API".                                                                                                      |
+| `LanguageModel.create(options)` creates a session. If the model isn't downloaded, **creating starts the download**                                      | Pass a `monitor` to get `downloadprogress` events (`event.loaded` is 0..1).                                                                                                    |
+| Starting a download **requires user activation** (a click or key press in the last few seconds)                                                         | Call `createSession()` **synchronously inside the click handler**, before any `await`. Same rule as `createSummarizer()` in `ParkDialog.tsx`.                                  |
+| `session.prompt(input, { responseConstraint, omitResponseConstraintInput, signal })` resolves to a string                                               | With `responseConstraint` (a JSON Schema), the string is JSON that matches the schema. We still validate it (§4.5).                                                            |
+| `session.contextWindow` (tokens) and `session.contextUsage`; older builds: `session.inputQuota` and `session.measureInputUsage(input)`                  | Use these to make input fit (§4.6). Feature-detect both names; fall back to a character budget when neither exists. A prompt that doesn't fit fails with `QuotaExceededError`. |
+| `initialPrompts: [{ role: 'system', content }]` sets the system prompt                                                                                  | Each feature passes its own system prompt.                                                                                                                                     |
+| `expectedInputs` / `expectedOutputs` declare languages, e.g. `[{ type: 'text', languages: ['en'] }]`                                                    | Pass English for both. Chrome may warn or refuse without them.                                                                                                                 |
+| `session.destroy()` frees memory                                                                                                                        | Always destroy in a `finally`.                                                                                                                                                 |
+| Hardware requirement: roughly 16 GB RAM or a GPU with more than 4 GB VRAM, about 22 GB free disk; the model download is about 2 GB or more              | Many users get `unavailable`. Features must have a non-AI path.                                                                                                                |
 
 ### 3.2 What we never assume
 
