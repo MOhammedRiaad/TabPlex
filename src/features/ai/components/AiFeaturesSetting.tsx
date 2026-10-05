@@ -20,6 +20,12 @@ const FEATURES: { key: keyof AiSettings; title: string; description: string }[] 
         title: 'Name saved sessions',
         description: 'Give sessions saved from your tabs a short name. Without AI, they are named after their sites.',
     },
+    {
+        key: 'noteHelpers',
+        title: 'Note helpers',
+        description:
+            'A ✨ AI menu in the note editor: summarize a note, turn its to-dos into tasks, proofread or rewrite it. Hidden when AI is not available.',
+    },
 ];
 
 /**
@@ -55,8 +61,8 @@ const AiFeaturesSetting: React.FC = () => {
                 </div>
             ))}
             <p className="setting-status">
-                Your tabs&apos; titles and addresses are processed on this computer by Chrome&apos;s built-in AI.
-                Nothing is sent to TabPlex or anyone else.
+                Your tabs&apos; titles and addresses, and the notes you use a helper on, are processed on this computer
+                by Chrome&apos;s built-in AI. Nothing is sent to TabPlex or anyone else.
             </p>
         </>
     );

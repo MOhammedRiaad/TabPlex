@@ -7,6 +7,7 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
     tabGrouping: true,
     taskDrafts: true,
     sessionNames: true,
+    noteHelpers: true,
 };
 
 /** Longest a single model call may take before we give up */

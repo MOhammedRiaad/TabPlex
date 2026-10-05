@@ -2,7 +2,7 @@
 
 |                |                                                                                             |
 | -------------- | ------------------------------------------------------------------------------------------- |
-| **Status**     | Ready to implement · milestone v1.2 (ROADMAP #20)                                           |
+| **Status**     | Implemented · milestone v1.2 (ROADMAP #20)                                                  |
 | **Created**    | 2026-10-05                                                                                  |
 | **Size**       | M (1–2 days)                                                                                |
 | **Depends on** | [AI_FOUNDATION.md](AI_FOUNDATION.md) (`promptApi.ts`), the `built-in-ai` skill rules        |

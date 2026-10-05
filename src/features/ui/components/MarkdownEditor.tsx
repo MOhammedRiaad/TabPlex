@@ -8,6 +8,8 @@ interface MarkdownEditorProps {
     placeholder?: string;
     minHeight?: number;
     autoFocus?: boolean;
+    /** Extra toolbar content before Preview (e.g. the notes' ✨ AI menu) */
+    aiMenu?: React.ReactNode;
 }
 
 // Simple markdown parser for preview
@@ -65,6 +67,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     placeholder = 'Write your note in markdown...',
     minHeight = 150,
     autoFocus = false,
+    aiMenu,
 }) => {
     const [isPreview, setIsPreview] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -283,6 +286,8 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 </div>
 
                 <div className="toolbar-spacer" />
+
+                {aiMenu && <div className="toolbar-group">{aiMenu}</div>}
 
                 <div className="toolbar-group">
                     <button
