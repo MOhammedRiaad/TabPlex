@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { useCanvasStore } from '../store/canvasStore';
 import { useShallow } from 'zustand/react/shallow';
 import { CanvasElement } from '../types/canvas';
@@ -6,6 +6,16 @@ import './Minimap.css';
 
 const MINIMAP_SIZE = 150;
 const PADDING = 20;
+
+/** Bounding box of all elements (a 1000×1000 default when empty) */
+function boundsOf(elements: CanvasElement[]) {
+    if (elements.length === 0) return { minX: 0, minY: 0, maxX: 1000, maxY: 1000, width: 1000, height: 1000 };
+    const minX = Math.min(...elements.map(el => el.x));
+    const minY = Math.min(...elements.map(el => el.y));
+    const maxX = Math.max(...elements.map(el => el.x + el.width));
+    const maxY = Math.max(...elements.map(el => el.y + el.height));
+    return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+}
 
 export const Minimap: React.FC = () => {
     const { elements, panX, panY, zoom, setPan } = useCanvasStore(
@@ -24,35 +34,16 @@ export const Minimap: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Calculate bounding box of all elements
-    const getBounds = () => {
-        if (elements.length === 0) return { minX: 0, minY: 0, maxX: 1000, maxY: 1000, width: 1000, height: 1000 };
-
-        const xs = elements.map((el: CanvasElement) => el.x);
-        const ys = elements.map((el: CanvasElement) => el.y);
-        const minX = Math.min(...xs);
-        const minY = Math.min(...ys);
-        const maxX = Math.max(...elements.map((el: CanvasElement) => el.x + el.width));
-        const maxY = Math.max(...elements.map((el: CanvasElement) => el.y + el.height));
-
+    // Bounding box of all elements plus padding; memoized so the drawing effect only reruns when elements change
+    const totalBounds = useMemo(() => {
+        const bounds = boundsOf(elements);
         return {
-            minX,
-            minY,
-            maxX,
-            maxY,
-            width: maxX - minX,
-            height: maxY - minY,
+            x: bounds.minX - PADDING,
+            y: bounds.minY - PADDING,
+            width: bounds.width + PADDING * 2,
+            height: bounds.height + PADDING * 2,
         };
-    };
-
-    const bounds = getBounds();
-    // Add some padding to bounds
-    const totalBounds = {
-        x: bounds.minX - PADDING,
-        y: bounds.minY - PADDING,
-        width: bounds.width + PADDING * 2,
-        height: bounds.height + PADDING * 2,
-    };
+    }, [elements]);
 
     // Calculate scale scale to fit in minimap
     const scale = Math.min(

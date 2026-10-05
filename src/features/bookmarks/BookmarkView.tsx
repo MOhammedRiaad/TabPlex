@@ -237,7 +237,7 @@ const BookmarkView: React.FC = () => {
             return filteredSearchResults;
         }
         return sortBookmarks(filteredSearchResults, sortConfig);
-    }, [filteredSearchResults, sortConfig]);
+    }, [filteredSearchResults, sortConfig, searchQuery]);
 
     // For search results, we need to handle them differently since they're flat
     // For bookmark tree, we pass the tree structure
