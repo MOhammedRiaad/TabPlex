@@ -32,6 +32,8 @@ export default [
     rules: {
       'react/react-in-jsx-scope': 'off', // Not needed in React 17+ with new JSX transform
       'react/prop-types': 'off', // We're using TypeScript
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn', // --max-warnings 0 makes it blocking
       '@typescript-eslint/no-unused-vars': [
         'warn',
         {
@@ -50,6 +52,14 @@ export default [
       react: {
         version: 'detect', // React version is detected automatically
       },
+    },
+  },
+  {
+    // Playwright fixtures call `use(...)`, which the hooks rule mistakes for React's `use` hook
+    files: ['e2e/**/*.ts'],
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
+      'react-hooks/exhaustive-deps': 'off',
     },
   },
   // Prettier must be last to override any conflicting rules

@@ -2,6 +2,9 @@ import React, { useId, useState } from 'react';
 import { Tab, Task } from '../../../types';
 import { generateId } from '../../../utils/idGenerator';
 import { validateRequiredText } from '../../../utils/formValidation';
+import { collectTags } from '../../../utils/tags';
+import { useBoardStore } from '../../../store/boardStore';
+import TagInput from '../../ui/components/TagInput';
 import './TaskForm.css';
 
 export const TASK_TITLE_MAX = 200;
@@ -16,6 +19,7 @@ export interface TaskFormValues {
     priority: Task['priority'];
     checklist: NonNullable<Task['checklist']>;
     tabIds: string[];
+    tags: string[];
 }
 
 export const EMPTY_TASK_FORM: TaskFormValues = {
@@ -25,6 +29,7 @@ export const EMPTY_TASK_FORM: TaskFormValues = {
     priority: 'medium',
     checklist: [],
     tabIds: [],
+    tags: [],
 };
 
 export const taskToFormValues = (task: Task): TaskFormValues => ({
@@ -34,6 +39,7 @@ export const taskToFormValues = (task: Task): TaskFormValues => ({
     priority: task.priority,
     checklist: task.checklist ?? [],
     tabIds: task.tabIds ?? [],
+    tags: task.tags ?? [],
 });
 
 /** The form values as task fields: trimmed, with empty optional fields left out */
@@ -44,6 +50,7 @@ export const formValuesToTask = (values: TaskFormValues) => ({
     priority: values.priority,
     checklist: values.checklist,
     tabIds: values.tabIds,
+    tags: values.tags,
 });
 
 interface TaskFormProps {
@@ -62,6 +69,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ initial, availableTabs, submitLabel
     const [values, setValues] = useState<TaskFormValues>(initial);
     const [newItem, setNewItem] = useState('');
     const [error, setError] = useState<string>();
+    const tasks = useBoardStore(state => state.tasks);
 
     const set = <K extends keyof TaskFormValues>(key: K, value: TaskFormValues[K]) =>
         setValues(prev => ({ ...prev, [key]: value }));
@@ -158,6 +166,15 @@ const TaskForm: React.FC<TaskFormProps> = ({ initial, availableTabs, submitLabel
                         onChange={e => set('dueDate', e.target.value)}
                     />
                 </label>
+            </div>
+
+            <div className="task-form-field">
+                <span>Tags</span>
+                <TagInput
+                    tags={values.tags}
+                    onChange={tags => set('tags', tags)}
+                    suggestions={collectTags(tasks).map(t => t.tag)}
+                />
             </div>
 
             <fieldset className="task-form-checklist">

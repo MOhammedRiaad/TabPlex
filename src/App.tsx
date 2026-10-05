@@ -65,7 +65,8 @@ function AppContent() {
                 }
             }
         }
-    }, []); // Only run on mount
+        // Acts once (isInitialMount); later runs return immediately
+    }, [activeView, location.pathname, navigate, setActiveView]);
 
     // Sync activeView with URL when location changes (browser back/forward or direct navigation)
     useEffect(() => {
@@ -114,7 +115,7 @@ function AppContent() {
         navigateToView as (view: 'boards' | 'history' | 'sessions' | 'today' | 'bookmarks') => void
     );
 
-    const handleExport = async () => {
+    const handleExport = useCallback(async () => {
         try {
             await downloadExportFile();
             showToast('Data exported successfully!', 'success');
@@ -122,11 +123,11 @@ function AppContent() {
             console.error('Export failed:', error);
             showToast('Export failed. Please try again.', 'error');
         }
-    };
+    }, [showToast]);
 
-    const handleImportClick = () => {
+    const handleImportClick = useCallback(() => {
         fileInputRef.current?.click();
-    };
+    }, []);
 
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -200,7 +201,7 @@ function AppContent() {
             window.removeEventListener('exportData', handleExportEvent);
             window.removeEventListener('importData', handleImportEvent);
         };
-    }, []);
+    }, [handleExport, handleImportClick]);
 
     return (
         <div className="app">

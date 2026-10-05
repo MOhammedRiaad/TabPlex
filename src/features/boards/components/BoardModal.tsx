@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Folder, Tab } from '../../../types';
 import { normalizeUrl, validateRequiredText, validateUrl } from '../../../utils/formValidation';
+import { collectTags } from '../../../utils/tags';
+import { useBoardStore } from '../../../store/boardStore';
+import TagInput from '../../ui/components/TagInput';
 import '../BoardView.css';
 
 interface BoardModalProps {
@@ -12,7 +15,14 @@ interface BoardModalProps {
     tab?: Tab;
     folders?: Folder[];
     initialFolderId?: string;
-    onSubmit: (data: { name?: string; title?: string; url?: string; color?: string; folderId?: string }) => void;
+    onSubmit: (data: {
+        name?: string;
+        title?: string;
+        url?: string;
+        color?: string;
+        folderId?: string;
+        tags?: string[];
+    }) => void;
     onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
@@ -33,6 +43,8 @@ const BoardModal: React.FC<BoardModalProps> = ({
     const [url, setUrl] = useState('');
     const [color, setColor] = useState('#3b82f6');
     const [folderId, setFolderId] = useState<string>('');
+    const [tags, setTags] = useState<string[]>([]);
+    const allTabs = useBoardStore(state => state.tabs);
     const [errors, setErrors] = useState<{ name?: string; title?: string; url?: string }>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -53,6 +65,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
                     setTitle(tab.title || '');
                     setUrl(tab.url || '');
                     setFolderId(tab.folderId || '');
+                    setTags(tab.tags ?? []);
                 }
             } else {
                 setName('');
@@ -60,6 +73,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
                 setUrl('');
                 setColor('#3b82f6');
                 setFolderId(initialFolderId || '');
+                setTags([]);
             }
             setErrors({});
             setIsSubmitting(false);
@@ -156,6 +170,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
                     url: type === 'tab' ? finalUrl : undefined,
                     color: type === 'folder' ? color : undefined,
                     folderId: type === 'tab' ? folderId || '' : undefined,
+                    tags: type === 'tab' ? tags : undefined,
                 });
 
                 onShowToast?.(
@@ -176,7 +191,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
                 setIsSubmitting(false);
             }
         },
-        [name, title, url, color, folderId, type, mode, onSubmit, onClose, onShowToast]
+        [name, title, url, color, folderId, tags, type, mode, onSubmit, onClose, onShowToast]
     );
 
     if (!isOpen) return null;
@@ -319,6 +334,15 @@ const BoardModal: React.FC<BoardModalProps> = ({
                                 <p className="board-modal-hint">
                                     We&apos;ll automatically add https:// if you don&apos;t include a protocol
                                 </p>
+                            </div>
+
+                            <div className="board-modal-field">
+                                <span className="board-modal-label">Tags</span>
+                                <TagInput
+                                    tags={tags}
+                                    onChange={setTags}
+                                    suggestions={collectTags(allTabs).map(t => t.tag)}
+                                />
                             </div>
 
                             {folders.length > 0 && (

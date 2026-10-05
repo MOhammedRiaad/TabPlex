@@ -36,6 +36,8 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 - **Rich Task Details**: Add descriptions, checklists, due dates, and priority levels
 - **Pinning**: Pin a task or note (📌) to keep it at the top of its column or list, on Today too
 - **Session names**: Sessions saved from your tabs get a readable name (`github.com, docs.google.com +3 more · Mon 5 Oct`), or a short on-device AI name when Chrome's built-in AI is available; rename any session or ask for a suggestion
+- **Export**: Copy or download a task (details, checklist, tabs, where you left off) as Markdown, or a board as Markdown or CSV, from the task card, the Boards header or the command palette
+- **Tags**: Tag tasks, notes and saved tabs (`#q4`, `#research`), filter the Tasks and Notes views by tag, and find tagged items with search
 - **Task-Tab Linking**: Associate web resources with specific tasks
 - **Park & Resume**: Each task keeps its own tabs. Start a task to open them in a named Chrome tab group, park it with a "where I left off" note to close them, and resume later in one click — everything stays on your device. Optional: start a Pomodoro with the task, and on-device AI summaries of parked work (Chrome's built-in AI)
 - **On-device AI**: Chrome's built-in AI (Gemini Nano) runs on your computer, never in the cloud. Settings → On-device AI shows whether your device supports it and turns AI features on or off; every feature still works without it
@@ -380,7 +382,7 @@ First run of the E2E suite: `npx playwright install chromium`.
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+**Proprietary, all rights reserved** (see [LICENSE](LICENSE)). The source is public so you can read it and check what TabPlex does, but you may not copy, modify, redistribute or publish it, or reuse its screenshots and text, without written permission. Install TabPlex only from the official [Microsoft Edge Add-ons listing](https://microsoftedge.microsoft.com/addons/detail/kaeaniaepejnapfgmkjgjkkgbgkaehed) or this repository's GitHub Releases. By opening a pull request you agree to the contribution terms in section 3 of the LICENSE.
 
 ## 🙏 Acknowledgments
 

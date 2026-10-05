@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { boardContents } from '../../utils/boards';
 import {
     DndContext,
     DragEndEvent,
@@ -51,16 +52,20 @@ const BoardView: React.FC = () => {
     );
 
     // Create a default board if none exists
-    const currentBoard =
-        boards.length > 0
-            ? boards[0]
-            : {
-                  id: 'default_board',
-                  name: 'My Board',
-                  color: '#3b82f6',
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-              };
+    // Memoized so callbacks that depend on it don't change on every render
+    const currentBoard = useMemo(
+        () =>
+            boards.length > 0
+                ? boards[0]
+                : {
+                      id: 'default_board',
+                      name: 'My Board',
+                      color: '#3b82f6',
+                      createdAt: new Date().toISOString(),
+                      updatedAt: new Date().toISOString(),
+                  },
+        [boards]
+    );
 
     useEffect(() => {
         // Check if default_board already exists in the boards array
@@ -88,45 +93,10 @@ const BoardView: React.FC = () => {
         }
     }, [boards, addBoard]);
 
-    const boardFolders = folders.filter(folder => folder.boardId === currentBoard.id);
-
-    // Get set of valid folder IDs in this board
-    const boardFolderIds = new Set(boardFolders.map(f => f.id));
-
-    // Get set of all tab IDs that are part of sessions
-    const sessionTabIds = useMemo(() => {
-        const ids = new Set<string>();
-        sessions.forEach(session => {
-            session.tabIds.forEach(id => ids.add(id));
-        });
-        return ids;
-    }, [sessions]);
-
-    const boardTabs = tabs.filter(tab => {
-        // Include tabs that belong to folders in this board
-        if (tab.folderId && tab.folderId !== '' && boardFolderIds.has(tab.folderId)) {
-            return true;
-        }
-
-        // Check if tab belongs to a session
-        if (sessionTabIds.has(tab.id)) {
-            return false;
-        }
-
-        // Include tabs without folders (they belong to the board but not a specific folder)
-        if (!tab.folderId || tab.folderId === '') {
-            return true;
-        }
-        // Include orphaned tabs (tabs with folder IDs that no longer exist in ANY folder)
-        // This handles migration from old designs where folders may have been restructured
-        const folderStillExists = folders.some(f => f.id === tab.folderId);
-        if (!folderStillExists) {
-            // Clear the orphaned folderId so the tab shows in "uncategorized"
-            return true;
-        }
-        // Tab belongs to a folder in a different board
-        return false;
-    });
+    const { folders: boardFolders, tabs: boardTabs } = useMemo(
+        () => boardContents(currentBoard, folders, tabs, sessions),
+        [currentBoard, folders, tabs, sessions]
+    );
 
     // Search functionality
     const filteredFolders = useMemo(() => {
@@ -173,13 +143,14 @@ const BoardView: React.FC = () => {
     );
 
     const handleCreateTab = useCallback(
-        (data: { title: string; url: string; folderId?: string }) => {
+        (data: { title: string; url: string; folderId?: string; tags?: string[] }) => {
             const tabToAdd = {
                 id: `tab_${Date.now()}`,
                 title: data.title,
                 url: data.url,
                 favicon: undefined,
                 folderId: data.folderId || '',
+                tags: data.tags?.length ? data.tags : undefined,
                 tabId: null,
                 lastAccessed: new Date().toISOString(),
                 status: 'closed' as const,
@@ -199,7 +170,7 @@ const BoardView: React.FC = () => {
     );
 
     const handleUpdateTab = useCallback(
-        (id: string, changes: { title?: string; url?: string; folderId?: string }) => {
+        (id: string, changes: { title?: string; url?: string; folderId?: string; tags?: string[] }) => {
             updateTab(id, changes);
             showToast('Tab updated successfully!', 'success');
         },
@@ -343,6 +314,7 @@ const BoardView: React.FC = () => {
 
                 <BoardHeader
                     boardName={currentBoard?.name || 'Default Board'}
+                    board={currentBoard}
                     folders={boardFolders}
                     tabs={boardTabs}
                     searchQuery={searchQuery}

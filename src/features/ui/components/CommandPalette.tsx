@@ -6,6 +6,7 @@ import { useUIStore } from '../store/uiStore';
 import { useTaskContextActions } from '../../tasks/hooks/useTaskContextActions';
 import { startOrganize } from '../../organize/store/organizeStore';
 import { openTaskFromTabs } from '../../taskDraft/store/taskDraftStore';
+import { exportCurrentBoard } from '../utils/exportActions';
 import { getActiveContextTask, getParkedTasks } from '../../tasks/utils/contextUtils';
 import './CommandPalette.css';
 
@@ -107,6 +108,20 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                 icon: '✨',
                 // Synchronous in the click/Enter: the on-device model session must start there
                 action: () => openTaskFromTabs(),
+                category: 'creation',
+            },
+            {
+                id: 'export-board-md',
+                name: 'Export board as Markdown',
+                icon: '⤓',
+                action: () => exportCurrentBoard('md'),
+                category: 'creation',
+            },
+            {
+                id: 'export-board-csv',
+                name: 'Export board as CSV',
+                icon: '⤓',
+                action: () => exportCurrentBoard('csv'),
                 category: 'creation',
             },
             {

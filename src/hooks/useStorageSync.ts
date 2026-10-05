@@ -396,5 +396,15 @@ export const useStorageSync = () => {
             window.removeEventListener('message', handleStorageChange);
             chrome.runtime.onMessage.removeListener(handleRuntimeMessage);
         };
-    }, []);
+        // Store actions are stable references: the listeners are registered once
+    }, [
+        addBoardSilentlyToStore,
+        addFolderSilentlyToStore,
+        deleteTabSilentlyFromStore,
+        deleteTaskSilentlyFromStore,
+        deleteNoteSilentlyFromStore,
+        deleteFolderSilentlyFromStore,
+        deleteSessionSilentlyFromStore,
+        deleteBoardSilentlyFromStore,
+    ]);
 };

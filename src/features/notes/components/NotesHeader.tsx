@@ -9,6 +9,10 @@ interface NotesHeaderProps {
     onViewModeChange: (mode: 'grid' | 'list') => void;
     totalNotes: number;
     filteredCount: number;
+    /** '' = all tags */
+    tagFilter?: string;
+    onTagFilterChange?: (tag: string) => void;
+    tagOptions?: { tag: string; count: number }[];
 }
 
 const NotesHeader: React.FC<NotesHeaderProps> = ({
@@ -18,6 +22,9 @@ const NotesHeader: React.FC<NotesHeaderProps> = ({
     onViewModeChange,
     totalNotes,
     filteredCount,
+    tagFilter = '',
+    onTagFilterChange,
+    tagOptions = [],
 }) => {
     const navigate = useNavigate();
 
@@ -32,7 +39,7 @@ const NotesHeader: React.FC<NotesHeaderProps> = ({
                         📝 All Notes
                         <span className="notes-count-badge">{totalNotes}</span>
                     </h1>
-                    {searchQuery && filteredCount !== totalNotes && (
+                    {(searchQuery || tagFilter) && filteredCount !== totalNotes && (
                         <span className="notes-filtered-count">
                             Showing {filteredCount} of {totalNotes}
                         </span>
@@ -40,6 +47,19 @@ const NotesHeader: React.FC<NotesHeaderProps> = ({
                 </div>
 
                 <div className="notes-view-actions">
+                    {onTagFilterChange && (tagOptions.length > 0 || tagFilter) && (
+                        <label className="notes-tag-filter">
+                            Tag:
+                            <select value={tagFilter} onChange={e => onTagFilterChange(e.target.value)}>
+                                <option value="">All tags</option>
+                                {tagOptions.map(({ tag, count }) => (
+                                    <option key={tag} value={tag}>
+                                        #{tag} ({count})
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    )}
                     {/* View Toggle */}
                     <div className="notes-view-toggle">
                         <button

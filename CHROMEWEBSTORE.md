@@ -60,11 +60,12 @@ NEW TASK FROM TABS
 ALSO INCLUDED
 • Boards: save tabs into coloured folders, search them, drag and drop
 • Tasks: To Do / Doing / Done with priorities, due dates and checklists; pin tasks and notes to the top
+• Tags on tasks, notes and saved tabs, with a tag filter
 • Markdown notes, a Pomodoro focus timer and a whiteboard canvas
 • Bookmarks manager and saved browsing sessions
 • Local insights: how often you switched context and how many tabs parking closed
 • Command palette (Ctrl+K), keyboard shortcuts, light and dark themes
-• Export and import all your data as a file
+• Export and import all your data as a file; copy a task or a board as Markdown, or a board as CSV
 
 HOW TO USE
 1. Click the TabPlex icon in the toolbar to open your workspace in a tab.

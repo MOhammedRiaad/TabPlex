@@ -254,7 +254,7 @@ TabPlex complies with:
 
 TabPlex is committed to transparency:
 
-- **Open Source**: Code available for review
+- **Source available**: The code is public on GitHub for review (proprietary licence, see LICENSE)
 - **No Hidden Features**: All functionality documented
 - **Clear Permissions**: Explicit explanation of why each permission is needed
 - **User Control**: You decide what data to create and store

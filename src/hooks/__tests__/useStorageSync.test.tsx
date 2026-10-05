@@ -42,6 +42,19 @@ describe('useStorageSync', () => {
         expect(fakeChrome().runtime.sendMessage).not.toHaveBeenCalled();
     });
 
+    it('registers its message listener once, however often it re-renders', async () => {
+        const addListener = vi.spyOn(chrome.runtime.onMessage, 'addListener');
+        const { rerender, unmount } = renderHook(() => useStorageSync());
+        // Store updates re-render the hook; the listener must not be re-added
+        act(() => useBoardStore.setState({ tasks: [makeTask()] }));
+        rerender();
+        rerender();
+        expect(addListener).toHaveBeenCalledTimes(1);
+        const removeListener = vi.spyOn(chrome.runtime.onMessage, 'removeListener');
+        unmount();
+        expect(removeListener).toHaveBeenCalledTimes(1);
+    });
+
     it('takes newer task fields and the background-owned context from chrome.storage', async () => {
         await db.addTask(makeTask({ id: 'a', title: 'local', updatedAt: '2026-10-03T10:00:00Z' }));
         await db.addTask(makeTask({ id: 'b', title: 'local newer', updatedAt: '2026-10-03T12:00:00Z' }));

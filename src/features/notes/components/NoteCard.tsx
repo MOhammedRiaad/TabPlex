@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Note } from '../../../types';
 import { useBoardStore } from '../../../store/boardStore';
 import MarkdownEditor from '../../ui/components/MarkdownEditor';
+import TagInput, { TagList } from '../../ui/components/TagInput';
+import { collectTags } from '../../../utils/tags';
 import { escapeHtml, renderMarkdownLinks } from '../../../utils/markdown';
 import './NoteCard.css';
 
@@ -40,18 +42,28 @@ const parseMarkdownToHtml = (text: string): string => {
 const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(note.content);
+    const [editTags, setEditTags] = useState<string[]>(note.tags ?? []);
+    const allNotes = useBoardStore(state => state.notes);
 
     const updateNote = useBoardStore(state => state.updateNote);
     const deleteNote = useBoardStore(state => state.deleteNote);
 
     const handleSave = () => {
-        updateNote(note.id, { content: editContent, format: 'markdown' });
+        updateNote(note.id, { content: editContent, format: 'markdown', tags: editTags });
         setIsEditing(false);
     };
 
     const handleCancel = () => {
         setEditContent(note.content);
+        setEditTags(note.tags ?? []);
         setIsEditing(false);
+    };
+
+    // Start from the latest content and tags (they may have changed in another tab)
+    const startEditing = () => {
+        setEditContent(note.content);
+        setEditTags(note.tags ?? []);
+        setIsEditing(true);
     };
 
     const handleDelete = () => {
@@ -70,6 +82,11 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                         minHeight={200}
                         autoFocus
                         placeholder="Write your note in markdown..."
+                    />
+                    <TagInput
+                        tags={editTags}
+                        onChange={setEditTags}
+                        suggestions={collectTags(allNotes).map(t => t.tag)}
                     />
                     <div className="note-edit-actions">
                         <button onClick={handleSave} className="save-btn">
@@ -96,6 +113,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                             <p className="note-text">{note.content}</p>
                         )}
                     </div>
+                    <TagList tags={note.tags} />
                     <div className="note-meta">
                         Created:{' '}
                         {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -120,7 +138,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                         >
                             📌
                         </button>
-                        <button onClick={() => setIsEditing(true)} className="edit-btn" aria-label="Edit note">
+                        <button onClick={startEditing} className="edit-btn" aria-label="Edit note">
                             ✏️
                         </button>
                         <button onClick={handleDelete} className="delete-btn" aria-label="Delete note">
