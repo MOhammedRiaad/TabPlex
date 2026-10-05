@@ -10,7 +10,7 @@ interface BoardHeaderProps {
     searchQuery: string;
     onSearch: (query: string) => void;
     onCreateFolder: (data: { name: string; color: string }) => void;
-    onCreateTab: (data: { title: string; url: string; folderId?: string }) => void;
+    onCreateTab: (data: { title: string; url: string; folderId?: string; tags?: string[] }) => void;
     onShowHistory: () => void;
     isHistoryOpen: boolean;
     onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
@@ -234,6 +234,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
                             title: data.title,
                             url: data.url,
                             folderId: data.folderId,
+                            tags: data.tags,
                         });
                     }
                 }}

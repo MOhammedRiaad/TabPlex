@@ -3,6 +3,7 @@ import { useBoardStore } from '../../store/boardStore';
 import TasksHeader from './components/TasksHeader';
 import TasksList from './components/TasksList';
 import TaskCard from './components/TaskCard';
+import { collectTags, filterByTag } from '../../utils/tags';
 import './TasksView.css';
 
 const TasksView: React.FC = () => {
@@ -10,6 +11,8 @@ const TasksView: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'overdue' | 'upcoming'>('all');
     const [priorityFilter, setPriorityFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
+    const [tagFilter, setTagFilter] = useState('');
+    const tagOptions = useMemo(() => collectTags(tasks), [tasks]);
 
     // Filter tasks by search query, date, and priority
     const filteredTasks = useMemo(() => {
@@ -18,7 +21,9 @@ const TasksView: React.FC = () => {
         // Search filter
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
-            result = result.filter(task => task.title.toLowerCase().includes(query));
+            result = result.filter(
+                task => task.title.toLowerCase().includes(query) || task.tags?.some(tag => tag.includes(query))
+            );
         }
 
         // Date filter
@@ -52,8 +57,8 @@ const TasksView: React.FC = () => {
             result = result.filter(task => task.priority === priorityFilter);
         }
 
-        return result;
-    }, [tasks, searchQuery, dateFilter, priorityFilter]);
+        return filterByTag(result, tagFilter);
+    }, [tasks, searchQuery, dateFilter, priorityFilter, tagFilter]);
 
     // Separate by status
     const todoTasks = filteredTasks.filter(t => t.status === 'todo');
@@ -88,6 +93,9 @@ const TasksView: React.FC = () => {
                 onDateFilterChange={setDateFilter}
                 priorityFilter={priorityFilter}
                 onPriorityFilterChange={setPriorityFilter}
+                tagFilter={tagFilter}
+                onTagFilterChange={setTagFilter}
+                tagOptions={tagOptions}
                 totalTasks={tasks.length}
                 filteredCount={filteredTasks.length}
                 todoCount={todoTasks.length}

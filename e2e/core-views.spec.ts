@@ -230,6 +230,37 @@ test.describe('Tasks', () => {
     });
 });
 
+test.describe('Tags', () => {
+    test('a task gets tags in the form, they reach the background, and the Tasks view filters by them', async ({
+        app,
+        serviceWorker,
+    }) => {
+        await openView(app, 'tasks');
+        await app.locator('body').press('Control+Shift+K');
+        const dialog = app.getByRole('dialog', { name: 'New task' });
+        await dialog.getByLabel('Title').fill('Tagged task');
+        await dialog.getByLabel('Add tag').fill('#Q4, research');
+        await dialog.getByLabel('Add tag').press('Enter');
+        await dialog.getByRole('button', { name: 'Create task' }).click();
+
+        await expect
+            .poll(
+                async () =>
+                    (await stored<Task>(serviceWorker, 'tabboard_tasks')).find(t => t.title === 'Tagged task')?.tags
+            )
+            .toEqual(['q4', 'research']);
+
+        await app.locator('body').press('Control+Shift+K');
+        await app.getByRole('dialog', { name: 'New task' }).getByLabel('Title').fill('Untagged task');
+        await app.getByRole('dialog', { name: 'New task' }).getByRole('button', { name: 'Create task' }).click();
+
+        await app.getByLabel('Tag:').selectOption('q4');
+        await expect(app.locator('.task-card', { hasText: 'Tagged task' })).toBeVisible();
+        await expect(app.locator('.task-card', { hasText: 'Untagged task' })).toHaveCount(0);
+        await expect(app.locator('.task-card', { hasText: 'Tagged task' }).getByText('#research')).toBeVisible();
+    });
+});
+
 test.describe('Bookmarks', () => {
     test('lists the browser bookmarks', async ({ app, serviceWorker }) => {
         await serviceWorker.evaluate(() =>

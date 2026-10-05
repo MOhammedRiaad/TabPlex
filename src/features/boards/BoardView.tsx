@@ -173,13 +173,14 @@ const BoardView: React.FC = () => {
     );
 
     const handleCreateTab = useCallback(
-        (data: { title: string; url: string; folderId?: string }) => {
+        (data: { title: string; url: string; folderId?: string; tags?: string[] }) => {
             const tabToAdd = {
                 id: `tab_${Date.now()}`,
                 title: data.title,
                 url: data.url,
                 favicon: undefined,
                 folderId: data.folderId || '',
+                tags: data.tags?.length ? data.tags : undefined,
                 tabId: null,
                 lastAccessed: new Date().toISOString(),
                 status: 'closed' as const,
@@ -199,7 +200,7 @@ const BoardView: React.FC = () => {
     );
 
     const handleUpdateTab = useCallback(
-        (id: string, changes: { title?: string; url?: string; folderId?: string }) => {
+        (id: string, changes: { title?: string; url?: string; folderId?: string; tags?: string[] }) => {
             updateTab(id, changes);
             showToast('Tab updated successfully!', 'success');
         },

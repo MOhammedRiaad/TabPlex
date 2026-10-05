@@ -10,6 +10,10 @@ interface TasksHeaderProps {
     onDateFilterChange: (filter: 'all' | 'today' | 'overdue' | 'upcoming') => void;
     priorityFilter: 'all' | 'low' | 'medium' | 'high';
     onPriorityFilterChange: (filter: 'all' | 'low' | 'medium' | 'high') => void;
+    /** '' = all tags */
+    tagFilter?: string;
+    onTagFilterChange?: (tag: string) => void;
+    tagOptions?: { tag: string; count: number }[];
     totalTasks: number;
     filteredCount: number;
     todoCount: number;
@@ -24,6 +28,9 @@ const TasksHeader: React.FC<TasksHeaderProps> = ({
     onDateFilterChange,
     priorityFilter,
     onPriorityFilterChange,
+    tagFilter = '',
+    onTagFilterChange,
+    tagOptions = [],
     totalTasks,
     filteredCount,
     todoCount,
@@ -91,6 +98,25 @@ const TasksHeader: React.FC<TasksHeaderProps> = ({
                         <option value="high">🔴 High</option>
                     </select>
                 </div>
+
+                {onTagFilterChange && (tagOptions.length > 0 || tagFilter) && (
+                    <div className="filter-group">
+                        <label htmlFor="tag-filter-tasks">Tag:</label>
+                        <select
+                            id="tag-filter-tasks"
+                            className="filter-select"
+                            value={tagFilter}
+                            onChange={e => onTagFilterChange(e.target.value)}
+                        >
+                            <option value="">All tags</option>
+                            {tagOptions.map(({ tag, count }) => (
+                                <option key={tag} value={tag}>
+                                    #{tag} ({count})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
             </div>
 
             {/* Search Bar */}
