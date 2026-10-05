@@ -1,5 +1,5 @@
 // Draft without AI: a sensible title from the tabs, defaults for the rest. See docs/specs/AI_TASK_FROM_TABS.md §5.3.
-import { siteKey } from '../../organize/utils/siteGrouping';
+import { siteKey } from '../../../utils/siteKey';
 import { TaskDraft } from '../types';
 import { cleanLine } from './aiDraft';
 

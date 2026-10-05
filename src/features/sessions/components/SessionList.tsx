@@ -8,9 +8,12 @@ interface SessionListProps {
     onRestore: (session: Session) => void;
     onEnd: (id: string) => void;
     onDelete: (id: string) => void;
+    onRename?: (id: string, name: string) => void;
+    /** Present only when on-device AI can be used */
+    onSuggestName?: (session: Session) => Promise<string> | undefined;
 }
 
-const SessionList: React.FC<SessionListProps> = ({ sessions, onRestore, onEnd, onDelete }) => {
+const SessionList: React.FC<SessionListProps> = ({ sessions, onRestore, onEnd, onDelete, onRename, onSuggestName }) => {
     if (sessions.length === 0) {
         return <p className="no-sessions">No sessions found. Create a new session or infer from history.</p>;
     }
@@ -25,6 +28,8 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, onRestore, onEnd, o
                         onRestore={onRestore}
                         onEnd={onEnd}
                         onDelete={onDelete}
+                        onRename={onRename}
+                        onSuggestName={onSuggestName}
                     />
                 ))}
             </div>

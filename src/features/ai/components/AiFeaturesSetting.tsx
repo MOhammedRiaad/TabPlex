@@ -15,6 +15,11 @@ const FEATURES: { key: keyof AiSettings; title: string; description: string }[] 
         title: 'Draft tasks from tabs',
         description: 'Pre-fill the title, priority and steps of a new task from its tabs.',
     },
+    {
+        key: 'sessionNames',
+        title: 'Name saved sessions',
+        description: 'Give sessions saved from your tabs a short name. Without AI, they are named after their sites.',
+    },
 ];
 
 /**
