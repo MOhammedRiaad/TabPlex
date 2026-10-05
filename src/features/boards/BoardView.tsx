@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { boardContents } from '../../utils/boards';
+import { pickCurrentBoard } from './utils/currentBoard';
+import { useUIStore } from '../ui/store/uiStore';
 import {
     DndContext,
     DragEndEvent,
@@ -53,18 +55,17 @@ const BoardView: React.FC = () => {
 
     // Create a default board if none exists
     // Memoized so callbacks that depend on it don't change on every render
+    const activeBoardId = useUIStore(state => state.activeBoardId);
     const currentBoard = useMemo(
         () =>
-            boards.length > 0
-                ? boards[0]
-                : {
-                      id: 'default_board',
-                      name: 'My Board',
-                      color: '#3b82f6',
-                      createdAt: new Date().toISOString(),
-                      updatedAt: new Date().toISOString(),
-                  },
-        [boards]
+            pickCurrentBoard(boards, activeBoardId) ?? {
+                id: 'default_board',
+                name: 'My Board',
+                color: '#3b82f6',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            },
+        [boards, activeBoardId]
     );
 
     useEffect(() => {
@@ -162,7 +163,7 @@ const BoardView: React.FC = () => {
     );
 
     const handleUpdateFolder = useCallback(
-        (id: string, changes: { name?: string; color?: string }) => {
+        (id: string, changes: { name?: string; color?: string; boardId?: string }) => {
             updateFolder(id, changes);
             showToast('Folder updated successfully!', 'success');
         },

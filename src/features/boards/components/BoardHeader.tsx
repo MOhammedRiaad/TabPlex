@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Board, Folder, Tab } from '../../../types';
 import BoardModal from './BoardModal';
+import BoardSwitcher from './BoardSwitcher';
 import ExportMenu from '../../ui/components/ExportMenu';
 import { copyBoardMarkdown, downloadBoardCsv, downloadBoardMarkdown } from '../../ui/utils/exportActions';
 import '../BoardView.css';
@@ -46,6 +47,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
             <div className="board-header-top">
                 <div className="board-header-title-section">
                     <h2 className="board-title">{boardName}</h2>
+                    <BoardSwitcher onShowToast={onShowToast} />
                     <div className="board-stats">
                         <span className="board-stat-item">
                             <svg
@@ -66,14 +68,28 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
                     {board && (
                         <ExportMenu
                             label="Export board"
-                            buttonClassName="board-icon-btn board-export-btn"
+                            buttonClassName="board-icon-btn"
                             items={[
                                 { label: 'Copy as Markdown', onSelect: () => copyBoardMarkdown(board, folders, tabs) },
                                 { label: 'Download .md', onSelect: () => downloadBoardMarkdown(board, folders, tabs) },
                                 { label: 'Download .csv', onSelect: () => downloadBoardCsv(board, folders, tabs) },
                             ]}
                         >
-                            ⤓ Export
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 18 18"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                            >
+                                <path d="M9 2v9" />
+                                <path d="M5 7.5 9 11.5l4-4" />
+                                <path d="M3 13v2h12v-2" />
+                            </svg>
                         </ExportMenu>
                     )}
                     {/* View Toggle Buttons */}

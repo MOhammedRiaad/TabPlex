@@ -76,6 +76,39 @@ describe('board store', () => {
             expect(messages[1].payload).toEqual(expect.objectContaining({ id: 'f1', name: 'Renamed' }));
             expect(messages[2].payload).toEqual({ id: 'f1', moveTabs: true, targetFolderId: 'f2' });
         });
+
+        it('deletes a board with its contents, or moves its folders to another board', async () => {
+            useBoardStore.setState({
+                boards: [makeBoard({ id: 'b1' }), makeBoard({ id: 'b2' }), makeBoard({ id: 'b3' })],
+                folders: [
+                    makeFolder({ id: 'f1', boardId: 'b1' }),
+                    makeFolder({ id: 'f2', boardId: 'b2' }),
+                    makeFolder({ id: 'f3', boardId: 'b3' }),
+                ],
+                tabs: [
+                    makeTab({ id: 't1', folderId: 'f1' }),
+                    makeTab({ id: 't2', folderId: 'f2' }),
+                    makeTab({ id: 't3', folderId: 'f3' }),
+                ],
+            });
+            store().deleteBoardWithContents('b1', { moveTo: 'b3' });
+            expect(store().boards.map(b => b.id)).toEqual(['b2', 'b3']);
+            expect(store().folders.find(f => f.id === 'f1')?.boardId).toBe('b3');
+            expect(store().tabs).toHaveLength(3);
+
+            store().deleteBoardWithContents('b2');
+            expect(store().boards.map(b => b.id)).toEqual(['b3']);
+            expect(store().folders.map(f => f.id)).toEqual(['f1', 'f3']);
+            expect(store().tabs.map(t => t.id)).toEqual(['t1', 't3']);
+            await flushPromises();
+            expect(types(messages)).toEqual([
+                'UPDATE_FOLDER',
+                'DELETE_BOARD',
+                'DELETE_TAB',
+                'DELETE_FOLDER',
+                'DELETE_BOARD',
+            ]);
+        });
     });
 
     describe('tabs', () => {

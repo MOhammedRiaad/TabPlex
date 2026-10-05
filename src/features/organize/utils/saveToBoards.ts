@@ -2,6 +2,8 @@ import { BoardState } from '../../../store/slices/board/types';
 import { generateFolderId, generateTabId } from '../../../utils/idGenerator';
 import { CreatedGroup, FOLDER_HEX_FOR_GROUP_COLOR } from '../../../utils/organizeTabs';
 import { OrganizableTab } from '../../ai/types';
+import { pickCurrentBoard } from '../../boards/utils/currentBoard';
+import { useUIStore } from '../../ui/store/uiStore';
 
 /** The board BoardView creates when there is none */
 export const DEFAULT_BOARD = { id: 'default_board', name: 'My Board', color: '#3b82f6' };
@@ -17,7 +19,8 @@ export function saveGroupsToBoards(
     store: Pick<BoardState, 'boards' | 'folders' | 'addBoard' | 'addFolder' | 'addTab'>,
     now = new Date()
 ): { boardId: string; folderCount: number; tabCount: number } {
-    let boardId = store.boards[0]?.id;
+    // The board the Boards view shows, so the folders appear where the user looks
+    let boardId = pickCurrentBoard(store.boards, useUIStore.getState().activeBoardId)?.id;
     if (!boardId) {
         store.addBoard(DEFAULT_BOARD);
         boardId = DEFAULT_BOARD.id;

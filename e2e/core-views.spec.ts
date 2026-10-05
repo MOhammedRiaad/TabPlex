@@ -6,6 +6,24 @@ import { expect, seedTask, site, storedTask, test } from './fixtures';
 /** Open a TabPlex view in the same tab (the fixture starts on #/tasks) */
 const openView = (page: Page, route: string) => page.goto(page.url().replace(/#\/.*$/, `#/${route}`));
 
+/** Folder names the page has saved in its IndexedDB (what it loads after a reload) */
+const savedFolderNames = (page: Page) =>
+    page.evaluate(
+        () =>
+            new Promise<string[]>((resolve, reject) => {
+                const open = indexedDB.open('TabPlexDB');
+                open.onerror = () => reject(open.error);
+                open.onsuccess = () => {
+                    const request = open.result.transaction('folders').objectStore('folders').getAll();
+                    request.onsuccess = () => {
+                        resolve((request.result as Folder[]).map(folder => folder.name));
+                        open.result.close();
+                    };
+                    request.onerror = () => reject(request.error);
+                };
+            })
+    );
+
 /** The background's copy of a collection (chrome.storage.local) */
 function stored<T>(serviceWorker: Worker, key: string) {
     return serviceWorker.evaluate(async k => ((await chrome.storage.local.get(k))[k] as T[] | undefined) ?? [], key);
@@ -63,6 +81,49 @@ test.describe('Boards', () => {
         await app.reload();
         await app.getByRole('button', { name: 'Folder: Research' }).click();
         await expect(app.getByText('Stripe pricing').first()).toBeVisible();
+    });
+
+    test('a second board: switch to it, it is remembered, and deleting it moves its folders', async ({
+        app,
+        serviceWorker,
+    }) => {
+        await openView(app, 'boards');
+        const picker = app.getByRole('combobox', { name: 'Board' });
+        await expect(picker).toBeVisible();
+
+        await picker.selectOption('__new__');
+        await app.getByRole('dialog', { name: 'New board' }).getByLabel('Name').fill('Side project');
+        await app.getByRole('button', { name: 'Create board' }).click();
+        await expect(picker.locator('option:checked')).toHaveText('Side project');
+
+        await app.getByRole('button', { name: 'Create folder' }).click();
+        await app.locator('#board-folder-name').fill('Ideas');
+        await app.getByRole('button', { name: 'Create', exact: true }).click();
+        await expect(app.getByRole('button', { name: 'Folder: Ideas' })).toBeVisible();
+        // The page saves to IndexedDB after it renders: wait for it before reloading
+        await expect.poll(() => savedFolderNames(app)).toContain('Ideas');
+
+        // The choice survives a reload; the first board doesn't show this folder
+        await app.reload();
+        await expect(app.getByRole('combobox', { name: 'Board' }).locator('option:checked')).toHaveText('Side project');
+        await expect(app.getByRole('button', { name: 'Folder: Ideas' })).toBeVisible();
+        const first = await app.getByRole('combobox', { name: 'Board' }).locator('option').first().textContent();
+        await app.getByRole('combobox', { name: 'Board' }).selectOption({ index: 0 });
+        await expect(app.getByRole('button', { name: 'Folder: Ideas' })).toHaveCount(0);
+
+        // Delete "Side project", moving its folder to the first board
+        await app.getByRole('combobox', { name: 'Board' }).selectOption({ label: 'Side project' });
+        await app.getByRole('button', { name: 'Board actions' }).click();
+        await app.getByRole('menuitem', { name: 'Delete board' }).click();
+        const dialog = app.getByRole('dialog', { name: 'Delete “Side project”' });
+        await expect(dialog).toContainText('It has 1 folder and 0 saved tabs.');
+        await dialog.getByRole('button', { name: 'Delete board' }).click();
+        await expect(app.getByRole('combobox', { name: 'Board' }).locator('option:checked')).toHaveText(first!);
+        await expect(app.getByRole('button', { name: 'Folder: Ideas' })).toBeVisible();
+
+        await expect
+            .poll(async () => (await stored<{ name: string }>(serviceWorker, 'tabboard_boards')).map(b => b.name))
+            .not.toContain('Side project');
     });
 });
 

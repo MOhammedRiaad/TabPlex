@@ -22,6 +22,7 @@ interface BoardModalProps {
         color?: string;
         folderId?: string;
         tags?: string[];
+        boardId?: string;
     }) => void;
     onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
@@ -45,6 +46,8 @@ const BoardModal: React.FC<BoardModalProps> = ({
     const [folderId, setFolderId] = useState<string>('');
     const [tags, setTags] = useState<string[]>([]);
     const allTabs = useBoardStore(state => state.tabs);
+    const boards = useBoardStore(state => state.boards);
+    const [boardId, setBoardId] = useState('');
     const [errors, setErrors] = useState<{ name?: string; title?: string; url?: string }>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -61,6 +64,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
                 if (type === 'folder' && folder) {
                     setName(folder.name || '');
                     setColor(folder.color || '#3b82f6');
+                    setBoardId(folder.boardId);
                 } else if (type === 'tab' && tab) {
                     setTitle(tab.title || '');
                     setUrl(tab.url || '');
@@ -171,6 +175,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
                     color: type === 'folder' ? color : undefined,
                     folderId: type === 'tab' ? folderId || '' : undefined,
                     tags: type === 'tab' ? tags : undefined,
+                    boardId: type === 'folder' && mode === 'edit' ? boardId : undefined,
                 });
 
                 onShowToast?.(
@@ -191,7 +196,7 @@ const BoardModal: React.FC<BoardModalProps> = ({
                 setIsSubmitting(false);
             }
         },
-        [name, title, url, color, folderId, tags, type, mode, onSubmit, onClose, onShowToast]
+        [name, title, url, color, folderId, tags, boardId, type, mode, onSubmit, onClose, onShowToast]
     );
 
     if (!isOpen) return null;
@@ -271,6 +276,27 @@ const BoardModal: React.FC<BoardModalProps> = ({
                                     disabled={isSubmitting}
                                 />
                             </div>
+
+                            {mode === 'edit' && boards.length > 1 && (
+                                <div className="board-modal-field">
+                                    <label htmlFor="board-folder-board" className="board-modal-label">
+                                        Board
+                                    </label>
+                                    <select
+                                        id="board-folder-board"
+                                        value={boardId}
+                                        onChange={e => setBoardId(e.target.value)}
+                                        className="board-modal-input"
+                                        disabled={isSubmitting}
+                                    >
+                                        {boards.map(board => (
+                                            <option key={board.id} value={board.id}>
+                                                {board.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                         </>
                     ) : (
                         <>

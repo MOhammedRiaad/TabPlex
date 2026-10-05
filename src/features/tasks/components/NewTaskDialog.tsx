@@ -3,6 +3,7 @@ import { useBoardStore } from '../../../store/boardStore';
 import { generateTaskId } from '../../../utils/idGenerator';
 import { useUIActions, useUIStore } from '../../ui/store/uiStore';
 import TaskForm, { EMPTY_TASK_FORM, formValuesToTask } from './TaskForm';
+import { useCurrentBoard } from '../../boards/utils/currentBoard';
 import './NewTaskDialog.css';
 
 /** "New task" from anywhere (command palette, Ctrl+Shift+K, Today quick action). Rendered once, in App. */
@@ -10,7 +11,7 @@ const NewTaskDialog: React.FC = () => {
     const open = useUIStore(state => state.newTaskDialogOpen);
     const { closeNewTaskDialog, showToast } = useUIActions();
     const tabs = useBoardStore(state => state.tabs);
-    const boards = useBoardStore(state => state.boards);
+    const currentBoard = useCurrentBoard();
     const addTask = useBoardStore(state => state.addTask);
 
     if (!open) return null;
@@ -31,7 +32,7 @@ const NewTaskDialog: React.FC = () => {
                     submitLabel="Create task"
                     onSubmit={values => {
                         const task = formValuesToTask(values);
-                        addTask({ id: generateTaskId(), status: 'todo', boardId: boards[0]?.id, ...task });
+                        addTask({ id: generateTaskId(), status: 'todo', boardId: currentBoard?.id, ...task });
                         showToast(`Created “${task.title}”`, 'success');
                         closeNewTaskDialog();
                     }}

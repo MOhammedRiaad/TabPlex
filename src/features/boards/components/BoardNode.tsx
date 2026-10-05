@@ -14,7 +14,7 @@ interface BoardNodeProps {
     folder?: Folder;
     tab?: Tab;
     tabs?: Tab[];
-    onUpdateFolder?: (id: string, changes: { name?: string; color?: string }) => void;
+    onUpdateFolder?: (id: string, changes: { name?: string; color?: string; boardId?: string }) => void;
     onUpdateTab?: (id: string, changes: { title?: string; url?: string; folderId?: string; tags?: string[] }) => void;
     onDeleteFolder?: (id: string) => void;
     onDeleteTab?: (id: string) => void;
@@ -99,11 +99,13 @@ const BoardNode: React.FC<BoardNodeProps> = ({
         color?: string;
         folderId?: string;
         tags?: string[];
+        boardId?: string;
     }) => {
         if (isFolder && folder && onUpdateFolder) {
             onUpdateFolder(folder.id, {
                 name: data.name,
                 color: data.color,
+                ...(data.boardId && { boardId: data.boardId }),
             });
         } else if (tab && onUpdateTab) {
             onUpdateTab(tab.id, {

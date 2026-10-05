@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useBoardStore } from '../store/boardStore';
 import { useUIStore } from '../features/ui/store/uiStore';
+import { getCurrentBoard } from '../features/boards/utils/currentBoard';
 
 export const useKeyboardShortcuts = (
     activeView: 'boards' | 'history' | 'sessions' | 'today' | 'bookmarks',
@@ -65,7 +66,7 @@ export const useKeyboardShortcuts = (
 
                 // Add a new tab based on the current view
                 if (activeView === 'boards') {
-                    const currentBoard = state.boards[0]; // Use first board as default
+                    const currentBoard = getCurrentBoard();
                     const currentFolder = state.folders.find(f => f.boardId === currentBoard?.id);
 
                     addTab({
@@ -109,14 +110,11 @@ export const useKeyboardShortcuts = (
                 // Set processing flag
                 isProcessingNoteRef.current = true;
 
-                // Get current state inside the handler to avoid dependency issues
-                const state = useBoardStore.getState();
-
                 addNote({
                     id: `note_${Date.now()}`,
                     title: 'New note',
                     content: 'New note',
-                    boardId: state.boards[0]?.id || undefined,
+                    boardId: getCurrentBoard()?.id,
                     folderId: undefined,
                     tabId: undefined,
                     format: 'text',
@@ -138,7 +136,7 @@ export const useKeyboardShortcuts = (
 
                 // Get current state inside the handler to avoid dependency issues
                 const state = useBoardStore.getState();
-                const currentBoard = state.boards[0]; // Use first board as default
+                const currentBoard = getCurrentBoard();
 
                 if (currentBoard) {
                     // Check if we're already processing a folder addition

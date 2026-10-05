@@ -66,6 +66,8 @@ interface UIState {
     parkDialogTaskId: string | null;
     /** The New task dialog (command palette, Ctrl+Shift+K, Today quick action) */
     newTaskDialogOpen: boolean;
+    /** Board shown in the Boards view (per TabPlex tab, remembered in localStorage); null = the first board */
+    activeBoardId: string | null;
     actions: {
         setActiveView: (view: ViewType) => void;
         setCommandPaletteOpen: (isOpen: boolean) => void;
@@ -76,10 +78,21 @@ interface UIState {
         closeParkDialog: () => void;
         openNewTaskDialog: () => void;
         closeNewTaskDialog: () => void;
+        setActiveBoard: (id: string | null) => void;
     };
 }
 
 let toastCounter = 0;
+
+export const ACTIVE_BOARD_KEY = 'tabplex_active_board';
+
+function readActiveBoard(): string | null {
+    try {
+        return localStorage.getItem(ACTIVE_BOARD_KEY);
+    } catch {
+        return null; // storage blocked: fall back to the first board
+    }
+}
 
 export const useUIStore = create<UIState>(set => ({
     activeView: getInitialView(),
@@ -87,6 +100,7 @@ export const useUIStore = create<UIState>(set => ({
     toast: null,
     parkDialogTaskId: null,
     newTaskDialogOpen: false,
+    activeBoardId: readActiveBoard(),
     actions: {
         setActiveView: view => {
             localStorage.setItem('tabboard-active-view', view);
@@ -100,6 +114,15 @@ export const useUIStore = create<UIState>(set => ({
         closeParkDialog: () => set({ parkDialogTaskId: null }),
         openNewTaskDialog: () => set({ newTaskDialogOpen: true }),
         closeNewTaskDialog: () => set({ newTaskDialogOpen: false }),
+        setActiveBoard: id => {
+            try {
+                if (id) localStorage.setItem(ACTIVE_BOARD_KEY, id);
+                else localStorage.removeItem(ACTIVE_BOARD_KEY);
+            } catch {
+                // not remembered across reloads; still switches now
+            }
+            set({ activeBoardId: id });
+        },
     },
 }));
 

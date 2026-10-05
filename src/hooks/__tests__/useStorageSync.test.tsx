@@ -23,7 +23,9 @@ describe('useStorageSync', () => {
 
     it('hydrates the store from IndexedDB without resetting timestamps or messaging the background', async () => {
         const task = makeTask({ createdAt: '2020-01-01T00:00:00.000Z' });
-        await db.addBoard(makeBoard());
+        // IndexedDB returns boards by id; the store keeps them in creation order
+        await db.addBoard(makeBoard({ id: 'default_board', createdAt: '2020-01-01T00:00:00.000Z' }));
+        await db.addBoard(makeBoard({ id: 'board_2', createdAt: '2021-01-01T00:00:00.000Z' }));
         await db.addFolder(makeFolder());
         await db.addTab(makeTab({ id: 'b', order: 1 }));
         await db.addTab(makeTab({ id: 'a', order: 0 }));
@@ -36,7 +38,7 @@ describe('useStorageSync', () => {
         await waitFor(() => expect(state().tasks).toHaveLength(1));
         expect(state().tasks[0].createdAt).toBe('2020-01-01T00:00:00.000Z');
         expect(state().tabs.map(t => t.id)).toEqual(['a', 'b', 'z']);
-        expect(state().boards).toHaveLength(1);
+        expect(state().boards.map(b => b.id)).toEqual(['default_board', 'board_2']);
         expect(state().notes).toHaveLength(1);
         expect(state().sessions).toHaveLength(1);
         expect(fakeChrome().runtime.sendMessage).not.toHaveBeenCalled();

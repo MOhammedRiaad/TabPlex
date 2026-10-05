@@ -25,6 +25,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 ### 📋 Core Organization
 
 - **Board & Folder System**: Organize tabs into visual boards with customizable folders
+- **Several boards**: Keep separate boards (work, home, a side project); switch, create, rename or delete them from the Boards header. Deleting a board moves its folders to another board or deletes them, and TabPlex remembers the board you last used
 - **Drag & Drop**: Intuitive drag-and-drop interface for moving tabs between folders
 - **Smart Tab Management**: Automatically capture and organize browser tabs
 - **Local-First Storage**: All data stored locally with no cloud dependency
