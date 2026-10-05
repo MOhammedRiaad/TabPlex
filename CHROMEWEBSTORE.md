@@ -65,7 +65,7 @@ ALSO INCLUDED
 • Bookmarks manager and saved browsing sessions
 • Local insights: how often you switched context and how many tabs parking closed
 • Command palette (Ctrl+K), keyboard shortcuts, light and dark themes
-• Export and import all your data as a file
+• Export and import all your data as a file; copy a task or a board as Markdown, or a board as CSV
 
 HOW TO USE
 1. Click the TabPlex icon in the toolbar to open your workspace in a tab.

@@ -1,0 +1,39 @@
+.export-menu {
+    position: relative;
+    display: inline-flex;
+}
+
+.export-menu-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 50;
+    min-width: 180px;
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-primary);
+    box-shadow: var(--shadow-lg);
+}
+
+.export-menu-list button {
+    display: block;
+    width: 100%;
+    padding: 6px var(--spacing-sm);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-text-primary);
+    font-size: var(--font-sm);
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.export-menu-list button:hover,
+.export-menu-list button:focus-visible {
+    background: var(--color-bg-hover);
+    outline: none;
+}
