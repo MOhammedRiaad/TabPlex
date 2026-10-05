@@ -88,9 +88,9 @@ TabPlex requests the following permissions to function:
     - **Data Access**: Browser history (only when requested)
 
 5. **`notifications`**
-    - **Purpose**: Send task reminders and timer alerts
-    - **Usage**: When tasks are due or timer completes
-    - **Data Access**: Task titles for notification display
+    - **Purpose**: Send task reminders and timer alerts, and (if you turn it on) suggest a parked task for a page you open
+    - **Usage**: When tasks are due or timer completes; for suggestions, when a page you open is on the same site as a parked task's tabs
+    - **Data Access**: Task titles and the page title for notification display. Suggestions compare the page's site with your parked tasks' saved tabs on your device; nothing is sent anywhere
 
 6. **`sessions`**
     - **Purpose**: Restore recently closed tabs and windows

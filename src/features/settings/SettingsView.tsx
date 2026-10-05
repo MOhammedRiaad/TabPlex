@@ -227,6 +227,24 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                         </div>
                         <div className="setting-item">
                             <div className="setting-info">
+                                <h4>Suggest a task for new tabs</h4>
+                                <p>
+                                    When a page you open matches a parked task&apos;s sites, TabPlex offers to add it.
+                                    Uses notifications; matching happens on your device.
+                                </p>
+                            </div>
+                            <div className="setting-control">
+                                <input
+                                    type="checkbox"
+                                    className="setting-checkbox"
+                                    aria-label="Suggest a task for new tabs"
+                                    checked={parkSettings.suggestTasksForTabs}
+                                    onChange={e => updateParkSettings({ suggestTasksForTabs: e.target.checked })}
+                                />
+                            </div>
+                        </div>
+                        <div className="setting-item">
+                            <div className="setting-info">
                                 <h4>Start a Pomodoro when a task starts</h4>
                                 <p>
                                     Starting or resuming a task links the focus timer to it and starts a work session.

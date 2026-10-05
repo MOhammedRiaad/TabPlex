@@ -42,6 +42,7 @@ PARK & RESUME
 • Parked work waits for you on the Today view; resume in one click
 • Closing the group by hand parks the task safely, so no tab is lost
 • Optional: start a Pomodoro with the task, and an on-device AI summary of what you were doing
+• Optional: when a page you open is on the same site as a parked task's tabs, a notification offers to add it to that task
 
 ORGANIZE TABS
 • One click suggests tab groups for your loose tabs
@@ -127,7 +128,7 @@ Regenerate the screenshots and promo tiles (from `store-assets/promo/promo.html`
 | `history`       | permissions | Show recent browser history in the History view and the Boards side panel so the user can add pages to folders, and suggest work sessions from recent history in the Sessions view. Read only by those views; it stays on the device. |
 | `sessions`      | permissions | List recently closed tabs and windows in the Sessions view so the user can restore them.                                                                                                                                              |
 | `storage`       | permissions | Save the user's tasks, tabs, notes, boards and settings locally in the browser.                                                                                                                                                       |
-| `notifications` | permissions | Show task due reminders and focus-timer alerts.                                                                                                                                                                                       |
+| `notifications` | permissions | Show task due reminders and focus-timer alerts, and (only if the user turns it on) offer to add a newly opened page to a parked task on the same site.                                                                                |
 | `bookmarks`     | permissions | Show, search, create, edit and organize the user's bookmarks in the Bookmarks view.                                                                                                                                                   |
 | `favicon`       | permissions | Show website icons from Chrome's local favicon cache next to saved tabs, bookmarks and links, without contacting a third-party icon service.                                                                                          |
 
