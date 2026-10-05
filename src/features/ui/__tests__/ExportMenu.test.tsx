@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ExportMenu from '../components/ExportMenu';
@@ -76,6 +76,36 @@ describe('ExportMenu', () => {
         fireEvent.click(button);
         fireEvent.mouseDown(screen.getByText('outside'));
         expect(screen.queryByRole('menu')).toBeNull();
+    });
+
+    it('opens on hover and closes shortly after the pointer leaves, unless it comes back', () => {
+        vi.useFakeTimers();
+        const { container } = render(
+            <ExportMenu label="Export thing" items={[{ label: 'Copy', onSelect: vi.fn() }]}>
+                ⤓
+            </ExportMenu>
+        );
+        const root = container.querySelector('.export-menu') as HTMLElement;
+        const button = screen.getByRole('button', { name: 'Export thing' });
+
+        fireEvent.mouseEnter(root);
+        expect(screen.getByRole('menu')).toBeInTheDocument();
+        // A click after hovering keeps it open rather than toggling it shut; the next click closes it
+        fireEvent.click(button);
+        expect(screen.getByRole('menu')).toBeInTheDocument();
+        fireEvent.click(button);
+        expect(screen.queryByRole('menu')).toBeNull();
+
+        fireEvent.mouseEnter(root);
+        fireEvent.mouseLeave(root);
+        act(() => vi.advanceTimersByTime(100));
+        fireEvent.mouseEnter(root); // back in time (e.g. crossing the gap into the menu)
+        act(() => vi.advanceTimersByTime(500));
+        expect(screen.getByRole('menu')).toBeInTheDocument();
+        fireEvent.mouseLeave(root);
+        act(() => vi.advanceTimersByTime(200));
+        expect(screen.queryByRole('menu')).toBeNull();
+        vi.useRealTimers();
     });
 });
 
