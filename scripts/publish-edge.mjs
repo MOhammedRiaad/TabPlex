@@ -93,6 +93,24 @@ export async function publishToEdge({
     return published;
 }
 
+/** The error message plus what to do about it, for the failures we know */
+export function explainFailure(message) {
+    if (message.startsWith('InProgressSubmission')) {
+        return (
+            `${message}\nThe new package is uploaded to the Edge draft; only the submission failed because an ` +
+            'earlier one is still in review. When that finishes, submit the draft in Partner Center, or run ' +
+            'Actions → "Publish to Edge" for this release tag.'
+        );
+    }
+    if (/HTTP 401/.test(message)) {
+        return (
+            `${message}\nThe Edge API key may have expired: create a new one in Partner Center → Microsoft Edge → ` +
+            'Publish API, update the EDGE_API_KEY secret, then run Actions → "Publish to Edge".'
+        );
+    }
+    return message;
+}
+
 /** The zip semantic-release built in this run, if any */
 export async function findReleaseZip(dir = 'release') {
     const files = await readdir(dir).catch(() => []);
@@ -119,7 +137,7 @@ async function main() {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
     main().catch(error => {
-        console.error(`Edge Add-ons publish failed: ${error.message}`);
+        console.error(`Edge Add-ons publish failed: ${explainFailure(error.message)}`);
         process.exit(1);
     });
 }
