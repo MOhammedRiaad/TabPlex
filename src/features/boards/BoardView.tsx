@@ -51,16 +51,20 @@ const BoardView: React.FC = () => {
     );
 
     // Create a default board if none exists
-    const currentBoard =
-        boards.length > 0
-            ? boards[0]
-            : {
-                  id: 'default_board',
-                  name: 'My Board',
-                  color: '#3b82f6',
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-              };
+    // Memoized so callbacks that depend on it don't change on every render
+    const currentBoard = useMemo(
+        () =>
+            boards.length > 0
+                ? boards[0]
+                : {
+                      id: 'default_board',
+                      name: 'My Board',
+                      color: '#3b82f6',
+                      createdAt: new Date().toISOString(),
+                      updatedAt: new Date().toISOString(),
+                  },
+        [boards]
+    );
 
     useEffect(() => {
         // Check if default_board already exists in the boards array
