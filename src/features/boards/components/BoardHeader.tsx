@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import { Folder, Tab } from '../../../types';
+import { Board, Folder, Tab } from '../../../types';
 import BoardModal from './BoardModal';
+import ExportMenu from '../../ui/components/ExportMenu';
+import { copyBoardMarkdown, downloadBoardCsv, downloadBoardMarkdown } from '../../ui/utils/exportActions';
 import '../BoardView.css';
 
 interface BoardHeaderProps {
     boardName: string;
+    /** The board shown, for Export */
+    board?: Board;
     folders: Folder[];
     tabs: Tab[];
     searchQuery: string;
@@ -20,7 +24,9 @@ interface BoardHeaderProps {
 
 const BoardHeader: React.FC<BoardHeaderProps> = ({
     boardName,
+    board,
     folders,
+    tabs,
     searchQuery,
     onSearch,
     onCreateFolder,
@@ -57,6 +63,19 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
                     </div>
                 </div>
                 <div className="board-view-actions">
+                    {board && (
+                        <ExportMenu
+                            label="Export board"
+                            buttonClassName="board-icon-btn board-export-btn"
+                            items={[
+                                { label: 'Copy as Markdown', onSelect: () => copyBoardMarkdown(board, folders, tabs) },
+                                { label: 'Download .md', onSelect: () => downloadBoardMarkdown(board, folders, tabs) },
+                                { label: 'Download .csv', onSelect: () => downloadBoardCsv(board, folders, tabs) },
+                            ]}
+                        >
+                            ⤓ Export
+                        </ExportMenu>
+                    )}
                     {/* View Toggle Buttons */}
                     <button
                         onClick={() => onViewModeChange('grid')}
