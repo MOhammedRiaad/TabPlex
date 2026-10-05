@@ -1,6 +1,7 @@
 {
     "name": "tabplex",
     "private": true,
+    "license": "UNLICENSED",
     "version": "1.0.1",
     "repository": {
         "type": "git",

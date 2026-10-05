@@ -379,7 +379,7 @@ First run of the E2E suite: `npx playwright install chromium`.
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+**Proprietary, all rights reserved** (see [LICENSE](LICENSE)). The source is public so you can read it and check what TabPlex does, but you may not copy, modify, redistribute or publish it, or reuse its screenshots and text, without written permission. Install TabPlex only from the official [Microsoft Edge Add-ons listing](https://microsoftedge.microsoft.com/addons/detail/kaeaniaepejnapfgmkjgjkkgbgkaehed) or this repository's GitHub Releases. By opening a pull request you agree to the contribution terms in section 3 of the LICENSE.
 
 ## 🙏 Acknowledgments
 
