@@ -1,0 +1,42 @@
+name: Publish to Edge
+
+# Re-submit a release that's already on GitHub to Microsoft Edge Add-ons, e.g. when the Release workflow's Edge step
+# failed with InProgressSubmission (the previous version was still in review). Re-running the Release workflow
+# doesn't help: it releases nothing new, so it has no zip to publish.
+on:
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: 'Release tag to publish, e.g. v1.1.0 (empty = latest release)'
+                required: false
+                default: ''
+
+concurrency:
+    group: edge-publish
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: 22
+
+            - name: Download the release zip
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  TAG: ${{ inputs.tag }}
+              run: gh release download $TAG --pattern 'tabplex-v*.zip' --dir release
+
+            - name: Publish to Microsoft Edge Add-ons
+              env:
+                  EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+                  EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+                  EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+              run: node scripts/publish-edge.mjs

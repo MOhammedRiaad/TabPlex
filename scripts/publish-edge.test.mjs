@@ -2,7 +2,14 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { API, findReleaseZip, operationIdFrom, publishToEdge, waitForOperation } from './publish-edge.mjs';
+import {
+    API,
+    explainFailure,
+    findReleaseZip,
+    operationIdFrom,
+    publishToEdge,
+    waitForOperation,
+} from './publish-edge.mjs';
 
 const PRODUCT = 'd34f98f5-f9b7-42b1-bebb-98707202b21d';
 const credentials = { clientId: 'client-1', apiKey: 'key-1' };
@@ -136,6 +143,18 @@ describe('publishToEdge', () => {
             publishToEdge({ zip, notes: 'n', productId: PRODUCT, ...credentials, fetchImpl, log: () => undefined })
         ).rejects.toThrow('Upload failed: HTTP 400 No package');
         expect(calls).toHaveLength(1);
+    });
+});
+
+describe('explainFailure', () => {
+    it('says how to finish when an earlier submission is in review, or when the key expired', () => {
+        const busy = explainFailure(
+            "InProgressSubmission: Can't publish extension as your extension submission is in progress."
+        );
+        expect(busy).toContain('uploaded to the Edge draft');
+        expect(busy).toContain('"Publish to Edge"');
+        expect(explainFailure('Upload failed: HTTP 401 expired key')).toContain('EDGE_API_KEY');
+        expect(explainFailure('Upload failed: HTTP 500 oops')).toBe('Upload failed: HTTP 500 oops');
     });
 });
 
