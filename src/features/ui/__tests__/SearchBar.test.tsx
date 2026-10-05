@@ -73,6 +73,18 @@ describe('SearchBar', () => {
         expect(input).toHaveValue('');
     });
 
+    it('Enter uses the latest onResultClick after a re-render (no stale handler)', () => {
+        vi.spyOn(window, 'open').mockImplementation(() => null);
+        const first = vi.fn();
+        const second = vi.fn();
+        const { rerender } = render(<SearchBar onResultClick={first} />);
+        const input = type('alpha');
+        rerender(<SearchBar onResultClick={second} />);
+        fireEvent.keyDown(input, { key: 'Enter' });
+        expect(second).toHaveBeenCalledTimes(1);
+        expect(first).not.toHaveBeenCalled();
+    });
+
     it('selects non-tab results by click, closes on Escape and outside clicks', () => {
         const onResultClick = vi.fn();
         render(<SearchBar onResultClick={onResultClick} />);
