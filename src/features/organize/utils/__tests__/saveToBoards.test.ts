@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_BOARD, saveGroupsToBoards } from '../saveToBoards';
 import { makeBoard, makeFolder } from '../../../../test/factories';
+import { useUIStore } from '../../../ui/store/uiStore';
 import { OrganizableTab } from '../../../ai/types';
 import { CreatedGroup } from '../../../../utils/organizeTabs';
 
@@ -43,6 +44,14 @@ describe('saveGroupsToBoards', () => {
             expect.objectContaining({ title: 'Paddle', tabId: 2, folderId: pricingFolder }),
             expect.objectContaining({ title: 'React', tabId: 3 }),
         ]);
+    });
+
+    it('saves to the board chosen in the Boards view', () => {
+        useUIStore.setState({ activeBoardId: 'b2' });
+        const s = store([makeBoard({ id: 'b1' }), makeBoard({ id: 'b2' })]);
+        expect(saveGroupsToBoards(created, tabs, s, NOW).boardId).toBe('b2');
+        expect(s.addFolder.mock.calls[0][0]).toEqual(expect.objectContaining({ boardId: 'b2', order: 0 }));
+        useUIStore.setState({ activeBoardId: null });
     });
 
     it('creates the default board when there is none', () => {

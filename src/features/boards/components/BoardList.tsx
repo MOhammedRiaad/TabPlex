@@ -7,7 +7,7 @@ import '../BoardView.css';
 interface BoardListProps {
     folders: Folder[];
     tabs: Tab[];
-    onUpdateFolder?: (id: string, changes: { name?: string; color?: string }) => void;
+    onUpdateFolder?: (id: string, changes: { name?: string; color?: string; boardId?: string }) => void;
     onUpdateTab?: (id: string, changes: { title?: string; url?: string; folderId?: string; tags?: string[] }) => void;
     onDeleteFolder?: (id: string) => void;
     onDeleteTab?: (id: string) => void;

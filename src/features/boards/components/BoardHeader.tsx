@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Board, Folder, Tab } from '../../../types';
 import BoardModal from './BoardModal';
+import BoardSwitcher from './BoardSwitcher';
 import ExportMenu from '../../ui/components/ExportMenu';
 import { copyBoardMarkdown, downloadBoardCsv, downloadBoardMarkdown } from '../../ui/utils/exportActions';
 import '../BoardView.css';
@@ -46,6 +47,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
             <div className="board-header-top">
                 <div className="board-header-title-section">
                     <h2 className="board-title">{boardName}</h2>
+                    <BoardSwitcher onShowToast={onShowToast} />
                     <div className="board-stats">
                         <span className="board-stat-item">
                             <svg

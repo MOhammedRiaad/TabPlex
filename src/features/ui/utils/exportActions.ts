@@ -5,6 +5,7 @@ import { boardToCsv, boardToMarkdown, taskToMarkdown } from '../../../utils/expo
 import { useUIStore } from '../store/uiStore';
 import { useBoardStore } from '../../../store/boardStore';
 import { boardContents } from '../../../utils/boards';
+import { getCurrentBoard } from '../../boards/utils/currentBoard';
 
 const toast = (message: string, type: 'success' | 'error') => useUIStore.getState().actions.showToast(message, type);
 const date = () => new Date().toISOString().slice(0, 10);
@@ -36,10 +37,10 @@ export const downloadBoardMarkdown = (board: Board, folders: Folder[], tabs: Tab
 export const downloadBoardCsv = (board: Board, folders: Folder[], tabs: Tab[]) =>
     downloadText(`${slugify(board.name)}-${date()}.csv`, boardToCsv(board, folders, tabs), 'text/csv;charset=utf-8');
 
-/** Export the board the Boards view shows (the first board), as the command palette does */
+/** Export the board the Boards view shows, as the command palette does */
 export function exportCurrentBoard(format: 'md' | 'csv') {
-    const { boards, folders, tabs, sessions } = useBoardStore.getState();
-    const board = boards[0];
+    const { folders, tabs, sessions } = useBoardStore.getState();
+    const board = getCurrentBoard();
     if (!board) {
         toast('No board to export yet', 'error');
         return;

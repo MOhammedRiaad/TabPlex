@@ -64,6 +64,47 @@ test.describe('Boards', () => {
         await app.getByRole('button', { name: 'Folder: Research' }).click();
         await expect(app.getByText('Stripe pricing').first()).toBeVisible();
     });
+
+    test('a second board: switch to it, it is remembered, and deleting it moves its folders', async ({
+        app,
+        serviceWorker,
+    }) => {
+        await openView(app, 'boards');
+        const picker = app.getByRole('combobox', { name: 'Board' });
+        await expect(picker).toBeVisible();
+
+        await picker.selectOption('__new__');
+        await app.getByRole('dialog', { name: 'New board' }).getByLabel('Name').fill('Side project');
+        await app.getByRole('button', { name: 'Create board' }).click();
+        await expect(picker.locator('option:checked')).toHaveText('Side project');
+
+        await app.getByRole('button', { name: 'Create folder' }).click();
+        await app.locator('#board-folder-name').fill('Ideas');
+        await app.getByRole('button', { name: 'Create', exact: true }).click();
+        await expect(app.getByRole('button', { name: 'Folder: Ideas' })).toBeVisible();
+
+        // The choice survives a reload; the first board doesn't show this folder
+        await app.reload();
+        await expect(app.getByRole('combobox', { name: 'Board' }).locator('option:checked')).toHaveText('Side project');
+        await expect(app.getByRole('button', { name: 'Folder: Ideas' })).toBeVisible();
+        const first = await app.getByRole('combobox', { name: 'Board' }).locator('option').first().textContent();
+        await app.getByRole('combobox', { name: 'Board' }).selectOption({ index: 0 });
+        await expect(app.getByRole('button', { name: 'Folder: Ideas' })).toHaveCount(0);
+
+        // Delete "Side project", moving its folder to the first board
+        await app.getByRole('combobox', { name: 'Board' }).selectOption({ label: 'Side project' });
+        await app.getByRole('button', { name: 'Board actions' }).click();
+        await app.getByRole('menuitem', { name: 'Delete board' }).click();
+        const dialog = app.getByRole('dialog', { name: 'Delete “Side project”' });
+        await expect(dialog).toContainText('It has 1 folder and 0 saved tabs.');
+        await dialog.getByRole('button', { name: 'Delete board' }).click();
+        await expect(app.getByRole('combobox', { name: 'Board' }).locator('option:checked')).toHaveText(first!);
+        await expect(app.getByRole('button', { name: 'Folder: Ideas' })).toBeVisible();
+
+        await expect
+            .poll(async () => (await stored<{ name: string }>(serviceWorker, 'tabboard_boards')).map(b => b.name))
+            .not.toContain('Side project');
+    });
 });
 
 test.describe('Boards and browsing', () => {
