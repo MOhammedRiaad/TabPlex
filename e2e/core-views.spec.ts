@@ -6,6 +6,24 @@ import { expect, seedTask, site, storedTask, test } from './fixtures';
 /** Open a TabPlex view in the same tab (the fixture starts on #/tasks) */
 const openView = (page: Page, route: string) => page.goto(page.url().replace(/#\/.*$/, `#/${route}`));
 
+/** Folder names the page has saved in its IndexedDB (what it loads after a reload) */
+const savedFolderNames = (page: Page) =>
+    page.evaluate(
+        () =>
+            new Promise<string[]>((resolve, reject) => {
+                const open = indexedDB.open('TabPlexDB');
+                open.onerror = () => reject(open.error);
+                open.onsuccess = () => {
+                    const request = open.result.transaction('folders').objectStore('folders').getAll();
+                    request.onsuccess = () => {
+                        resolve((request.result as Folder[]).map(folder => folder.name));
+                        open.result.close();
+                    };
+                    request.onerror = () => reject(request.error);
+                };
+            })
+    );
+
 /** The background's copy of a collection (chrome.storage.local) */
 function stored<T>(serviceWorker: Worker, key: string) {
     return serviceWorker.evaluate(async k => ((await chrome.storage.local.get(k))[k] as T[] | undefined) ?? [], key);
@@ -82,6 +100,8 @@ test.describe('Boards', () => {
         await app.locator('#board-folder-name').fill('Ideas');
         await app.getByRole('button', { name: 'Create', exact: true }).click();
         await expect(app.getByRole('button', { name: 'Folder: Ideas' })).toBeVisible();
+        // The page saves to IndexedDB after it renders: wait for it before reloading
+        await expect.poll(() => savedFolderNames(app)).toContain('Ideas');
 
         // The choice survives a reload; the first board doesn't show this folder
         await app.reload();
