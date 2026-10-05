@@ -63,6 +63,7 @@ ALSO INCLUDED
 • Tasks: To Do / Doing / Done with priorities, due dates and checklists; pin tasks and notes to the top
 • Tags on tasks, notes and saved tabs, with a tag filter
 • Markdown notes, a Pomodoro focus timer and a whiteboard canvas
+• With Chrome's built-in AI: summarize a note, turn its to-dos into tasks, proofread or rewrite it, previewed before anything changes
 • Bookmarks manager and saved browsing sessions
 • Local insights: how often you switched context and how many tabs parking closed
 • Command palette (Ctrl+K), keyboard shortcuts, light and dark themes
@@ -205,7 +206,7 @@ Most recent first. Versions come from semantic-release (`CHANGELOG.md`); a store
 
 ### Known Issues / Limitations
 
-- On-device AI (Organize tabs by topic, task drafts, park summaries) needs desktop Chrome with built-in AI on capable hardware. Without it, Organize tabs groups by site, New task from tabs suggests only a title, and summaries are off.
+- On-device AI (Organize tabs by topic, task drafts, park summaries, note helpers) needs desktop Chrome with built-in AI on capable hardware. Without it, Organize tabs groups by site, New task from tabs suggests only a title, summaries are off and the note editor has no ✨ AI menu.
 - Edge: the AI features are hidden or fall back, because Edge may not offer the same built-in model.
 
 ### Rejection History

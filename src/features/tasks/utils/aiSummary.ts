@@ -6,7 +6,7 @@ import { describeTabForAi } from '../../ai/utils/tabText';
 
 type Availability = 'unavailable' | 'downloadable' | 'downloading' | 'available';
 
-interface SummarizerCreateOptions {
+export interface SummarizerCreateOptions {
     type?: 'key-points' | 'tldr' | 'teaser' | 'headline';
     format?: 'markdown' | 'plain-text';
     length?: 'short' | 'medium' | 'long';
@@ -16,8 +16,8 @@ interface SummarizerCreateOptions {
     monitor?: (monitor: EventTarget) => void;
 }
 
-interface SummarizerInstance {
-    summarize(input: string, options?: { context?: string }): Promise<string>;
+export interface SummarizerInstance {
+    summarize(input: string, options?: { context?: string; signal?: AbortSignal }): Promise<string>;
     destroy?: () => void;
 }
 
@@ -80,11 +80,14 @@ function getSummarizer(): SummarizerStatic | null {
     return api ?? null;
 }
 
-export async function getSummaryAvailability(): Promise<SummaryAvailability> {
+/** `options`: the same ones passed to createSummarizer (Chrome checks availability for those options) */
+export async function getSummaryAvailability(
+    createOptions: SummarizerCreateOptions = OPTIONS
+): Promise<SummaryAvailability> {
     const api = getSummarizer();
     if (!api) return 'unsupported';
     try {
-        const { monitor: _monitor, ...options } = OPTIONS;
+        const { monitor: _monitor, ...options } = createOptions;
         return await api.availability(options);
     } catch {
         return 'unavailable';
@@ -95,11 +98,14 @@ export async function getSummaryAvailability(): Promise<SummaryAvailability> {
  * Create a summarizer. Call this directly inside a click handler: Chrome requires user activation
  * to start the model download, and the activation expires a few seconds after the click.
  */
-export function createSummarizer(onDownloadProgress?: (fraction: number) => void): Promise<SummarizerInstance> {
+export function createSummarizer(
+    onDownloadProgress?: (fraction: number) => void,
+    options: SummarizerCreateOptions = OPTIONS
+): Promise<SummarizerInstance> {
     const api = getSummarizer();
     if (!api) return Promise.reject(new Error('The Summarizer API is not available in this browser'));
     return api.create({
-        ...OPTIONS,
+        ...options,
         monitor: monitor => {
             monitor.addEventListener('downloadprogress', event => {
                 onDownloadProgress?.((event as ProgressEvent).loaded);

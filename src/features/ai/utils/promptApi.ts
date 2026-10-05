@@ -110,11 +110,14 @@ export interface PromptJsonOptions<T> {
 }
 
 /**
- * Prompt for JSON matching `schema`, parse and validate it. Retries once on unusable output. Errors are
- * AiErrors: 'bad-output', 'timeout', 'aborted' or 'too-large'. Does not destroy the session (the caller owns it).
+ * Run one model call with a time limit and the caller's AbortSignal. Errors become AiErrors: 'timeout', 'aborted',
+ * 'too-large' (the input exceeded the context window) or 'bad-output'.
  */
-export async function promptJson<T>(session: AiSession, input: string, options: PromptJsonOptions<T>): Promise<T> {
-    const { schema, validate, signal, timeoutMs = AI_TIMEOUT_MS } = options;
+async function guarded<T>(
+    run: (signal: AbortSignal) => Promise<T>,
+    signal: AbortSignal | undefined,
+    timeoutMs: number
+): Promise<T> {
     if (signal?.aborted) throw new AiError('aborted', 'Cancelled');
 
     const controller = new AbortController();
@@ -129,25 +132,8 @@ export async function promptJson<T>(session: AiSession, input: string, options: 
         controller.abort();
     }, timeoutMs);
 
-    const attempt = async (text: string): Promise<T | null> => {
-        const raw = await session.prompt(text, {
-            responseConstraint: schema,
-            omitResponseConstraintInput: true,
-            signal: controller.signal,
-        });
-        try {
-            return validate(JSON.parse(stripFences(raw)));
-        } catch {
-            return null; // not JSON
-        }
-    };
-
     try {
-        const value = (await attempt(input)) ?? (await attempt(input + RETRY_SUFFIX));
-        if (value === null) {
-            throw new AiError('bad-output', 'The on-device model returned an answer TabPlex could not use');
-        }
-        return value;
+        return await run(controller.signal);
     } catch (error) {
         if (isAiError(error)) throw error;
         if (reason === 'timeout') throw new AiError('timeout', 'The on-device model took too long');
@@ -160,6 +146,47 @@ export async function promptJson<T>(session: AiSession, input: string, options: 
         clearTimeout(timer);
         signal?.removeEventListener('abort', onAbort);
     }
+}
+
+/**
+ * Prompt for JSON matching `schema`, parse and validate it. Retries once on unusable output. Errors are
+ * AiErrors: 'bad-output', 'timeout', 'aborted' or 'too-large'. Does not destroy the session (the caller owns it).
+ */
+export async function promptJson<T>(session: AiSession, input: string, options: PromptJsonOptions<T>): Promise<T> {
+    const { schema, validate, signal, timeoutMs = AI_TIMEOUT_MS } = options;
+    return guarded(
+        async controllerSignal => {
+            const attempt = async (text: string): Promise<T | null> => {
+                const raw = await session.prompt(text, {
+                    responseConstraint: schema,
+                    omitResponseConstraintInput: true,
+                    signal: controllerSignal,
+                });
+                try {
+                    return validate(JSON.parse(stripFences(raw)));
+                } catch {
+                    return null; // not JSON
+                }
+            };
+            const value = (await attempt(input)) ?? (await attempt(input + RETRY_SUFFIX));
+            if (value === null) {
+                throw new AiError('bad-output', 'The on-device model returned an answer TabPlex could not use');
+            }
+            return value;
+        },
+        signal,
+        timeoutMs
+    );
+}
+
+/** Prompt for free text (e.g. a rewritten note). Same errors as promptJson; the caller checks the text. */
+export function promptText(
+    session: AiSession,
+    input: string,
+    options: { signal?: AbortSignal; timeoutMs?: number } = {}
+): Promise<string> {
+    const { signal, timeoutMs = AI_TIMEOUT_MS } = options;
+    return guarded(controllerSignal => session.prompt(input, { signal: controllerSignal }), signal, timeoutMs);
 }
 
 /**

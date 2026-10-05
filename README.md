@@ -48,6 +48,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 ### 📝 Note-Taking
 
 - **Markdown Support**: Rich text formatting with markdown editor
+- **✨ AI note helpers**: In the note editor, summarize a note, turn its to-dos into tasks, proofread it, or rewrite it shorter, clearer or more formal, with Chrome's built-in AI on your device. Every result is previewed first, and Undo restores the note. Hidden when on-device AI isn't available
 - **Context-Aware Notes**: Link notes to specific boards, folders, or tabs
 - **Quick Capture**: Fast note creation from any view
 

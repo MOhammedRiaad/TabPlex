@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Note } from '../../../types';
 import { useBoardStore } from '../../../store/boardStore';
 import MarkdownEditor from '../../ui/components/MarkdownEditor';
 import TagInput, { TagList } from '../../ui/components/TagInput';
 import { collectTags } from '../../../utils/tags';
 import { escapeHtml, renderMarkdownLinks } from '../../../utils/markdown';
+import NoteAiMenu from './NoteAiMenu';
+import NoteAiDialog from './NoteAiDialog';
+import { ActionItem, NoteAiAction, NoteHelper, insertSummary, startNoteHelper } from '../utils/aiNoteHelpers';
+import { generateTaskId } from '../../../utils/idGenerator';
+import { useUIStore } from '../../ui/store/uiStore';
 import './NoteCard.css';
 
 interface NoteCardProps {
@@ -48,14 +53,70 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
     const updateNote = useBoardStore(state => state.updateNote);
     const deleteNote = useBoardStore(state => state.deleteNote);
 
+    // ✨ AI helpers: the running helper, the model download progress, and the text before the last Replace (Undo)
+    const [aiRun, setAiRun] = useState<{ action: NoteAiAction; helper: NoteHelper; text: string } | null>(null);
+    const [aiProgress, setAiProgress] = useState<number | null>(null);
+    const [undo, setUndo] = useState<{ before: string; after: string; label: string } | null>(null);
+    const helperRef = useRef<NoteHelper | null>(null);
+
+    // Free the model if the card goes away while a helper is open
+    useEffect(() => () => helperRef.current?.release(), []);
+
+    /** Runs in the menu click (and Try again): the model is created with user activation */
+    const startAi = (action: NoteAiAction) => {
+        helperRef.current?.release();
+        setAiProgress(null);
+        const helper = startNoteHelper(action, setAiProgress);
+        helperRef.current = helper;
+        setAiRun({ action, helper, text: editContent });
+    };
+
+    const closeAi = () => {
+        helperRef.current?.release();
+        helperRef.current = null;
+        setAiRun(null);
+    };
+
+    const applyAiText = (next: string, label: string) => {
+        setUndo({ before: editContent, after: next, label });
+        setEditContent(next);
+        closeAi();
+    };
+
+    const createTasks = (items: ActionItem[]) => {
+        const { addTask } = useBoardStore.getState();
+        for (const item of items) {
+            addTask({
+                id: generateTaskId(),
+                title: item.title,
+                status: 'todo',
+                priority: item.priority,
+                description: `From note “${note.title}”`,
+                tags: note.tags?.length ? [...note.tags] : undefined,
+            });
+        }
+        useUIStore
+            .getState()
+            .actions.showToast(`Created ${items.length} ${items.length === 1 ? 'task' : 'tasks'}`, 'success');
+        closeAi();
+    };
+
+    // Undo only makes sense until the text is edited again
+    const changeContent = (value: string) => {
+        setEditContent(value);
+        if (undo && value !== undo.after) setUndo(null);
+    };
+
     const handleSave = () => {
         updateNote(note.id, { content: editContent, format: 'markdown', tags: editTags });
+        setUndo(null);
         setIsEditing(false);
     };
 
     const handleCancel = () => {
         setEditContent(note.content);
         setEditTags(note.tags ?? []);
+        setUndo(null);
         setIsEditing(false);
     };
 
@@ -78,11 +139,44 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                 <div className="note-edit">
                     <MarkdownEditor
                         value={editContent}
-                        onChange={setEditContent}
+                        onChange={changeContent}
                         minHeight={200}
                         autoFocus
                         placeholder="Write your note in markdown..."
+                        aiMenu={<NoteAiMenu text={editContent} onStart={startAi} />}
                     />
+                    {undo && (
+                        <div className="note-ai-undo" role="status">
+                            {undo.label}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setEditContent(undo.before);
+                                    setUndo(null);
+                                }}
+                            >
+                                Undo
+                            </button>
+                        </div>
+                    )}
+                    {aiRun && (
+                        <NoteAiDialog
+                            action={aiRun.action}
+                            helper={aiRun.helper}
+                            text={aiRun.text}
+                            existingTaskTitles={useBoardStore.getState().tasks.map(task => task.title)}
+                            progress={aiProgress}
+                            onRetry={() => startAi(aiRun.action)}
+                            onReplace={text =>
+                                applyAiText(text, aiRun.action === 'proofread' ? 'Note proofread' : 'Note rewritten')
+                            }
+                            onInsertSummary={summary =>
+                                applyAiText(insertSummary(editContent, summary), 'Summary added')
+                            }
+                            onCreateTasks={createTasks}
+                            onClose={closeAi}
+                        />
+                    )}
                     <TagInput
                         tags={editTags}
                         onChange={setEditTags}
