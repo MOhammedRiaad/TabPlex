@@ -99,11 +99,13 @@ describe('SettingsView', () => {
         fireEvent.click(screen.getByLabelText('Close tabs when parking'));
         fireEvent.click(screen.getByLabelText('Add new tabs to the active task'));
         fireEvent.click(screen.getByLabelText('Start a Pomodoro when a task starts'));
+        fireEvent.click(screen.getByLabelText('Suggest a task for new tabs'));
         await waitFor(async () =>
             expect((await chrome.storage.local.get(PARK_RESUME_SETTINGS_KEY))[PARK_RESUME_SETTINGS_KEY]).toMatchObject({
                 closeTabsOnPark: false,
                 autoAddNewTabs: false,
                 startPomodoroOnStart: true,
+                suggestTasksForTabs: true,
             })
         );
     });

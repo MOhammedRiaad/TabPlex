@@ -50,6 +50,8 @@ const clone = <T>(value: T): T => (value === undefined ? value : JSON.parse(JSON
 
 export function createChromeMock() {
     const store: Record<string, unknown> = {};
+    const sessionStore: Record<string, unknown> = {};
+    const notifications = new Map<string, Record<string, unknown>>();
     const tabs = new Map<number, FakeTab>();
     const groups = new Map<number, FakeGroup>();
     const windows = new Set<number>([1]);
@@ -75,6 +77,8 @@ export function createChromeMock() {
         bookmarkCreated: new FakeEvent(),
         bookmarkRemoved: new FakeEvent(),
         bookmarkMoved: new FakeEvent(),
+        notificationButtonClicked: new FakeEvent(),
+        notificationClosed: new FakeEvent(),
     };
 
     // ----- storage -----------------------------------------------------------------------------
@@ -311,7 +315,22 @@ export function createChromeMock() {
             onInstalled: events.installed,
             onStartup: events.startup,
         },
-        storage: { local, onChanged: events.storageChanged },
+        storage: {
+            local,
+            // chrome.storage.session: survives a service-worker restart, not a browser restart
+            session: {
+                get: vi.fn(async (keys?: string | string[] | null) => {
+                    const names = keys === undefined || keys === null ? Object.keys(sessionStore) : [keys].flat();
+                    return Object.fromEntries(
+                        names.filter(n => n in sessionStore).map(n => [n, clone(sessionStore[n])])
+                    );
+                }),
+                set: vi.fn(async (items: Record<string, unknown>) => {
+                    for (const [key, value] of Object.entries(items)) sessionStore[key] = clone(value);
+                }),
+            },
+            onChanged: events.storageChanged,
+        },
         tabs: tabsApi,
         tabGroups: tabGroupsApi,
         windows: windowsApi,
@@ -323,7 +342,14 @@ export function createChromeMock() {
             getRecentlyClosed: vi.fn(async () => [] as unknown[]),
         },
         notifications: {
-            create: vi.fn(),
+            create: vi.fn(async (id: string, options: Record<string, unknown>) => {
+                notifications.set(id, clone(options));
+                return id;
+            }),
+            clear: vi.fn(async (id: string) => notifications.delete(id)),
+            getAll: vi.fn(async () => Object.fromEntries([...notifications.keys()].map(id => [id, true]))),
+            onButtonClicked: events.notificationButtonClicked,
+            onClosed: events.notificationClosed,
         },
         bookmarks: {
             getTree: vi.fn(async () => [] as unknown[]),
@@ -345,6 +371,9 @@ export function createChromeMock() {
     /** Test helpers to arrange browser state directly */
     const browser = {
         store,
+        sessionStore,
+        /** Notifications on screen, by id */
+        notifications,
         tabs,
         groups,
         events,

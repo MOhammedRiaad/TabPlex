@@ -316,7 +316,8 @@ async function startTask(
     return { success: true, task: await saveTask(started), autoParked };
 }
 
-async function addTabsToTask(payload: AddTabsPayload): Promise<ContextResponse> {
+/** Also used by suggest-service when the user accepts a suggestion */
+export async function addTabsToTask(payload: AddTabsPayload): Promise<ContextResponse> {
     const task = await resolveTask(payload.task);
     const ctx = getContext(task);
 

@@ -2,7 +2,7 @@
 
 |               |                                                                                                                  |
 | ------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **Status**    | Ready to implement · milestone v1.2 (ROADMAP #18)                                                                |
+| **Status**    | Implemented · milestone v1.2 (ROADMAP #18)                                                                       |
 | **Created**   | 2026-10-05                                                                                                       |
 | **Size**      | M (1–2 days)                                                                                                     |
 | **Builds on** | Park & Resume ([PARK_AND_RESUME.md](PARK_AND_RESUME.md) §10 "Future"), `TASK_CONTEXT_ADD_TABS` with explicit ids |

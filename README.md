@@ -40,7 +40,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 - **Export**: Copy or download a task (details, checklist, tabs, where you left off) as Markdown, or a board as Markdown or CSV, from the task card, the Boards header or the command palette
 - **Tags**: Tag tasks, notes and saved tabs (`#q4`, `#research`), filter the Tasks and Notes views by tag, and find tagged items with search
 - **Task-Tab Linking**: Associate web resources with specific tasks
-- **Park & Resume**: Each task keeps its own tabs. Start a task to open them in a named Chrome tab group, park it with a "where I left off" note to close them, and resume later in one click — everything stays on your device. Optional: start a Pomodoro with the task, and on-device AI summaries of parked work (Chrome's built-in AI)
+- **Park & Resume**: Each task keeps its own tabs. Start a task to open them in a named Chrome tab group, park it with a "where I left off" note to close them, and resume later in one click — everything stays on your device. Optional: start a Pomodoro with the task, on-device AI summaries of parked work (Chrome's built-in AI), and a notification that offers to add a page you open to the parked task whose tabs are on the same site (Settings → Park & Resume, off by default)
 - **On-device AI**: Chrome's built-in AI (Gemini Nano) runs on your computer, never in the cloud. Settings → On-device AI shows whether your device supports it and turns AI features on or off; every feature still works without it
 - **Organize tabs**: One click on Today (or "Organize open tabs" in the command palette) suggests Chrome tab groups for your loose tabs, by what you're working on with on-device AI, or by site without it. Rename, recolour or drop tabs in a preview, then create the groups; Undo or Save to Boards afterwards. Pinned tabs and existing groups (including your active task) are never touched
 - **✨ New task from tabs**: drafts a task (title, priority, steps) from the tabs you pick, on-device. Start it from the Tasks view, the command palette ("New task from open tabs") or **Make a task** on a group you just organized; edit the draft, then **Create task** or **▶ Create & start** to group those tabs under the task right away, or **⏸ Create & park** to save them to the task and close them for later. Without on-device AI you get a suggested title and fill in the rest
@@ -313,7 +313,7 @@ TabPlex requests the following Chrome permissions:
 - **`tabGroups`**: To integrate with Chrome's native tab groups
 - **`history`**: To allow you to import and organize browser history (only when you explicitly request it)
 - **`storage`**: To save your boards, tasks, and notes locally
-- **`notifications`**: To send task reminders and timer notifications
+- **`notifications`**: To send task reminders and timer notifications, and (if you turn it on) suggest a parked task for a page you open
 - **`sessions`**: To restore recently closed tabs and windows
 - **`bookmarks`**: To manage and organize your browser bookmarks (read/write access)
 - **`favicon`**: To show website icons from Chrome's own local icon cache (no third-party icon service)
