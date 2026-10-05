@@ -152,7 +152,7 @@ If you turn on **On-device AI summaries** in Settings, TabPlex uses Chrome's bui
 
 ### On-device AI features (optional)
 
-"Organize tabs" and "New task from tabs" can use Chrome's built-in AI model (Gemini Nano), which runs on your computer:
+"Organize tabs", "New task from tabs" and session names can use Chrome's built-in AI model (Gemini Nano), which runs on your computer:
 
 - TabPlex sends it the titles and addresses (host and path only, without query strings) of the tabs you choose, and any hint you type
 - The model's answer stays in your browser, and nothing changes until you confirm it

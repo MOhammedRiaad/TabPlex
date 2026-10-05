@@ -7,10 +7,40 @@ interface SessionCardProps {
     onRestore: (session: Session) => void;
     onEnd: (sessionId: string) => void;
     onDelete: (sessionId: string) => void;
+    onRename?: (sessionId: string, name: string) => void;
+    /** On-device AI name for the session; only passed when AI can be used */
+    onSuggestName?: (session: Session) => Promise<string> | undefined;
 }
 
-const SessionCard: React.FC<SessionCardProps> = ({ session, onRestore, onEnd, onDelete }) => {
+const SessionCard: React.FC<SessionCardProps> = ({ session, onRestore, onEnd, onDelete, onRename, onSuggestName }) => {
     const [showActions, setShowActions] = useState(false);
+    /** The name being edited, or null when not editing */
+    const [draftName, setDraftName] = useState<string | null>(null);
+    const [naming, setNaming] = useState(false);
+    const nameInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (draftName !== null && !naming) nameInputRef.current?.focus();
+    }, [draftName, naming]);
+
+    const saveName = () => {
+        if (draftName !== null && draftName.trim() && draftName.trim() !== session.name) {
+            onRename?.(session.id, draftName);
+        }
+        setDraftName(null);
+    };
+
+    /** Called in the click: the AI session must start there */
+    const suggest = () => {
+        const pending = onSuggestName?.(session);
+        if (!pending) return;
+        setDraftName(session.name);
+        setNaming(true);
+        pending
+            .then(name => setDraftName(current => (current === null ? null : name)))
+            .catch(() => undefined) // keep the current name; the user can type one
+            .finally(() => setNaming(false));
+    };
     const actionsRef = useRef<HTMLDivElement>(null);
     const isEnded = !!session.endTime;
     const tabCount = session.tabIds ? session.tabIds.length : 0;
@@ -68,9 +98,27 @@ const SessionCard: React.FC<SessionCardProps> = ({ session, onRestore, onEnd, on
         <article className="session-card" aria-labelledby={`session-title-${session.id}`}>
             <header className="session-card-header">
                 <div className="session-title-wrapper">
-                    <h3 id={`session-title-${session.id}`} className="session-name" title={session.name}>
-                        {session.name}
-                    </h3>
+                    {draftName === null ? (
+                        <h3 id={`session-title-${session.id}`} className="session-name" title={session.name}>
+                            {session.name}
+                        </h3>
+                    ) : (
+                        <input
+                            ref={nameInputRef}
+                            id={`session-title-${session.id}`}
+                            className="session-name-input"
+                            aria-label="Session name"
+                            value={naming ? 'Naming…' : draftName}
+                            disabled={naming}
+                            maxLength={60}
+                            onChange={e => setDraftName(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter') saveName();
+                                if (e.key === 'Escape') setDraftName(null);
+                            }}
+                            onBlur={saveName}
+                        />
+                    )}
                     {!isEnded && (
                         <mark className="session-status-badge active" aria-label="Active session">
                             Active
@@ -131,6 +179,40 @@ const SessionCard: React.FC<SessionCardProps> = ({ session, onRestore, onEnd, on
                                             ⏹
                                         </span>
                                         <span>End</span>
+                                    </button>
+                                </li>
+                            )}
+                            {onRename && (
+                                <li role="none">
+                                    <button
+                                        onClick={() => {
+                                            setDraftName(session.name);
+                                            setShowActions(false);
+                                        }}
+                                        className="session-action-btn"
+                                        role="menuitem"
+                                    >
+                                        <span className="action-icon" aria-hidden="true">
+                                            ✎
+                                        </span>
+                                        <span>Rename</span>
+                                    </button>
+                                </li>
+                            )}
+                            {onRename && onSuggestName && (
+                                <li role="none">
+                                    <button
+                                        onClick={() => {
+                                            suggest();
+                                            setShowActions(false);
+                                        }}
+                                        className="session-action-btn"
+                                        role="menuitem"
+                                    >
+                                        <span className="action-icon" aria-hidden="true">
+                                            ✨
+                                        </span>
+                                        <span>Suggest a name</span>
                                     </button>
                                 </li>
                             )}

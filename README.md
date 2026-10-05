@@ -35,6 +35,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 - **Kanban-Style Workflow**: To Do, Doing, Done columns for visual progress tracking
 - **Rich Task Details**: Add descriptions, checklists, due dates, and priority levels
 - **Pinning**: Pin a task or note (📌) to keep it at the top of its column or list, on Today too
+- **Session names**: Sessions saved from your tabs get a readable name (`github.com, docs.google.com +3 more · Mon 5 Oct`), or a short on-device AI name when Chrome's built-in AI is available; rename any session or ask for a suggestion
 - **Export**: Copy or download a task (details, checklist, tabs, where you left off) as Markdown, or a board as Markdown or CSV, from the task card, the Boards header or the command palette
 - **Tags**: Tag tasks, notes and saved tabs (`#q4`, `#research`), filter the Tasks and Notes views by tag, and find tagged items with search
 - **Task-Tab Linking**: Associate web resources with specific tasks
