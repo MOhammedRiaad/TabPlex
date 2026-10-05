@@ -5,6 +5,7 @@ import { formatDate } from '../../../utils/dateUtils';
 import { isContextActive } from '../../../utils/taskContext';
 import { useTaskContextActions } from '../hooks/useTaskContextActions';
 import TaskContextStrip from './TaskContextStrip';
+import { TagList } from '../../ui/components/TagInput';
 import TaskForm, { TaskFormValues, formValuesToTask, taskToFormValues } from './TaskForm';
 import './TaskCard.css';
 
@@ -133,6 +134,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             </div>
 
             {task.description && <p className="task-description">{task.description}</p>}
+            <TagList tags={task.tags} />
 
             {linkedTabs.length > 0 && (
                 <div className="task-links">

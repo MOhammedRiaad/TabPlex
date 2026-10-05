@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Folder, Tab } from '../../../types';
 import { useBoardStore } from '../../../store/boardStore';
 import BoardModal from './BoardModal';
+import { TagList } from '../../ui/components/TagInput';
 import FolderDeleteModal from './FolderDeleteModal';
 import { getFaviconUrl } from '../../../utils/favicon';
 import '../BoardView.css';
@@ -14,11 +15,11 @@ interface BoardNodeProps {
     tab?: Tab;
     tabs?: Tab[];
     onUpdateFolder?: (id: string, changes: { name?: string; color?: string }) => void;
-    onUpdateTab?: (id: string, changes: { title?: string; url?: string; folderId?: string }) => void;
+    onUpdateTab?: (id: string, changes: { title?: string; url?: string; folderId?: string; tags?: string[] }) => void;
     onDeleteFolder?: (id: string) => void;
     onDeleteTab?: (id: string) => void;
     onOpenTab?: (url: string) => void;
-    onCreateTab?: (data: { title: string; url: string; folderId?: string }) => void;
+    onCreateTab?: (data: { title: string; url: string; folderId?: string; tags?: string[] }) => void;
     onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
     folders?: Folder[];
 }
@@ -97,6 +98,7 @@ const BoardNode: React.FC<BoardNodeProps> = ({
         url?: string;
         color?: string;
         folderId?: string;
+        tags?: string[];
     }) => {
         if (isFolder && folder && onUpdateFolder) {
             onUpdateFolder(folder.id, {
@@ -108,6 +110,7 @@ const BoardNode: React.FC<BoardNodeProps> = ({
                 title: data.title,
                 url: data.url,
                 folderId: data.folderId || '',
+                tags: data.tags,
             });
         }
     };
@@ -275,6 +278,7 @@ const BoardNode: React.FC<BoardNodeProps> = ({
                                     })()}
                                 </span>
                             )}
+                            {!isFolder && <TagList tags={tab?.tags} className="board-node-tags" />}
                         </div>
                     </div>
                     <div className="board-node-actions">
@@ -388,6 +392,7 @@ const BoardNode: React.FC<BoardNodeProps> = ({
                                 title: data.title,
                                 url: data.url,
                                 folderId: folder.id,
+                                tags: data.tags,
                             });
                             setShowAddTabModal(false);
                         }
