@@ -28,11 +28,16 @@ const DONE_PREFIX = 'suggest-done:';
 /** At most one suggestion per this long */
 export const SUGGEST_INTERVAL_MS = 2 * 60 * 1000;
 const LAST_SHOWN_KEY = 'tabplex_suggest_last_shown';
+const ASKED_KEY = 'tabplex_suggest_asked';
+const MAX_ASKED = 200;
 const CONFIRMATION_MS = 4000;
 // Full URL: a relative one resolves against the worker's folder (src/background/), and Chrome then shows nothing
 const icon = () => chrome.runtime.getURL('assets/icon128.png');
 
-/** Tabs we already asked about (redirects fire "complete" again) */
+/**
+ * Tabs we already asked about (redirects fire "complete" again). Kept in chrome.storage.session too: Chrome stops an
+ * idle worker after ~30 s, and an in-memory list alone let the same tab be offered again once the rate limit passed.
+ */
 const askedTabIds = new Set<number>();
 /** Notifications whose button was used, so the close that follows isn't read as "Not now" */
 const handled = new Set<string>();
@@ -58,6 +63,29 @@ async function getLastShownAt(): Promise<number> {
     }
 }
 
+async function wasAsked(tabId: number): Promise<boolean> {
+    if (askedTabIds.has(tabId)) return true;
+    try {
+        const result = await chrome.storage.session.get(ASKED_KEY);
+        return ((result[ASKED_KEY] as number[] | undefined) ?? []).includes(tabId);
+    } catch {
+        return false;
+    }
+}
+
+async function setAsked(tabId: number, asked: boolean): Promise<void> {
+    if (asked) askedTabIds.add(tabId);
+    else askedTabIds.delete(tabId);
+    try {
+        const result = await chrome.storage.session.get(ASKED_KEY);
+        const stored = ((result[ASKED_KEY] as number[] | undefined) ?? []).filter(id => id !== tabId);
+        if (asked) stored.push(tabId);
+        await chrome.storage.session.set({ [ASKED_KEY]: stored.slice(-MAX_ASKED) });
+    } catch {
+        // Only the in-memory list then
+    }
+}
+
 async function setLastShownAt(at: number): Promise<void> {
     try {
         await chrome.storage.session.set({ [LAST_SHOWN_KEY]: at });
@@ -79,7 +107,7 @@ export function parseNotificationId(id: string): { tabId: number; taskId: string
 
 /** Decide whether to suggest a task for this loaded tab, and show the notification */
 export async function considerTab(tab: chrome.tabs.Tab): Promise<void> {
-    if (tab.id === undefined || !tab.url || askedTabIds.has(tab.id)) return;
+    if (tab.id === undefined || !tab.url || (await wasAsked(tab.id))) return;
     if (tab.pinned || tab.incognito) return;
     if (tab.groupId !== undefined && tab.groupId !== NO_GROUP) return;
 
@@ -102,7 +130,7 @@ export async function considerTab(tab: chrome.tabs.Tab): Promise<void> {
     if (!suggestion) return;
     if (now - (await getLastShownAt()) < SUGGEST_INTERVAL_MS) return;
 
-    askedTabIds.add(tab.id);
+    await setAsked(tab.id, true);
     await setLastShownAt(now);
     const page = tab.title || tab.url;
     await chrome.notifications.create(notificationId(tab.id, suggestion.taskId), {
@@ -179,4 +207,6 @@ chrome.notifications.onClosed.addListener((id, byUser) => {
     handleClosed(id, byUser).catch(error => console.warn('Task suggestion dismiss failed', error));
 });
 
-chrome.tabs.onRemoved.addListener(tabId => askedTabIds.delete(tabId));
+chrome.tabs.onRemoved.addListener(tabId => {
+    setAsked(tabId, false).catch(() => undefined);
+});

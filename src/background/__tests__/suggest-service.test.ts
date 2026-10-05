@@ -110,6 +110,25 @@ describe('suggest-service', () => {
         expect(suggestions()).toHaveLength(2);
     });
 
+    it('remembers asked tabs across a worker restart, and forgets them when the tab closes', async () => {
+        await setup();
+        const tab = load('https://stripe.com/docs/a');
+        await service.considerTab(tab);
+        expect(suggestions()).toHaveLength(1);
+
+        // Chrome stops the idle worker: the module reloads with empty memory, chrome.storage.session survives
+        vi.resetModules();
+        service = await import('../suggest-service');
+        await vi.advanceTimersByTimeAsync(service.SUGGEST_INTERVAL_MS);
+        await service.considerTab(tab);
+        expect(suggestions()).toHaveLength(1);
+        expect(mock.browser.sessionStore.tabplex_suggest_asked).toEqual([tab.id]);
+
+        mock.browser.events.tabRemoved.emit(tab.id, {});
+        await vi.advanceTimersByTimeAsync(0);
+        expect(mock.browser.sessionStore.tabplex_suggest_asked).toEqual([]);
+    });
+
     it('"Add to task" saves the tab in the task, tells open TabPlex pages and confirms', async () => {
         await setup();
         const tab = load('https://stripe.com/docs/api');
