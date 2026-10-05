@@ -2,7 +2,7 @@
 
 |             |                                                                                  |
 | ----------- | -------------------------------------------------------------------------------- |
-| **Status**  | Ready (needs Brave installed on the test machine) · v1.1 (ROADMAP #16)           |
+| **Status**  | Done 2026-10-05 · Brave 1.96.61 (Chromium 154) · v1.1 (ROADMAP #16)              |
 | **Created** | 2026-10-05                                                                       |
 | **Size**    | S (½ day)                                                                        |
 | **Outcome** | README says "Works in Brave" (with any known limits), or a list of issues to fix |
@@ -48,3 +48,24 @@ task, Start (group appears), Park (tabs close, note saved), Resume; Organize tab
   "Known limits in Brave" line (e.g. "on-device AI isn't available; TabPlex uses its non-AI fallbacks").
 - `CHROMEWEBSTORE.md`: nothing (Brave uses the Chrome listing).
 - File issues for real bugs; ROADMAP #16 → ✅ with the date and Brave version.
+
+## 5. Results (2026-10-05, Brave 1.96.61 on Chromium 154, Windows 11)
+
+**Works in Brave.** The full E2E suite passes in Brave: 28/28 (`PW_CHROMIUM_PATH=<brave.exe> npm run test:e2e`); no test
+needed a Brave skip.
+
+| Area                                         | Result                                                                                                |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `chrome.tabGroups`                           | Works: Park & Resume, Organize tabs and New task from tabs specs pass (create, colour, ungroup)       |
+| `favicon` permission (`_favicon/`)           | Works: icons load at 32 px                                                                            |
+| On-device AI (`LanguageModel`, `Summarizer`) | Both APIs exist but report `unavailable`: site grouping, fallback titles, no summaries, no ✨ AI menu |
+| `chrome.sessions`, `history`, `bookmarks`    | Work (Bookmarks, export/import and view-render specs pass)                                            |
+| Notifications                                | Work: permission granted, notifications created (suggest-task spec passes)                            |
+| Service worker                               | Same behaviour as Chrome in the suite                                                                 |
+
+Notes:
+
+- Checked in Brave's headless mode through Playwright with a fresh profile. Brave Shields don't apply to extension
+  pages; a hands-on pass in a normal Brave window (section 3) is still worth doing once.
+- Settings → On-device AI says "This device can't run Chrome's built-in AI": in Brave it's the browser, not the device.
+  Accurate enough; reword if users ask.

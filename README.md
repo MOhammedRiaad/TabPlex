@@ -178,8 +178,9 @@ The application uses Zustand with a modular slice architecture:
 
 - **Microsoft Edge:** [install TabPlex from Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/kaeaniaepejnapfgmkjgjkkgbgkaehed)
 - **Chrome:** coming to the Chrome Web Store. Until then, download `tabplex-vX.Y.Z.zip` from the [latest GitHub release](https://github.com/MOhammedRiaad/TabPlex/releases), unzip it, open `chrome://extensions`, turn on **Developer mode** and click **Load unpacked** on the unzipped folder.
+- **Brave:** works (checked with Brave 1.96 on 2026-10-05: the full end-to-end suite passes). Install it the same way as Chrome; once TabPlex is on the Chrome Web Store, Brave installs it from there.
 
-On Edge, the on-device AI features may not be available; TabPlex then groups tabs by site and suggests task titles without AI.
+On Edge and Brave, the on-device AI features may not be available (Brave reports Chrome's built-in AI as unavailable); TabPlex then groups tabs by site, suggests task titles without AI, and hides the note helpers.
 
 ### For Developers
 
@@ -340,6 +341,7 @@ Any changes to this privacy policy will be communicated through extension update
 
 - Chrome 88+ (Manifest V3)
 - Microsoft Edge 88+
+- Brave (checked with 1.96; on-device AI is not available, so the non-AI fallbacks are used)
 - Other Chromium-based browsers with Manifest V3 support
 
 ### Storage Limits
