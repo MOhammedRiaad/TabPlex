@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.2.0](https://github.com/MOhammedRiaad/TabPlex/compare/v1.1.0...v1.2.0) (2026-10-07)
+
+### ✨ Features
+
+* **boards:** choose how to switch between boards ([4c5a07e](https://github.com/MOhammedRiaad/TabPlex/commit/4c5a07e8ff25dc49399a520ab221462ae1407014)), closes [#28](https://github.com/MOhammedRiaad/TabPlex/issues/28)
+* **boards:** switch between several boards ([c0b8d8e](https://github.com/MOhammedRiaad/TabPlex/commit/c0b8d8e81c532070fb2becf374ab3f3a0e68cd85))
+* **notes:** on-device AI helpers in the note editor ([fb1721d](https://github.com/MOhammedRiaad/TabPlex/commit/fb1721dd0f0fbaf3d63decc87a0f55098a848c43))
+* **sessions:** readable and AI names for saved sessions ([9f33b0b](https://github.com/MOhammedRiaad/TabPlex/commit/9f33b0b4b1902226d5a38849443f0cc2f0685e4e)), closes [#21](https://github.com/MOhammedRiaad/TabPlex/issues/21)
+* **tasks:** export a task or a board as Markdown or CSV ([c44e3ef](https://github.com/MOhammedRiaad/TabPlex/commit/c44e3ef3d21aa5030110c2b19af540fc27973257)), closes [#19](https://github.com/MOhammedRiaad/TabPlex/issues/19)
+* **tasks:** suggest a parked task for a newly opened tab ([1db1f10](https://github.com/MOhammedRiaad/TabPlex/commit/1db1f108a90594c01424452196e8796b036e10d8))
+* **tasks:** tag tasks, notes and saved tabs, and filter by tag ([9444f81](https://github.com/MOhammedRiaad/TabPlex/commit/9444f81637d98c383c5caa387d4b2b38b986f653)), closes [#17](https://github.com/MOhammedRiaad/TabPlex/issues/17)
+
+### 🐛 Bug Fixes
+
+* **boards:** export as an icon button that opens its menu on hover ([427f0ef](https://github.com/MOhammedRiaad/TabPlex/commit/427f0effa689acc9c118757a87daaf8eee62fdc0))
+* **search:** open results with the current click handler on Enter ([77bc395](https://github.com/MOhammedRiaad/TabPlex/commit/77bc39504e41a4f2a1fdb8a4aa7c5f4f0dafa6ef)), closes [#27](https://github.com/MOhammedRiaad/TabPlex/issues/27)
+* **tasks:** don't suggest a task twice for the same tab after the worker sleeps ([ff729c5](https://github.com/MOhammedRiaad/TabPlex/commit/ff729c5acca3f5ae5c1346f0456fcd2f4accec67))
+
 ## [1.1.0](https://github.com/MOhammedRiaad/TabPlex/compare/v1.0.1...v1.1.0) (2026-10-05)
 
 ### ✨ Features
