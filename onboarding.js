@@ -1,6 +1,38 @@
 /* global document, window, chrome, setTimeout, console */
 // Onboarding page script
+// Same key and ids as src/features/boards/switcher/boardStyle.ts (a unit test keeps the lists in step)
+const BOARD_STYLE_KEY = 'tabplex_board_style';
+
+/** Board view picker: shows the saved choice and saves a new one. Skipping it keeps the default (Board tabs). */
+function setUpBoardStylePicker() {
+    const options = Array.from(document.querySelectorAll('input[name="boardStyle"]'));
+    const saved = document.getElementById('boardStyleSaved');
+    if (!options.length || typeof chrome === 'undefined' || !chrome.storage) return;
+
+    chrome.storage.local
+        .get([BOARD_STYLE_KEY])
+        .then(result => {
+            const match = options.find(option => option.value === result[BOARD_STYLE_KEY]);
+            if (match) match.checked = true;
+        })
+        .catch(console.error);
+
+    options.forEach(option => {
+        option.addEventListener('change', () => {
+            if (!option.checked) return;
+            chrome.storage.local
+                .set({ [BOARD_STYLE_KEY]: option.value })
+                .then(() => {
+                    const name = option.parentElement.querySelector('.board-style-name');
+                    if (saved && name) saved.textContent = `Saved: ${name.firstChild.textContent.trim()}`;
+                })
+                .catch(console.error);
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    setUpBoardStylePicker();
     const getStartedBtn = document.getElementById('getStartedBtn');
 
     if (getStartedBtn) {

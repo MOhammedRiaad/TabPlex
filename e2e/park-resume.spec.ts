@@ -59,8 +59,11 @@ test.describe('Park & Resume', () => {
         await expect(row).toBeVisible();
         await row.locator('.parked-context-resume').click();
         await expect.poll(async () => (await openWebTabs(serviceWorker)).length).toBe(4);
+        // The tabs open before the background records the resume
+        await expect
+            .poll(async () => (await storedTask(serviceWorker, TASK.id))?.context)
+            .toMatchObject({ state: 'active', resumeCount: 1 });
         const resumed = await storedTask(serviceWorker, TASK.id);
-        expect(resumed?.context).toMatchObject({ state: 'active', resumeCount: 1 });
 
         // Closing the group by hand parks the task without losing tabs
         await serviceWorker.evaluate(async id => {

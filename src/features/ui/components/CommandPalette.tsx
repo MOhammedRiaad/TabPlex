@@ -6,7 +6,9 @@ import { useUIStore } from '../store/uiStore';
 import { useTaskContextActions } from '../../tasks/hooks/useTaskContextActions';
 import { startOrganize } from '../../organize/store/organizeStore';
 import { openTaskFromTabs } from '../../taskDraft/store/taskDraftStore';
+import { exportCurrentBoard } from '../utils/exportActions';
 import { getActiveContextTask, getParkedTasks } from '../../tasks/utils/contextUtils';
+import { getCurrentBoard } from '../../boards/utils/currentBoard';
 import './CommandPalette.css';
 
 interface CommandPaletteProps {
@@ -23,7 +25,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
 
-    const { addNote, addFolder, boards, tasks } = useBoardStore();
+    const { addNote, addFolder, tasks } = useBoardStore();
     const { requestPark, startOrResume, addCurrentTabs } = useTaskContextActions();
     const activeContextTask = getActiveContextTask(tasks);
     const lastParkedTask = getParkedTasks(tasks)[0];
@@ -110,6 +112,20 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                 category: 'creation',
             },
             {
+                id: 'export-board-md',
+                name: 'Export board as Markdown',
+                icon: '⤓',
+                action: () => exportCurrentBoard('md'),
+                category: 'creation',
+            },
+            {
+                id: 'export-board-csv',
+                name: 'Export board as CSV',
+                icon: '⤓',
+                action: () => exportCurrentBoard('csv'),
+                category: 'creation',
+            },
+            {
                 id: 'create-note',
                 name: 'Create New Note',
                 shortcut: 'Ctrl+Shift+N',
@@ -120,7 +136,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                         title: 'New Note',
                         content: '',
                         format: 'text',
-                        boardId: boards[0]?.id,
+                        boardId: getCurrentBoard()?.id,
                     });
                 },
                 category: 'creation',
@@ -131,11 +147,12 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                 shortcut: 'Ctrl+Shift+F',
                 icon: '📁',
                 action: () => {
-                    if (boards[0]) {
+                    const board = getCurrentBoard();
+                    if (board) {
                         addFolder({
                             id: generateFolderId(),
                             name: 'New Folder',
-                            boardId: boards[0].id,
+                            boardId: board.id,
                             color: '#3b82f6',
                             order: 0,
                         });
@@ -361,17 +378,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                 category: 'canvas',
             },
         ],
-        [
-            onNavigate,
-            addNote,
-            addFolder,
-            boards,
-            activeContextTask,
-            lastParkedTask,
-            requestPark,
-            startOrResume,
-            addCurrentTabs,
-        ]
+        [onNavigate, addNote, addFolder, activeContextTask, lastParkedTask, requestPark, startOrResume, addCurrentTabs]
     );
 
     // Filter commands based on query

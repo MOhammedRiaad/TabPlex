@@ -2,10 +2,12 @@ import { AiSettings } from './types';
 
 export const AI_SETTINGS_KEY = 'tabplex_ai_settings';
 
-// Both features only run on a click and always show a preview to confirm, so they're on by default
+// Every feature runs only on a click and keeps a non-AI result, so they're on by default
 export const DEFAULT_AI_SETTINGS: AiSettings = {
     tabGrouping: true,
     taskDrafts: true,
+    sessionNames: true,
+    noteHelpers: true,
 };
 
 /** Longest a single model call may take before we give up */

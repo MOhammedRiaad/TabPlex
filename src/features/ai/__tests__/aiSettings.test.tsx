@@ -25,7 +25,12 @@ describe('AI settings', () => {
     it('defaults to on and merges stored values', async () => {
         expect(await readAiSettings()).toEqual(DEFAULT_AI_SETTINGS);
         await chrome.storage.local.set({ [AI_SETTINGS_KEY]: { taskDrafts: false } });
-        expect(await readAiSettings()).toEqual({ tabGrouping: true, taskDrafts: false });
+        expect(await readAiSettings()).toEqual({
+            tabGrouping: true,
+            taskDrafts: false,
+            sessionNames: true,
+            noteHelpers: true,
+        });
         fakeChrome().storage.local.get.mockRejectedValueOnce(new Error('storage down'));
         expect(await readAiSettings()).toEqual(DEFAULT_AI_SETTINGS);
     });
@@ -50,9 +55,13 @@ describe('AI settings', () => {
             expect((await chrome.storage.local.get(AI_SETTINGS_KEY))[AI_SETTINGS_KEY]).toEqual({
                 tabGrouping: false,
                 taskDrafts: true,
+                sessionNames: true,
+                noteHelpers: true,
             })
         );
         expect(drafts).toBeChecked();
+        expect(screen.getByRole('checkbox', { name: 'Name saved sessions' })).toBeChecked();
+        expect(screen.getByRole('checkbox', { name: 'Note helpers' })).toBeChecked();
     });
 
     it('follows changes made in another TabPlex tab', async () => {
@@ -72,7 +81,12 @@ describe('AI settings', () => {
                 listener({ [AI_SETTINGS_KEY]: { newValue: { tabGrouping: false } } }, 'sync');
             }
         });
-        expect(result.current.settings).toEqual({ tabGrouping: true, taskDrafts: false });
+        expect(result.current.settings).toEqual({
+            tabGrouping: true,
+            taskDrafts: false,
+            sessionNames: true,
+            noteHelpers: true,
+        });
         act(() => {
             for (const listener of [...fakeChrome().storage.onChanged.listeners]) {
                 listener({ [AI_SETTINGS_KEY]: { newValue: undefined } }, 'local');

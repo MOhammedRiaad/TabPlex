@@ -42,6 +42,7 @@ PARK & RESUME
 • Parked work waits for you on the Today view; resume in one click
 • Closing the group by hand parks the task safely, so no tab is lost
 • Optional: start a Pomodoro with the task, and an on-device AI summary of what you were doing
+• Optional: when a page you open is on the same site as a parked task's tabs, a notification offers to add it to that task
 
 ORGANIZE TABS
 • One click suggests tab groups for your loose tabs
@@ -58,13 +59,15 @@ NEW TASK FROM TABS
 • Works from the Tasks view, the command palette, or a group you just organized
 
 ALSO INCLUDED
-• Boards: save tabs into coloured folders, search them, drag and drop
+• Boards: save tabs into coloured folders, search them, drag and drop; keep several boards and switch between them with tabs, a side dock, a bookshelf, a carousel or a zoomed-out overview
 • Tasks: To Do / Doing / Done with priorities, due dates and checklists; pin tasks and notes to the top
+• Tags on tasks, notes and saved tabs, with a tag filter
 • Markdown notes, a Pomodoro focus timer and a whiteboard canvas
+• With Chrome's built-in AI: summarize a note, turn its to-dos into tasks, proofread or rewrite it, previewed before anything changes
 • Bookmarks manager and saved browsing sessions
 • Local insights: how often you switched context and how many tabs parking closed
 • Command palette (Ctrl+K), keyboard shortcuts, light and dark themes
-• Export and import all your data as a file
+• Export and import all your data as a file; copy a task or a board as Markdown, or a board as CSV
 
 HOW TO USE
 1. Click the TabPlex icon in the toolbar to open your workspace in a tab.
@@ -126,7 +129,7 @@ Regenerate the screenshots and promo tiles (from `store-assets/promo/promo.html`
 | `history`       | permissions | Show recent browser history in the History view and the Boards side panel so the user can add pages to folders, and suggest work sessions from recent history in the Sessions view. Read only by those views; it stays on the device. |
 | `sessions`      | permissions | List recently closed tabs and windows in the Sessions view so the user can restore them.                                                                                                                                              |
 | `storage`       | permissions | Save the user's tasks, tabs, notes, boards and settings locally in the browser.                                                                                                                                                       |
-| `notifications` | permissions | Show task due reminders and focus-timer alerts.                                                                                                                                                                                       |
+| `notifications` | permissions | Show task due reminders and focus-timer alerts, and (only if the user turns it on) offer to add a newly opened page to a parked task on the same site.                                                                                |
 | `bookmarks`     | permissions | Show, search, create, edit and organize the user's bookmarks in the Bookmarks view.                                                                                                                                                   |
 | `favicon`       | permissions | Show website icons from Chrome's local favicon cache next to saved tabs, bookmarks and links, without contacting a third-party icon service.                                                                                          |
 
@@ -203,7 +206,7 @@ Most recent first. Versions come from semantic-release (`CHANGELOG.md`); a store
 
 ### Known Issues / Limitations
 
-- On-device AI (Organize tabs by topic, task drafts, park summaries) needs desktop Chrome with built-in AI on capable hardware. Without it, Organize tabs groups by site, New task from tabs suggests only a title, and summaries are off.
+- On-device AI (Organize tabs by topic, task drafts, park summaries, note helpers) needs desktop Chrome with built-in AI on capable hardware. Without it, Organize tabs groups by site, New task from tabs suggests only a title, summaries are off and the note editor has no ✨ AI menu.
 - Edge: the AI features are hidden or fall back, because Edge may not offer the same built-in model.
 
 ### Rejection History

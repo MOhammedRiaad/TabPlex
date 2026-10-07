@@ -9,6 +9,11 @@ export interface BoardSlice {
     addBoardSilently: (board: Board) => void;
     updateBoard: (id: string, updates: Partial<Omit<Board, 'id' | 'createdAt'>>) => void;
     deleteBoard: (id: string) => void;
+    /**
+     * Delete a board and deal with its folders: move them to `moveTo`, or delete them with their saved tabs.
+     * Every change goes through the synced actions, so the background and other TabPlex tabs follow.
+     */
+    deleteBoardWithContents: (id: string, options?: { moveTo?: string }) => void;
     deleteBoardSilently: (id: string) => void;
     addFolder: (folder: Omit<Folder, 'createdAt'>) => void;
     addFolderSilently: (folder: Folder) => void;

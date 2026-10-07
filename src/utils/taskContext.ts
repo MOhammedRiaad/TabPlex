@@ -71,6 +71,7 @@ export const DEFAULT_PARK_RESUME_SETTINGS: ParkResumeSettings = {
     autoAddNewTabs: true,
     startPomodoroOnStart: false,
     aiSummaries: false,
+    suggestTasksForTabs: false,
 };
 
 export const RESUME_NOTE_MAX_LENGTH = 280;

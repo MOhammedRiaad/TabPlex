@@ -107,6 +107,21 @@ const SearchBar: React.FC<SearchBarProps> = ({ onResultClick }) => {
         return searchResults.slice(0, 10); // Limit to 10 results
     }, [query, tabs, tasks, notes, folders, sessions]);
 
+    const handleResultClick = useCallback(
+        (result: SearchResult) => {
+            onResultClick?.(result);
+
+            // Default behavior: open URL for tabs
+            if (result.type === 'tab' && result.url) {
+                window.open(result.url, '_blank');
+            }
+
+            setQuery('');
+            setIsOpen(false);
+        },
+        [onResultClick]
+    );
+
     // Handle keyboard navigation
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
@@ -133,22 +148,8 @@ const SearchBar: React.FC<SearchBarProps> = ({ onResultClick }) => {
                     break;
             }
         },
-        [isOpen, results, selectedIndex]
+        [isOpen, results, selectedIndex, handleResultClick]
     );
-
-    const handleResultClick = (result: SearchResult) => {
-        if (onResultClick) {
-            onResultClick(result);
-        }
-
-        // Default behavior: open URL for tabs
-        if (result.type === 'tab' && result.url) {
-            window.open(result.url, '_blank');
-        }
-
-        setQuery('');
-        setIsOpen(false);
-    };
 
     // Close dropdown when clicking outside
     useEffect(() => {

@@ -6,6 +6,17 @@ import SessionHeader from './components/SessionHeader';
 import CreateSessionForm from './components/CreateSessionForm';
 import SessionList from './components/SessionList';
 import Toast from '../bookmarks/components/Toast';
+import { useAiSettings } from '../ai/hooks/useAiSettings';
+import { useModelAvailability } from '../ai/hooks/useModelAvailability';
+import { AiSession, createSession as createAiSession } from '../ai/utils/promptApi';
+import {
+    SESSION_NAME_MAX,
+    SESSION_NAME_SYSTEM_PROMPT,
+    fallbackSessionName,
+    suggestSessionName,
+} from './utils/sessionName';
+
+const releaseAi = (ai: Promise<AiSession>) => ai.then(session => session.destroy()).catch(() => undefined);
 
 const SessionsView: React.FC = () => {
     const {
@@ -26,6 +37,42 @@ const SessionsView: React.FC = () => {
         fetchSessions();
     }, [fetchSessions]);
 
+    const { settings: aiSettings } = useAiSettings();
+    const { availability } = useModelAvailability();
+    const canNameWithAi =
+        aiSettings.sessionNames &&
+        (availability === 'available' || availability === 'downloadable' || availability === 'downloading');
+
+    /** Start an AI naming session. Call synchronously in a click: Chrome needs user activation for the model. */
+    const startAiNaming = () => {
+        if (!canNameWithAi) return null;
+        const ai = createAiSession(SESSION_NAME_SYSTEM_PROMPT);
+        ai.catch(() => undefined); // failures surface where it's awaited
+        return ai;
+    };
+
+    /** Saved tabs of a session, for naming it */
+    const sessionTabs = (session: Session) => {
+        const { tabs } = useBoardStore.getState();
+        return session.tabIds
+            .map(id => tabs.find(tab => tab.id === id))
+            .filter((tab): tab is NonNullable<typeof tab> => Boolean(tab))
+            .map(tab => ({ title: tab.title, url: tab.url }));
+    };
+
+    const renameSession = async (id: string, name: string) => {
+        const clean = name.trim().slice(0, SESSION_NAME_MAX);
+        if (!clean) return;
+        await updateSessionFromBackground(id, { name: clean });
+    };
+
+    /** ✨ Suggest a name (from a click): the AI name, or undefined when AI can't be used */
+    const suggestName = (session: Session): Promise<string> | undefined => {
+        const ai = startAiNaming();
+        if (!ai) return undefined;
+        return suggestSessionName(ai, sessionTabs(session)).finally(() => releaseAi(ai));
+    };
+
     const createSession = async (name: string) => {
         if (!name.trim()) return;
 
@@ -42,6 +89,7 @@ const SessionsView: React.FC = () => {
     };
 
     const startSessionFromCurrentTabs = async () => {
+        const ai = startAiNaming(); // before any await
         try {
             // Get all currently open tabs in the browser
             const browserTabs = await chrome.tabs.query({ currentWindow: true, windowType: 'normal' });
@@ -80,7 +128,10 @@ const SessionsView: React.FC = () => {
 
             const newSession: Omit<Session, 'createdAt'> = {
                 id: `session_${Date.now()}`,
-                name: `Session ${new Date().toLocaleString()}`,
+                name: fallbackSessionName(
+                    browserTabs.map(tab => ({ url: tab.url || '' })),
+                    new Date()
+                ),
                 tabIds: tabIds,
                 startTime: new Date().toISOString(),
                 endTime: undefined,
@@ -88,7 +139,17 @@ const SessionsView: React.FC = () => {
             };
 
             await addSessionFromBackground(newSession);
+
+            // Saved already with the readable default; replace it with the AI name when that arrives
+            if (ai) {
+                const named = browserTabs.map(tab => ({ title: tab.title || tab.url || '', url: tab.url || '' }));
+                suggestSessionName(ai, named)
+                    .then(name => updateSessionFromBackground(newSession.id, { name }))
+                    .catch(() => undefined)
+                    .finally(() => releaseAi(ai));
+            }
         } catch (error) {
+            if (ai) releaseAi(ai);
             console.error('Error creating session from current tabs:', error);
         }
     };
@@ -317,7 +378,14 @@ const SessionsView: React.FC = () => {
 
             <CreateSessionForm onCreate={createSession} />
 
-            <SessionList sessions={sessions} onRestore={restoreSession} onEnd={endSession} onDelete={deleteSession} />
+            <SessionList
+                sessions={sessions}
+                onRestore={restoreSession}
+                onEnd={endSession}
+                onDelete={deleteSession}
+                onRename={renameSession}
+                onSuggestName={canNameWithAi ? suggestName : undefined}
+            />
 
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         </div>

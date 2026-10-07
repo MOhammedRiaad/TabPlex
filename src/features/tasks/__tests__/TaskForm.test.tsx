@@ -115,6 +115,7 @@ describe('TaskForm', () => {
             priority: 'medium',
             checklist: [],
             tabIds: [],
+            tags: [],
         });
     });
 });

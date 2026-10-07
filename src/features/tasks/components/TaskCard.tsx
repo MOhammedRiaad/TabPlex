@@ -5,6 +5,9 @@ import { formatDate } from '../../../utils/dateUtils';
 import { isContextActive } from '../../../utils/taskContext';
 import { useTaskContextActions } from '../hooks/useTaskContextActions';
 import TaskContextStrip from './TaskContextStrip';
+import { TagList } from '../../ui/components/TagInput';
+import ExportMenu from '../../ui/components/ExportMenu';
+import { copyTaskMarkdown, downloadTaskMarkdown } from '../../ui/utils/exportActions';
 import TaskForm, { TaskFormValues, formValuesToTask, taskToFormValues } from './TaskForm';
 import './TaskCard.css';
 
@@ -123,6 +126,15 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                     >
                         📌
                     </button>
+                    <ExportMenu
+                        label="Export task"
+                        items={[
+                            { label: 'Copy as Markdown', onSelect: () => copyTaskMarkdown(task, tabs) },
+                            { label: 'Download .md', onSelect: () => downloadTaskMarkdown(task, tabs) },
+                        ]}
+                    >
+                        ⤓
+                    </ExportMenu>
                     <button className="edit-btn" onClick={startEditing} title="Edit task">
                         ✏️
                     </button>
@@ -133,6 +145,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             </div>
 
             {task.description && <p className="task-description">{task.description}</p>}
+            <TagList tags={task.tags} />
 
             {linkedTabs.length > 0 && (
                 <div className="task-links">

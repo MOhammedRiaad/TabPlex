@@ -246,6 +246,8 @@ const CanvasContainer: React.FC = () => {
         bringToFront,
         sendToBack,
         setSelectedIds,
+        groupElements,
+        ungroupElements,
     ]);
 
     // Local UI state

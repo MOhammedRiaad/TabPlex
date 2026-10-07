@@ -106,7 +106,8 @@ export const useStorageSync = () => {
             // createdAt/updatedAt and send an ADD_* message to the background for every stored item
             // on every page load.
             useBoardStore.setState({
-                boards: storedBoards,
+                // IndexedDB returns them by id; keep the order they were created in (the board picker, the default board)
+                boards: storedBoards.sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
                 folders: storedFolders,
                 tabs: sortedTabs,
                 tasks: reconciledTasks,
@@ -396,5 +397,15 @@ export const useStorageSync = () => {
             window.removeEventListener('message', handleStorageChange);
             chrome.runtime.onMessage.removeListener(handleRuntimeMessage);
         };
-    }, []);
+        // Store actions are stable references: the listeners are registered once
+    }, [
+        addBoardSilentlyToStore,
+        addFolderSilentlyToStore,
+        deleteTabSilentlyFromStore,
+        deleteTaskSilentlyFromStore,
+        deleteNoteSilentlyFromStore,
+        deleteFolderSilentlyFromStore,
+        deleteSessionSilentlyFromStore,
+        deleteBoardSilentlyFromStore,
+    ]);
 };

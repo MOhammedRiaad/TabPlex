@@ -83,6 +83,23 @@
     gap: var(--spacing-md);
 }
 
+.notes-tag-filter {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--color-text-secondary);
+    font-size: var(--font-sm);
+}
+
+.notes-tag-filter select {
+    padding: 4px var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font: inherit;
+}
+
 /* View Toggle */
 .notes-view-toggle {
     display: flex;

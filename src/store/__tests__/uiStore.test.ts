@@ -59,4 +59,32 @@ describe('ui store', () => {
         actions.closeParkDialog();
         expect(store.getState().parkDialogTaskId).toBeNull();
     });
+
+    it('remembers the active board across reloads', async () => {
+        localStorage.clear();
+        let store = await loadStore();
+        expect(store.getState().activeBoardId).toBeNull();
+        store.getState().actions.setActiveBoard('b2');
+        expect(localStorage.getItem('tabplex_active_board')).toBe('b2');
+        store = await loadStore();
+        expect(store.getState().activeBoardId).toBe('b2');
+        store.getState().actions.setActiveBoard(null);
+        expect(localStorage.getItem('tabplex_active_board')).toBeNull();
+    });
+
+    it('keeps working when localStorage is unavailable', async () => {
+        window.location.hash = '/boards'; // the view comes from the URL, not storage
+        const get = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw new Error('blocked');
+        });
+        const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+            throw new Error('blocked');
+        });
+        const store = await loadStore();
+        expect(store.getState().activeBoardId).toBeNull();
+        store.getState().actions.setActiveBoard('b1');
+        expect(store.getState().activeBoardId).toBe('b1');
+        get.mockRestore();
+        set.mockRestore();
+    });
 });

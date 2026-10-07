@@ -225,7 +225,7 @@ export const CanvasRenderer = forwardRef<HTMLCanvasElement, CanvasRendererProps>
             };
 
             render();
-        }, [activeCanvas, activeCanvasId, canvases, canvasSize, previewElement]);
+        }, [activeCanvas, activeCanvasId, canvases, canvasSize, previewElement, ref]);
 
         // Resize Observer
         useEffect(() => {
@@ -247,7 +247,7 @@ export const CanvasRenderer = forwardRef<HTMLCanvasElement, CanvasRendererProps>
             updateSize();
 
             return () => resizeObserver.disconnect();
-        }, []);
+        }, [ref]);
 
         // Interactions
         const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {

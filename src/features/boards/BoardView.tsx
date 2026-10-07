@@ -1,4 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { boardContents } from '../../utils/boards';
+import { pickCurrentBoard } from './utils/currentBoard';
+import { useUIStore } from '../ui/store/uiStore';
 import {
     DndContext,
     DragEndEvent,
@@ -16,6 +19,9 @@ import BoardList from './components/BoardList';
 import BoardToast from './components/BoardToast';
 import { HistoryItem } from '../../types';
 import { createTabFromHistoryItem } from '../../utils/tabUtils';
+import { BoardActionsProvider } from './switcher/BoardActions';
+import BoardStyleFrame from './switcher/BoardStyleFrame';
+import { useBoardStyle } from './switcher/useBoardStyle';
 import './BoardView.css';
 
 const BoardView: React.FC = () => {
@@ -41,6 +47,7 @@ const BoardView: React.FC = () => {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [draggedHistoryItem, setDraggedHistoryItem] = useState<HistoryItem | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+    const { style: boardStyle } = useBoardStyle();
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -51,16 +58,19 @@ const BoardView: React.FC = () => {
     );
 
     // Create a default board if none exists
-    const currentBoard =
-        boards.length > 0
-            ? boards[0]
-            : {
-                  id: 'default_board',
-                  name: 'My Board',
-                  color: '#3b82f6',
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-              };
+    // Memoized so callbacks that depend on it don't change on every render
+    const activeBoardId = useUIStore(state => state.activeBoardId);
+    const currentBoard = useMemo(
+        () =>
+            pickCurrentBoard(boards, activeBoardId) ?? {
+                id: 'default_board',
+                name: 'My Board',
+                color: '#3b82f6',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            },
+        [boards, activeBoardId]
+    );
 
     useEffect(() => {
         // Check if default_board already exists in the boards array
@@ -88,45 +98,10 @@ const BoardView: React.FC = () => {
         }
     }, [boards, addBoard]);
 
-    const boardFolders = folders.filter(folder => folder.boardId === currentBoard.id);
-
-    // Get set of valid folder IDs in this board
-    const boardFolderIds = new Set(boardFolders.map(f => f.id));
-
-    // Get set of all tab IDs that are part of sessions
-    const sessionTabIds = useMemo(() => {
-        const ids = new Set<string>();
-        sessions.forEach(session => {
-            session.tabIds.forEach(id => ids.add(id));
-        });
-        return ids;
-    }, [sessions]);
-
-    const boardTabs = tabs.filter(tab => {
-        // Include tabs that belong to folders in this board
-        if (tab.folderId && tab.folderId !== '' && boardFolderIds.has(tab.folderId)) {
-            return true;
-        }
-
-        // Check if tab belongs to a session
-        if (sessionTabIds.has(tab.id)) {
-            return false;
-        }
-
-        // Include tabs without folders (they belong to the board but not a specific folder)
-        if (!tab.folderId || tab.folderId === '') {
-            return true;
-        }
-        // Include orphaned tabs (tabs with folder IDs that no longer exist in ANY folder)
-        // This handles migration from old designs where folders may have been restructured
-        const folderStillExists = folders.some(f => f.id === tab.folderId);
-        if (!folderStillExists) {
-            // Clear the orphaned folderId so the tab shows in "uncategorized"
-            return true;
-        }
-        // Tab belongs to a folder in a different board
-        return false;
-    });
+    const { folders: boardFolders, tabs: boardTabs } = useMemo(
+        () => boardContents(currentBoard, folders, tabs, sessions),
+        [currentBoard, folders, tabs, sessions]
+    );
 
     // Search functionality
     const filteredFolders = useMemo(() => {
@@ -173,13 +148,14 @@ const BoardView: React.FC = () => {
     );
 
     const handleCreateTab = useCallback(
-        (data: { title: string; url: string; folderId?: string }) => {
+        (data: { title: string; url: string; folderId?: string; tags?: string[] }) => {
             const tabToAdd = {
                 id: `tab_${Date.now()}`,
                 title: data.title,
                 url: data.url,
                 favicon: undefined,
                 folderId: data.folderId || '',
+                tags: data.tags?.length ? data.tags : undefined,
                 tabId: null,
                 lastAccessed: new Date().toISOString(),
                 status: 'closed' as const,
@@ -191,7 +167,7 @@ const BoardView: React.FC = () => {
     );
 
     const handleUpdateFolder = useCallback(
-        (id: string, changes: { name?: string; color?: string }) => {
+        (id: string, changes: { name?: string; color?: string; boardId?: string }) => {
             updateFolder(id, changes);
             showToast('Folder updated successfully!', 'success');
         },
@@ -199,7 +175,7 @@ const BoardView: React.FC = () => {
     );
 
     const handleUpdateTab = useCallback(
-        (id: string, changes: { title?: string; url?: string; folderId?: string }) => {
+        (id: string, changes: { title?: string; url?: string; folderId?: string; tags?: string[] }) => {
             updateTab(id, changes);
             showToast('Tab updated successfully!', 'success');
         },
@@ -338,100 +314,105 @@ const BoardView: React.FC = () => {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            <div className="board-view">
-                {toast && <BoardToast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+            <BoardActionsProvider onShowToast={showToast}>
+                <div className="board-view">
+                    {toast && <BoardToast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-                <BoardHeader
-                    boardName={currentBoard?.name || 'Default Board'}
-                    folders={boardFolders}
-                    tabs={boardTabs}
-                    searchQuery={searchQuery}
-                    onSearch={handleSearch}
-                    onCreateFolder={handleCreateFolder}
-                    onCreateTab={handleCreateTab}
-                    onShowHistory={() => setIsHistoryPanelOpen(!isHistoryPanelOpen)}
-                    isHistoryOpen={isHistoryPanelOpen}
-                    onShowToast={showToast}
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
-                />
+                    <BoardStyleFrame style={boardStyle}>
+                        <BoardHeader
+                            boardName={currentBoard?.name || 'Default Board'}
+                            board={currentBoard}
+                            folders={boardFolders}
+                            tabs={boardTabs}
+                            searchQuery={searchQuery}
+                            onSearch={handleSearch}
+                            onCreateFolder={handleCreateFolder}
+                            onCreateTab={handleCreateTab}
+                            onShowHistory={() => setIsHistoryPanelOpen(!isHistoryPanelOpen)}
+                            isHistoryOpen={isHistoryPanelOpen}
+                            onShowToast={showToast}
+                            viewMode={viewMode}
+                            onViewModeChange={setViewMode}
+                        />
 
-                {boardFolders.length === 0 && !hasCheckedForDefaultBoard.current ? (
-                    <div className="board-loading">
-                        <div className="board-loading-skeleton">
-                            <div className="board-skeleton-item"></div>
-                            <div className="board-skeleton-item"></div>
-                            <div className="board-skeleton-item"></div>
-                        </div>
-                    </div>
-                ) : filteredFolders.length === 0 && filteredTabs.length === 0 && searchQuery.trim() ? (
-                    <div className="board-empty" role="status" aria-live="polite">
-                        <div className="board-empty-text">
-                            No folders or tabs found matching &quot;<strong>{searchQuery}</strong>&quot;
-                        </div>
-                        <div className="board-empty-hint">Try adjusting your search terms</div>
-                    </div>
-                ) : (
-                    <BoardList
-                        folders={filteredFolders}
-                        tabs={filteredTabs}
-                        onUpdateFolder={handleUpdateFolder}
-                        onUpdateTab={handleUpdateTab}
-                        onDeleteFolder={handleDeleteFolder}
-                        onDeleteTab={handleDeleteTab}
-                        onOpenTab={handleOpenTab}
-                        onCreateTab={handleCreateTab}
-                        onShowToast={showToast}
-                        viewMode={viewMode}
-                    />
-                )}
-
-                <HistorySidePanel isOpen={isHistoryPanelOpen} onClose={() => setIsHistoryPanelOpen(false)} />
-
-                <DragOverlay>
-                    {activeTab ? (
-                        <div className="board-node board-item board-drag-overlay">
-                            <div className="board-node-content">
-                                <div className="board-node-main">
-                                    <span className="board-icon board-favicon">
-                                        <span className="board-default-icon">🌐</span>
-                                    </span>
-                                    <div className="board-node-info">
-                                        <div className="board-node-title-row">
-                                            <span className="board-title">{activeTab.title}</span>
-                                        </div>
-                                        <span className="board-url">{activeTab.url}</span>
-                                    </div>
+                        {boardFolders.length === 0 && !hasCheckedForDefaultBoard.current ? (
+                            <div className="board-loading">
+                                <div className="board-loading-skeleton">
+                                    <div className="board-skeleton-item"></div>
+                                    <div className="board-skeleton-item"></div>
+                                    <div className="board-skeleton-item"></div>
                                 </div>
                             </div>
-                        </div>
-                    ) : draggedHistoryItem ? (
-                        <div className="board-node board-item board-drag-overlay">
-                            <div className="board-node-content">
-                                <div className="board-node-main">
-                                    <span className="board-icon board-favicon">
-                                        {draggedHistoryItem.favicon ? (
-                                            <img
-                                                src={draggedHistoryItem.favicon}
-                                                alt=""
-                                                className="board-favicon-img"
-                                            />
-                                        ) : (
+                        ) : filteredFolders.length === 0 && filteredTabs.length === 0 && searchQuery.trim() ? (
+                            <div className="board-empty" role="status" aria-live="polite">
+                                <div className="board-empty-text">
+                                    No folders or tabs found matching &quot;<strong>{searchQuery}</strong>&quot;
+                                </div>
+                                <div className="board-empty-hint">Try adjusting your search terms</div>
+                            </div>
+                        ) : (
+                            <BoardList
+                                folders={filteredFolders}
+                                tabs={filteredTabs}
+                                onUpdateFolder={handleUpdateFolder}
+                                onUpdateTab={handleUpdateTab}
+                                onDeleteFolder={handleDeleteFolder}
+                                onDeleteTab={handleDeleteTab}
+                                onOpenTab={handleOpenTab}
+                                onCreateTab={handleCreateTab}
+                                onShowToast={showToast}
+                                viewMode={viewMode}
+                            />
+                        )}
+                    </BoardStyleFrame>
+
+                    <HistorySidePanel isOpen={isHistoryPanelOpen} onClose={() => setIsHistoryPanelOpen(false)} />
+
+                    <DragOverlay>
+                        {activeTab ? (
+                            <div className="board-node board-item board-drag-overlay">
+                                <div className="board-node-content">
+                                    <div className="board-node-main">
+                                        <span className="board-icon board-favicon">
                                             <span className="board-default-icon">🌐</span>
-                                        )}
-                                    </span>
-                                    <div className="board-node-info">
-                                        <div className="board-node-title-row">
-                                            <span className="board-title">{draggedHistoryItem.title}</span>
+                                        </span>
+                                        <div className="board-node-info">
+                                            <div className="board-node-title-row">
+                                                <span className="board-title">{activeTab.title}</span>
+                                            </div>
+                                            <span className="board-url">{activeTab.url}</span>
                                         </div>
-                                        <span className="board-url">{draggedHistoryItem.url}</span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ) : null}
-                </DragOverlay>
-            </div>
+                        ) : draggedHistoryItem ? (
+                            <div className="board-node board-item board-drag-overlay">
+                                <div className="board-node-content">
+                                    <div className="board-node-main">
+                                        <span className="board-icon board-favicon">
+                                            {draggedHistoryItem.favicon ? (
+                                                <img
+                                                    src={draggedHistoryItem.favicon}
+                                                    alt=""
+                                                    className="board-favicon-img"
+                                                />
+                                            ) : (
+                                                <span className="board-default-icon">🌐</span>
+                                            )}
+                                        </span>
+                                        <div className="board-node-info">
+                                            <div className="board-node-title-row">
+                                                <span className="board-title">{draggedHistoryItem.title}</span>
+                                            </div>
+                                            <span className="board-url">{draggedHistoryItem.url}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : null}
+                    </DragOverlay>
+                </div>
+            </BoardActionsProvider>
         </DndContext>
     );
 };

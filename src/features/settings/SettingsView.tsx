@@ -6,6 +6,7 @@ import Toast from '../bookmarks/components/Toast';
 import { useParkResumeSettings } from '../tasks/hooks/useParkResumeSettings';
 import AiSummarySetting from './components/AiSummarySetting';
 import AiFeaturesSetting from '../ai/components/AiFeaturesSetting';
+import BoardStyleSetting from './components/BoardStyleSetting';
 import { DISPLAY_NAME_KEY, DISPLAY_NAME_MAX, saveDisplayName } from './utils/displayName';
 import './SettingsView.css';
 
@@ -139,6 +140,17 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                     </div>
                 </section>
 
+                {/* Boards Section */}
+                <section className="settings-section">
+                    <h3 className="section-title">
+                        <span className="section-icon">🗂</span>
+                        Boards
+                    </h3>
+                    <div className="section-content">
+                        <BoardStyleSetting />
+                    </div>
+                </section>
+
                 {/* Data Management Section */}
                 <section className="settings-section">
                     <h3 className="section-title">
@@ -222,6 +234,24 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                                     aria-label="Add new tabs to the active task"
                                     checked={parkSettings.autoAddNewTabs}
                                     onChange={e => updateParkSettings({ autoAddNewTabs: e.target.checked })}
+                                />
+                            </div>
+                        </div>
+                        <div className="setting-item">
+                            <div className="setting-info">
+                                <h4>Suggest a task for new tabs</h4>
+                                <p>
+                                    When a page you open matches a parked task&apos;s sites, TabPlex offers to add it.
+                                    Uses notifications; matching happens on your device.
+                                </p>
+                            </div>
+                            <div className="setting-control">
+                                <input
+                                    type="checkbox"
+                                    className="setting-checkbox"
+                                    aria-label="Suggest a task for new tabs"
+                                    checked={parkSettings.suggestTasksForTabs}
+                                    onChange={e => updateParkSettings({ suggestTasksForTabs: e.target.checked })}
                                 />
                             </div>
                         </div>

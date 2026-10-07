@@ -1,0 +1,59 @@
+TabPlex
+Copyright (c) 2025-2026 Mohamed Riaad. All rights reserved.
+
+This repository and everything in it (source code, compiled extension packages,
+documentation, specifications, screenshots, images, icons, store listing text
+and website content, together "the Software") are the property of the
+copyright holder and are protected by copyright law.
+
+The source code is published so that people can read it and check what the
+TabPlex extension does. Publishing it does not grant any licence.
+
+1. Permitted use
+
+   You may:
+   a. view and read the Software on GitHub, including as allowed by GitHub's
+      Terms of Service (which lets other GitHub users view and fork public
+      repositories on GitHub);
+   b. install and use the official TabPlex extension, as published by the
+      copyright holder on Microsoft Edge Add-ons, the Chrome Web Store or this
+      repository's GitHub Releases, for your personal or internal business use.
+
+2. Restrictions
+
+   Without the copyright holder's prior written permission you may not:
+   a. copy, reproduce or download the Software for any purpose other than
+      those in section 1;
+   b. modify, adapt, translate or create derivative works of the Software;
+   c. distribute, publish, sublicense, sell, rent or otherwise make the
+      Software, or any part or derivative of it, available to anyone;
+   d. publish the Software, or an extension, app or website based on it, in
+      any store, marketplace or website;
+   e. use the Software's screenshots, images, icons, text or other content in
+      your own products, listings or marketing;
+   f. remove or alter any copyright or proprietary notice.
+
+3. Contributions
+
+   By submitting a contribution (for example a pull request, patch or issue
+   containing code), you grant the copyright holder a perpetual, worldwide,
+   irrevocable, royalty-free licence to use, copy, modify, distribute and
+   sublicense that contribution as part of the Software, and you confirm you
+   have the right to grant it. Submitting a contribution gives you no rights
+   in the Software.
+
+4. Third-party components
+
+   The Software uses third-party open-source libraries (for example React,
+   Zustand, tldraw and their dependencies). They remain under their own
+   licences, which are found in their packages; nothing here changes those
+   licences.
+
+5. No warranty
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR OTHER LIABILITY ARISING FROM THE SOFTWARE OR ITS USE.
+
+For permission requests, open an issue at
+https://github.com/MOhammedRiaad/TabPlex/issues.

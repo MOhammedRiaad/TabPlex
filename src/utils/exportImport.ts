@@ -1,3 +1,4 @@
+import { downloadText } from './download';
 import { Board, Folder, Tab, Task, Note, Session, HistoryItem } from '../types';
 import {
     getAllBoards,
@@ -132,18 +133,7 @@ export const importData = async (jsonData: string): Promise<void> => {
 export const downloadExportFile = async (): Promise<void> => {
     try {
         const data = await exportData();
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-
-        // Create a temporary link and trigger download
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `tabplex-export-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        URL.revokeObjectURL(url);
+        downloadText(`tabplex-export-${new Date().toISOString().split('T')[0]}.json`, data, 'application/json');
     } catch (error) {
         console.error('Error downloading export file:', error);
         throw error;

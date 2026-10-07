@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import BoardView from '../BoardView';
 import { useBoardStore } from '../../../store/boardStore';
+import { useUIStore } from '../../ui/store/uiStore';
 import { fakeChrome, respondToMessages } from '../../../test/chromeMock';
 import { makeBoard, makeFolder, makeSession, makeTab } from '../../../test/factories';
 
@@ -74,6 +75,38 @@ describe('BoardView', () => {
         render(<BoardView />);
         act(() => vi.advanceTimersByTime(500));
         expect(state().boards.map(b => b.id)).toEqual(['default_board']);
+    });
+
+    it('shows the chosen board, and moves a folder to another board', () => {
+        useBoardStore.setState(s => ({ boards: [...s.boards, makeBoard({ id: 'b2', name: 'Home' })] }));
+        useUIStore.setState({ activeBoardId: 'b1' });
+        render(<BoardView />);
+        // Board tabs is the default style
+        fireEvent.click(screen.getByRole('tab', { name: /Home/ }));
+        expect(screen.getByText('Elsewhere')).toBeInTheDocument();
+        expect(screen.queryByText('Research')).not.toBeInTheDocument();
+
+        fireEvent.click(within(screen.getByLabelText('Folder: Elsewhere')).getByLabelText('Edit folder'));
+        fireEvent.change(byId('board-folder-board'), { target: { value: 'b1' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+        expect(state().folders.find(f => f.id === 'other')!.boardId).toBe('b1');
+        expect(screen.queryByText('Elsewhere')).not.toBeInTheDocument();
+        act(() => useUIStore.getState().actions.setActiveBoard(null));
+    });
+
+    it('uses the board style saved in settings', async () => {
+        useBoardStore.setState(s => ({ boards: [...s.boards, makeBoard({ id: 'b2', name: 'Home' })] }));
+        await chrome.storage.local.set({ tabplex_board_style: 'dropdown' });
+        render(<BoardView />);
+        const select = await screen.findByRole('combobox', { name: 'Board' });
+        expect(screen.queryByRole('tab', { name: /Home/ })).not.toBeInTheDocument();
+
+        await act(() => chrome.storage.local.set({ tabplex_board_style: 'overview' }));
+        expect(select).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'All boards' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Open Home' }));
+        expect(screen.getByText('Elsewhere')).toBeInTheDocument();
+        act(() => useUIStore.getState().actions.setActiveBoard(null));
     });
 
     it('searches folders and tabs, with an empty state', () => {

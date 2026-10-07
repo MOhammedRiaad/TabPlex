@@ -110,6 +110,8 @@ export interface ParkResumeSettings {
     startPomodoroOnStart: boolean;
     /** Generate an on-device AI summary of the tabs when parking (Chrome built-in Summarizer) */
     aiSummaries: boolean;
+    /** Offer to add a newly opened page to a parked task on the same sites (notification) */
+    suggestTasksForTabs: boolean;
 }
 
 export interface Note {

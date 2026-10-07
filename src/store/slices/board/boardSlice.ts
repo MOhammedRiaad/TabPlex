@@ -54,6 +54,21 @@ export const createBoardSlice: BoardStoreCreator<BoardSlice> = (set, get) => ({
         chrome.runtime.sendMessage({ type: 'UPDATE_BOARD', payload: updated }).catch(console.error);
     },
 
+    deleteBoardWithContents: (id, options = {}) => {
+        const { folders, tabs, updateFolder, deleteFolder, deleteTab, deleteBoard } = get();
+        const boardFolders = folders.filter(folder => folder.boardId === id);
+        for (const folder of boardFolders) {
+            if (options.moveTo) {
+                updateFolder(folder.id, { boardId: options.moveTo });
+            } else {
+                // deleteFolder drops tabs from the page only; delete each one so IndexedDB and the background agree
+                for (const tab of tabs.filter(t => t.folderId === folder.id)) deleteTab(tab.id);
+                deleteFolder(folder.id);
+            }
+        }
+        deleteBoard(id);
+    },
+
     deleteBoard: id => {
         set(state => ({
             boards: state.boards.filter(board => board.id !== id),

@@ -1,0 +1,987 @@
+/* Board styles (docs/specs/BOARD_VIEWS.md). Every colour comes from the app theme or the board's own colour
+   (--board-color, with --board-text for text on it). */
+
+.bsw-frame {
+    --bsw-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --bsw-shelf: var(--color-bg-hover);
+    position: relative;
+    min-width: 0;
+}
+
+.bsw-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--board-color);
+}
+
+.bsw-count {
+    flex: none;
+    padding: 1px 7px;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    font-size: var(--font-xs);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Board slides in from the side it came from */
+@keyframes bsw-in-forward {
+    from {
+        opacity: 0;
+        transform: translateX(24px);
+    }
+}
+@keyframes bsw-in-back {
+    from {
+        opacity: 0;
+        transform: translateX(-24px);
+    }
+}
+@keyframes bsw-rise-forward {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+}
+@keyframes bsw-rise-back {
+    from {
+        opacity: 0;
+        transform: translateY(-24px);
+    }
+}
+.bsw-enter-forward {
+    animation: bsw-in-forward 280ms var(--bsw-ease);
+}
+.bsw-enter-back {
+    animation: bsw-in-back 280ms var(--bsw-ease);
+}
+.bsw-rise-forward {
+    animation: bsw-rise-forward 280ms var(--bsw-ease);
+}
+.bsw-rise-back {
+    animation: bsw-rise-back 280ms var(--bsw-ease);
+}
+
+/* ---------- Context menu (right-click a board) ---------- */
+.bsw-context-menu {
+    position: fixed;
+    z-index: 1001;
+    min-width: 180px;
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-primary);
+    box-shadow: var(--shadow-lg);
+}
+.bsw-context-menu button {
+    display: block;
+    width: 100%;
+    padding: 7px 10px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text-primary);
+    font-size: var(--font-sm);
+    text-align: left;
+    cursor: pointer;
+}
+.bsw-context-menu button:hover:not(:disabled),
+.bsw-context-menu button:focus-visible {
+    background: var(--color-bg-hover);
+    outline: none;
+}
+.bsw-context-menu button.danger {
+    color: var(--color-danger);
+}
+.bsw-context-menu button:disabled {
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
+/* ---------- Board tabs ---------- */
+.bsw-tabs {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    margin-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--color-border);
+}
+.bsw-tabs-strip {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+}
+.bsw-tabs-strip::-webkit-scrollbar {
+    display: none;
+}
+.bsw-tab {
+    position: relative;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 220px;
+    margin-bottom: -1px;
+    padding: 8px 12px 9px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: var(--font-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+        background var(--transition-fast),
+        color var(--transition-fast);
+}
+.bsw-tab:hover {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+}
+.bsw-tab.is-active {
+    border-color: var(--color-border);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    box-shadow: inset 0 2px 0 var(--board-color);
+}
+.bsw-tab-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bsw-tab-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    margin: 0 2px 4px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+.bsw-tab-icon:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text-primary);
+}
+.bsw-all {
+    position: relative;
+}
+.bsw-all-pop {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 60;
+    width: 260px;
+    padding: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-primary);
+    box-shadow: var(--shadow-lg);
+}
+.bsw-all-find {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    font: inherit;
+    font-size: var(--font-sm);
+}
+.bsw-all-pop ul {
+    max-height: 280px;
+    margin: 6px 0 0;
+    padding: 0;
+    overflow: auto;
+    list-style: none;
+}
+.bsw-all-pop li button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 8px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text-primary);
+    font-size: var(--font-sm);
+    text-align: left;
+    cursor: pointer;
+}
+.bsw-all-pop li button:hover,
+.bsw-all-pop li button.is-active {
+    background: var(--color-bg-hover);
+}
+.bsw-all-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bsw-all-empty {
+    padding: 8px;
+    color: var(--color-text-muted);
+    font-size: var(--font-sm);
+}
+
+/* ---------- Accordion + Bookshelf ---------- */
+.bsw-shelf {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    /* Tall enough to read as strips, short enough not to scroll the page on its own */
+    min-height: max(420px, calc(100vh - 16rem));
+}
+.bsw-spine-group {
+    flex: none;
+    display: flex;
+    gap: 6px;
+}
+.bsw-shelf-open {
+    flex: 1;
+    min-width: 0;
+    padding: 0 var(--spacing-md);
+}
+.bsw-spine {
+    position: relative;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 48px;
+    padding: 12px 0;
+    border: 1px solid color-mix(in srgb, var(--board-color) 30%, var(--color-border));
+    border-radius: var(--radius-xl);
+    background: color-mix(in srgb, var(--board-color) 10%, var(--color-bg-primary));
+    color: var(--color-text-primary);
+    cursor: pointer;
+    overflow: hidden;
+    transition:
+        width 220ms var(--bsw-ease),
+        background var(--transition-normal),
+        transform 200ms var(--bsw-ease);
+}
+.bsw-spine::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: var(--board-color);
+}
+.bsw-spine:hover {
+    width: 58px;
+    background: color-mix(in srgb, var(--board-color) 20%, var(--color-bg-primary));
+}
+.bsw-spine-count {
+    position: sticky;
+    top: 12px;
+    min-width: 22px;
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
+    background: var(--board-color);
+    color: var(--board-text);
+    font-size: 11px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+.bsw-spine-name {
+    position: sticky;
+    top: 44px;
+    max-height: 70vh;
+    overflow: hidden;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+}
+.bsw-spine-new {
+    border: 1.5px dashed var(--color-border);
+    background: transparent;
+    color: var(--color-text-secondary);
+}
+.bsw-spine-new::before {
+    display: none;
+}
+.bsw-spine-new:hover {
+    background: var(--color-bg-tertiary);
+}
+.bsw-spine-plus {
+    font-size: 20px;
+    line-height: 1;
+}
+
+/* Bookshelf: slim solid books of varying height, standing on a shelf at the top of the view */
+.bsw-shelf--bookshelf {
+    align-items: flex-start;
+    gap: 10px;
+}
+.bsw-shelf--bookshelf .bsw-spine-group {
+    position: sticky;
+    top: 0;
+    align-items: flex-end;
+    gap: 3px;
+    height: 300px;
+    padding: 0 4px;
+    border-bottom: 8px solid var(--bsw-shelf);
+    border-radius: 0 0 3px 3px;
+}
+.bsw-shelf--bookshelf .bsw-spine {
+    justify-content: flex-start;
+    flex-direction: column-reverse;
+    gap: 8px;
+    width: 30px;
+    height: var(--book-height);
+    padding: 10px 0;
+    border: none;
+    border-radius: 3px 3px 1px 1px;
+    background:
+        linear-gradient(
+                color-mix(in srgb, var(--board-text) 35%, transparent),
+                color-mix(in srgb, var(--board-text) 35%, transparent)
+            )
+            0 10px / 100% 2px no-repeat,
+        linear-gradient(
+                color-mix(in srgb, var(--board-text) 35%, transparent),
+                color-mix(in srgb, var(--board-text) 35%, transparent)
+            )
+            0 calc(100% - 31px) / 100% 2px no-repeat,
+        var(--board-color);
+    color: var(--board-text);
+    box-shadow:
+        inset -3px 0 0 rgba(0, 0, 0, 0.18),
+        inset 2px 0 0 rgba(255, 255, 255, 0.2);
+}
+.bsw-shelf--bookshelf .bsw-spine::before {
+    display: none;
+}
+.bsw-shelf--bookshelf .bsw-spine:hover {
+    width: 30px;
+    transform: translateY(-8px);
+}
+.bsw-shelf--bookshelf .bsw-spine-count,
+.bsw-shelf--bookshelf .bsw-spine-name {
+    position: static;
+}
+.bsw-shelf--bookshelf .bsw-spine-count {
+    min-width: 20px;
+    padding: 1px 4px;
+    background: color-mix(in srgb, var(--board-text) 22%, transparent);
+    color: var(--board-text);
+    font-size: 10px;
+}
+.bsw-shelf--bookshelf .bsw-spine-name {
+    max-height: calc(100% - 70px);
+    font-size: var(--font-xs);
+    letter-spacing: 0.02em;
+}
+.bsw-shelf--bookshelf .bsw-spine-new {
+    flex-direction: column;
+    height: 62%;
+    border: 1.5px dashed var(--color-border);
+    background: transparent;
+    color: var(--color-text-secondary);
+    box-shadow: none;
+}
+.bsw-shelf--bookshelf .bsw-shelf-open {
+    border-left: 6px solid var(--board-color);
+    border-radius: var(--radius-sm);
+}
+
+/* Narrow screens: every spine in one scrolling row above the board (the open one marked) */
+.bsw-shelf.bsw-shelf--narrow {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    min-height: 0;
+}
+.bsw-shelf--narrow .bsw-spine-group {
+    position: static;
+    height: 128px;
+    padding: 0 2px 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+}
+.bsw-shelf--narrow .bsw-spine,
+.bsw-shelf--narrow .bsw-spine:hover {
+    width: 38px;
+}
+.bsw-shelf--narrow .bsw-spine-count,
+.bsw-shelf--narrow .bsw-spine-name {
+    position: static;
+}
+.bsw-shelf--narrow .bsw-spine-name {
+    max-height: calc(100% - 44px);
+}
+.bsw-shelf--narrow .bsw-shelf-open {
+    padding: 0;
+}
+.bsw-spine.is-open {
+    background: var(--board-color);
+    color: var(--board-text);
+    cursor: default;
+}
+.bsw-spine.is-open .bsw-spine-count {
+    background: color-mix(in srgb, var(--board-text) 22%, transparent);
+}
+.bsw-shelf--bookshelf.bsw-shelf--narrow .bsw-spine-group {
+    height: 150px;
+    border-bottom: 6px solid var(--bsw-shelf);
+}
+.bsw-shelf--bookshelf.bsw-shelf--narrow .bsw-spine,
+.bsw-shelf--bookshelf.bsw-shelf--narrow .bsw-spine:hover {
+    width: 30px;
+}
+.bsw-shelf--bookshelf .bsw-spine.is-open {
+    box-shadow:
+        0 0 0 2px var(--color-bg-primary),
+        0 0 0 4px var(--board-color);
+    transform: translateY(-6px);
+}
+.bsw-shelf--bookshelf.bsw-shelf--narrow .bsw-shelf-open {
+    padding-left: var(--spacing-sm);
+}
+/* ---------- Carousel ---------- */
+.bsw-carousel {
+    touch-action: pan-y;
+}
+.bsw-dots {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: var(--spacing-md);
+}
+.bsw-dot-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 10px;
+    height: 10px;
+    padding: 0;
+    overflow: hidden;
+    border: none;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--board-color) 45%, var(--color-bg-hover));
+    color: var(--board-text);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 300ms var(--bsw-ease);
+}
+.bsw-dot-btn span {
+    max-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    white-space: nowrap;
+    transition:
+        max-width 300ms var(--bsw-ease),
+        opacity 200ms;
+}
+.bsw-dot-btn.is-active {
+    height: 22px;
+    padding: 0 10px;
+    background: var(--board-color);
+}
+.bsw-dot-btn.is-active span {
+    max-width: 160px;
+    opacity: 1;
+}
+.bsw-dot-new {
+    width: 20px;
+    height: 20px;
+    border: 1px dashed var(--color-border);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+}
+.bsw-carousel-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+}
+.bsw-carousel-current {
+    flex: 1;
+    min-width: 0;
+    padding: var(--spacing-lg);
+    border: 1px solid var(--color-border);
+    border-top: 3px solid var(--board-color);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-primary);
+    box-shadow: var(--shadow-lg);
+}
+.bsw-peek {
+    position: relative;
+    flex: 0 0 72px;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-height: 220px;
+    padding: 14px 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-top: 3px solid var(--board-color);
+    border-radius: var(--radius-xl);
+    background: color-mix(in srgb, var(--board-color) 8%, var(--color-bg-secondary));
+    color: var(--color-text-primary);
+    opacity: 0.7;
+    cursor: pointer;
+    transform: scale(0.96);
+    transition:
+        opacity var(--transition-normal),
+        transform var(--transition-normal);
+}
+.bsw-peek:hover {
+    opacity: 1;
+    transform: none;
+}
+.bsw-peek-arrow {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--color-bg-primary);
+    box-shadow: var(--shadow-md);
+    color: var(--color-text-primary);
+    font-size: 20px;
+    line-height: 1;
+}
+.bsw-peek-count {
+    flex: none;
+    min-width: 22px;
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
+    background: var(--board-color);
+    color: var(--board-text);
+    font-size: 11px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+.bsw-peek-name {
+    min-height: 0;
+    max-height: 60vh;
+    overflow: hidden;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    writing-mode: vertical-rl;
+}
+.bsw-peek--previous .bsw-peek-name {
+    transform: rotate(180deg);
+}
+.bsw-peek--blank {
+    visibility: hidden;
+}
+.bsw-peek--new {
+    justify-content: center;
+    border-style: dashed;
+    border-top-width: 1px;
+    background: transparent;
+}
+.bsw-peek-plus {
+    color: var(--color-text-secondary);
+    font-size: 26px;
+}
+@media (max-width: 720px) {
+    .bsw-peek {
+        flex-basis: 30px;
+        min-height: 160px;
+        padding: 10px 0;
+    }
+    .bsw-peek-name,
+    .bsw-peek-count {
+        display: none;
+    }
+    .bsw-peek-arrow {
+        width: 24px;
+        height: 24px;
+        font-size: 16px;
+    }
+    .bsw-carousel-current {
+        padding: var(--spacing-md);
+    }
+}
+/* Phones: the board gets the full width; dots and swiping move between boards */
+@media (max-width: 640px) {
+    .bsw-peek {
+        display: none;
+    }
+    .bsw-carousel-current {
+        padding: var(--spacing-sm);
+    }
+}
+/* ---------- Side dock ---------- */
+.bsw-dock-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+}
+.bsw-dock-rail {
+    position: relative;
+    z-index: 20;
+    flex: 0 0 64px;
+    align-self: stretch;
+}
+/* Sticks below the top while the board scrolls; widens over the board on hover */
+.bsw-dock {
+    position: sticky;
+    top: var(--spacing-md);
+    display: flex;
+    max-height: calc(100vh - 2 * var(--spacing-md));
+    flex-direction: column;
+    gap: 4px;
+    width: 64px;
+    padding: 10px 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-primary);
+    transition:
+        width 240ms var(--bsw-ease),
+        box-shadow 240ms;
+}
+.bsw-dock:hover,
+.bsw-dock:focus-within {
+    width: 248px;
+    box-shadow: var(--shadow-lg);
+}
+.bsw-dock-list {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 2px 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+.bsw-dock-item {
+    position: relative;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: calc(100% - 12px);
+    margin: 0 6px;
+    padding: 6px 7px;
+    border: none;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--color-text-primary);
+    text-align: left;
+    cursor: pointer;
+}
+.bsw-dock-item:hover {
+    background: var(--color-bg-tertiary);
+}
+.bsw-dock-item.is-active {
+    background: color-mix(in srgb, var(--board-color) 14%, var(--color-bg-primary));
+}
+.bsw-dock-item.is-active::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: -6px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--board-color);
+}
+.bsw-avatar {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--board-color);
+    color: var(--board-text);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+.bsw-avatar-new {
+    border: 1.5px dashed var(--color-border);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 18px;
+}
+.bsw-dock-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    opacity: 0;
+    white-space: nowrap;
+    transition: opacity 120ms;
+}
+.bsw-dock:hover .bsw-dock-text,
+.bsw-dock:focus-within .bsw-dock-text {
+    opacity: 1;
+    transition-delay: 80ms;
+}
+.bsw-dock-name {
+    overflow: hidden;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    text-overflow: ellipsis;
+}
+.bsw-dock-meta {
+    color: var(--color-text-muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+.bsw-dock-main {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Phones: the dock becomes a scrolling row of avatars above the board */
+@media (max-width: 640px) {
+    .bsw-dock-layout {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-md);
+    }
+    .bsw-dock-rail {
+        flex: none;
+    }
+    .bsw-dock,
+    .bsw-dock:hover,
+    .bsw-dock:focus-within {
+        position: static;
+        flex-direction: row;
+        width: auto;
+        max-height: none;
+        padding: 6px;
+        overflow-x: auto;
+        box-shadow: none;
+    }
+    .bsw-dock-list {
+        flex: none;
+        flex-direction: row;
+        overflow: visible;
+    }
+    .bsw-dock-item {
+        width: auto;
+        margin: 0;
+        padding: 4px;
+    }
+    .bsw-dock-text {
+        display: none;
+    }
+    .bsw-dock-item.is-active::before {
+        top: auto;
+        right: 8px;
+        bottom: -6px;
+        left: 8px;
+        width: auto;
+        height: 3px;
+        border-radius: 3px 3px 0 0;
+    }
+}
+/* ---------- Overview ---------- */
+@keyframes bsw-zoom-in {
+    from {
+        opacity: 0.4;
+        transform: scale(0.3);
+    }
+}
+@keyframes bsw-card-in {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+}
+.bsw-zoom-in {
+    animation: bsw-zoom-in 380ms var(--bsw-ease);
+}
+.bsw-overview {
+    min-height: 60vh;
+}
+.bsw-ov-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    margin-bottom: var(--spacing-lg);
+}
+.bsw-ov-head h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+.bsw-ov-meta {
+    color: var(--color-text-muted);
+    font-size: var(--font-sm);
+    font-variant-numeric: tabular-nums;
+}
+.bsw-ov-spacer {
+    flex: 1;
+}
+.bsw-ov-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--spacing-md);
+}
+.bsw-ov-card {
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    text-align: left;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    animation: bsw-card-in 280ms var(--bsw-ease) backwards;
+    transition:
+        transform 200ms var(--bsw-ease),
+        box-shadow 200ms;
+}
+.bsw-ov-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+.bsw-ov-card.is-active {
+    outline: 2px solid var(--board-color);
+    outline-offset: 2px;
+}
+.bsw-ov-new {
+    display: grid;
+    place-items: center;
+    min-height: 160px;
+    border: 1.5px dashed var(--color-border);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    box-shadow: none;
+}
+
+/* ---------- Board thumbnail (overview cards, carousel peeks) ---------- */
+.bsw-thumb {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 12px;
+}
+.bsw-thumb-band {
+    height: 6px;
+    background: var(--board-color);
+}
+.bsw-thumb-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    font-weight: 650;
+}
+.bsw-thumb-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bsw-thumb-mini {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    height: 76px;
+    padding: 0 12px;
+}
+.bsw-thumb-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 5px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 5px;
+    background: var(--color-bg-secondary);
+}
+.bsw-thumb-colhead {
+    flex: none;
+    height: 4px;
+    border-radius: 2px;
+}
+.bsw-thumb-line {
+    flex: none;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--color-border);
+}
+.bsw-thumb-line:nth-child(odd) {
+    width: 75%;
+}
+.bsw-thumb-empty {
+    grid-column: 1 / -1;
+    display: grid;
+    place-items: center;
+    border: 1px dashed var(--color-border);
+    border-radius: 5px;
+    color: var(--color-text-muted);
+    font-size: 11px;
+}
+.bsw-thumb-meta {
+    padding: 0 12px;
+    color: var(--color-text-muted);
+    font-size: 11px;
+}
+
+@media (max-width: 640px) {
+    .bsw-spine,
+    .bsw-spine:hover {
+        width: 38px;
+    }
+    .bsw-shelf-open {
+        padding: 0 var(--spacing-xs);
+    }
+    .bsw-dock-rail {
+        flex-basis: 56px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bsw-enter-forward,
+    .bsw-enter-back,
+    .bsw-rise-forward,
+    .bsw-rise-back,
+    .bsw-zoom-in,
+    .bsw-ov-card {
+        animation: none;
+    }
+    .bsw-frame *,
+    .bsw-frame *::before {
+        transition-duration: 0s !important;
+    }
+}

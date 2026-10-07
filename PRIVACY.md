@@ -88,9 +88,9 @@ TabPlex requests the following permissions to function:
     - **Data Access**: Browser history (only when requested)
 
 5. **`notifications`**
-    - **Purpose**: Send task reminders and timer alerts
-    - **Usage**: When tasks are due or timer completes
-    - **Data Access**: Task titles for notification display
+    - **Purpose**: Send task reminders and timer alerts, and (if you turn it on) suggest a parked task for a page you open
+    - **Usage**: When tasks are due or timer completes; for suggestions, when a page you open is on the same site as a parked task's tabs
+    - **Data Access**: Task titles and the page title for notification display. Suggestions compare the page's site with your parked tasks' saved tabs on your device; nothing is sent anywhere
 
 6. **`sessions`**
     - **Purpose**: Restore recently closed tabs and windows
@@ -152,11 +152,12 @@ If you turn on **On-device AI summaries** in Settings, TabPlex uses Chrome's bui
 
 ### On-device AI features (optional)
 
-"Organize tabs" and "New task from tabs" can use Chrome's built-in AI model (Gemini Nano), which runs on your computer:
+"Organize tabs", "New task from tabs", session names and the note helpers can use Chrome's built-in AI model (Gemini Nano), which runs on your computer:
 
 - TabPlex sends it the titles and addresses (host and path only, without query strings) of the tabs you choose, and any hint you type
+- The note helpers (✨ AI in the note editor) send it the text of the note you're editing, only when you pick a helper
 - The model's answer stays in your browser, and nothing changes until you confirm it
-- No tab data is sent to TabPlex, Google or any other server by these features
+- No tab or note data is sent to TabPlex, Google or any other server by these features
 - Without the model (another browser, or a device that can't run it) the features use simple local rules instead
 - Turn them off in Settings → On-device AI
 
@@ -254,7 +255,7 @@ TabPlex complies with:
 
 TabPlex is committed to transparency:
 
-- **Open Source**: Code available for review
+- **Source available**: The code is public on GitHub for review (proprietary licence, see LICENSE)
 - **No Hidden Features**: All functionality documented
 - **Clear Permissions**: Explicit explanation of why each permission is needed
 - **User Control**: You decide what data to create and store

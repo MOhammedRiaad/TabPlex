@@ -13,4 +13,5 @@ import './tab-listeners';
 import './cleanup-service';
 import './context-service';
 import './organize-service';
+import './suggest-service';
 import './message-handler';

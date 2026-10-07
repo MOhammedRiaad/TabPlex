@@ -5,14 +5,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy policy · TabPlex</title>
-    <meta name="description" content="How TabPlex handles your data: everything stays in your browser.">
-    <link rel="stylesheet" href="style.css">
+    <title>Privacy Policy · TabPlex Tab Manager</title>
+    <meta name="description"
+        content="TabPlex privacy policy: the tab manager keeps your tabs, tasks and notes in your browser. No account, no servers, no tracking.">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="canonical" href="https://mohammedriaad.github.io/TabPlex/privacy.html">
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="128x128" href="images/icon-128.png">
+
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="TabPlex">
+    <meta property="og:title" content="Privacy Policy · TabPlex Tab Manager">
+    <meta property="og:description"
+        content="TabPlex privacy policy: the tab manager keeps your tabs, tasks and notes in your browser. No account, no servers, no tracking.">
+    <meta property="og:url" content="https://mohammedriaad.github.io/TabPlex/privacy.html">
+    <meta property="og:image" content="https://mohammedriaad.github.io/TabPlex/images/1-today.png">
+    <meta name="twitter:card" content="summary">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -133,9 +149,9 @@
 </li>
 <li><p><strong><code>notifications</code></strong></p>
 <ul>
-<li><strong>Purpose</strong>: Send task reminders and timer alerts</li>
-<li><strong>Usage</strong>: When tasks are due or timer completes</li>
-<li><strong>Data Access</strong>: Task titles for notification display</li>
+<li><strong>Purpose</strong>: Send task reminders and timer alerts, and (if you turn it on) suggest a parked task for a page you open</li>
+<li><strong>Usage</strong>: When tasks are due or timer completes; for suggestions, when a page you open is on the same site as a parked task&#39;s tabs</li>
+<li><strong>Data Access</strong>: Task titles and the page title for notification display. Suggestions compare the page&#39;s site with your parked tasks&#39; saved tabs on your device; nothing is sent anywhere</li>
 </ul>
 </li>
 <li><p><strong><code>sessions</code></strong></p>
@@ -200,11 +216,12 @@
 <li>The summary is stored locally with the task and can be removed by parking again or deleting the task</li>
 </ul>
 <h3>On-device AI features (optional)</h3>
-<p>&quot;Organize tabs&quot; and &quot;New task from tabs&quot; can use Chrome&#39;s built-in AI model (Gemini Nano), which runs on your computer:</p>
+<p>&quot;Organize tabs&quot;, &quot;New task from tabs&quot;, session names and the note helpers can use Chrome&#39;s built-in AI model (Gemini Nano), which runs on your computer:</p>
 <ul>
 <li>TabPlex sends it the titles and addresses (host and path only, without query strings) of the tabs you choose, and any hint you type</li>
+<li>The note helpers (✨ AI in the note editor) send it the text of the note you&#39;re editing, only when you pick a helper</li>
 <li>The model&#39;s answer stays in your browser, and nothing changes until you confirm it</li>
-<li>No tab data is sent to TabPlex, Google or any other server by these features</li>
+<li>No tab or note data is sent to TabPlex, Google or any other server by these features</li>
 <li>Without the model (another browser, or a device that can&#39;t run it) the features use simple local rules instead</li>
 <li>Turn them off in Settings → On-device AI</li>
 </ul>
@@ -294,7 +311,7 @@
 <h2>Transparency Commitment</h2>
 <p>TabPlex is committed to transparency:</p>
 <ul>
-<li><strong>Open Source</strong>: Code available for review</li>
+<li><strong>Source available</strong>: The code is public on GitHub for review (proprietary licence, see LICENSE)</li>
 <li><strong>No Hidden Features</strong>: All functionality documented</li>
 <li><strong>Clear Permissions</strong>: Explicit explanation of why each permission is needed</li>
 <li><strong>User Control</strong>: You decide what data to create and store</li>

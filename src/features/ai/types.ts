@@ -26,6 +26,10 @@ export interface AiSettings {
     tabGrouping: boolean;
     /** "New task from tabs" pre-fills the form with the model when available */
     taskDrafts: boolean;
+    /** "Start session from current tabs" and "Suggest a name" name sessions with the model when available */
+    sessionNames: boolean;
+    /** ✨ AI in the note editor: summarize, action items → tasks, proofread, rewrite */
+    noteHelpers: boolean;
 }
 
 /** A browser tab that an AI feature may look at and act on */

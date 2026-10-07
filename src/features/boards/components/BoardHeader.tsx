@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
-import { Folder, Tab } from '../../../types';
+import { Board, Folder, Tab } from '../../../types';
 import BoardModal from './BoardModal';
+import BoardSwitcher from './BoardSwitcher';
+import { useBoardFrame } from '../switcher/BoardStyleFrame';
+import ExportMenu from '../../ui/components/ExportMenu';
+import { copyBoardMarkdown, downloadBoardCsv, downloadBoardMarkdown } from '../../ui/utils/exportActions';
 import '../BoardView.css';
 
 interface BoardHeaderProps {
     boardName: string;
+    /** The board shown, for Export */
+    board?: Board;
     folders: Folder[];
     tabs: Tab[];
     searchQuery: string;
     onSearch: (query: string) => void;
     onCreateFolder: (data: { name: string; color: string }) => void;
-    onCreateTab: (data: { title: string; url: string; folderId?: string }) => void;
+    onCreateTab: (data: { title: string; url: string; folderId?: string; tags?: string[] }) => void;
     onShowHistory: () => void;
     isHistoryOpen: boolean;
     onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
@@ -20,7 +26,9 @@ interface BoardHeaderProps {
 
 const BoardHeader: React.FC<BoardHeaderProps> = ({
     boardName,
+    board,
     folders,
+    tabs,
     searchQuery,
     onSearch,
     onCreateFolder,
@@ -33,6 +41,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 }) => {
     const [showFolderModal, setShowFolderModal] = useState(false);
     const [showTabModal, setShowTabModal] = useState(false);
+    const frame = useBoardFrame();
 
     return (
         <div className="board-header-modern">
@@ -40,6 +49,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
             <div className="board-header-top">
                 <div className="board-header-title-section">
                     <h2 className="board-title">{boardName}</h2>
+                    <BoardSwitcher onShowToast={onShowToast} showSelect={frame.style === 'dropdown'} />
                     <div className="board-stats">
                         <span className="board-stat-item">
                             <svg
@@ -57,6 +67,49 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
                     </div>
                 </div>
                 <div className="board-view-actions">
+                    {frame.showAllBoards && (
+                        <button
+                            type="button"
+                            className="board-action-btn"
+                            onClick={frame.showAllBoards}
+                            title="Or pinch out on a trackpad"
+                        >
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                                <rect x="1" y="1" width="5" height="5" rx="1" />
+                                <rect x="8" y="1" width="5" height="5" rx="1" />
+                                <rect x="1" y="8" width="5" height="5" rx="1" />
+                                <rect x="8" y="8" width="5" height="5" rx="1" />
+                            </svg>
+                            <span>All boards</span>
+                        </button>
+                    )}
+                    {board && (
+                        <ExportMenu
+                            label="Export board"
+                            buttonClassName="board-icon-btn"
+                            items={[
+                                { label: 'Copy as Markdown', onSelect: () => copyBoardMarkdown(board, folders, tabs) },
+                                { label: 'Download .md', onSelect: () => downloadBoardMarkdown(board, folders, tabs) },
+                                { label: 'Download .csv', onSelect: () => downloadBoardCsv(board, folders, tabs) },
+                            ]}
+                        >
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 18 18"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                            >
+                                <path d="M9 2v9" />
+                                <path d="M5 7.5 9 11.5l4-4" />
+                                <path d="M3 13v2h12v-2" />
+                            </svg>
+                        </ExportMenu>
+                    )}
                     {/* View Toggle Buttons */}
                     <button
                         onClick={() => onViewModeChange('grid')}
@@ -234,6 +287,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
                             title: data.title,
                             url: data.url,
                             folderId: data.folderId,
+                            tags: data.tags,
                         });
                     }
                 }}

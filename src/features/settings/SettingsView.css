@@ -238,3 +238,79 @@
     accent-color: var(--color-primary);
     cursor: pointer;
 }
+
+/* Board switcher picker (Settings → Boards) */
+.setting-item.setting-item-stacked {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.setting-item.setting-item-stacked:hover {
+    background-color: transparent;
+}
+
+.board-style-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 0.625rem;
+}
+
+.board-style-option {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.375rem;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        border-color 0.15s,
+        background-color 0.15s;
+}
+
+.board-style-option:hover {
+    border-color: var(--color-text-muted);
+}
+
+.board-style-option[aria-checked='true'] {
+    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 10%, var(--color-bg-secondary));
+    box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.board-style-icon {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-bg-primary);
+    color: var(--color-primary);
+}
+
+.board-style-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 650;
+}
+
+.board-style-tag {
+    color: var(--color-primary);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.board-style-desc {
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+}
