@@ -87,6 +87,8 @@ test.describe('Boards', () => {
         app,
         serviceWorker,
     }) => {
+        // This test drives the Dropdown style; board-styles.spec.ts covers the default Board tabs
+        await serviceWorker.evaluate(() => chrome.storage.local.set({ tabplex_board_style: 'dropdown' }));
         await openView(app, 'boards');
         const picker = app.getByRole('combobox', { name: 'Board' });
         await expect(picker).toBeVisible();

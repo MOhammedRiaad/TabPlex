@@ -398,7 +398,7 @@
 
 .board-list.grid-view {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
     gap: 1rem;
 }
 
@@ -1448,6 +1448,35 @@
    RESPONSIVE DESIGN
    ============================================ */
 
+/* The board name in the header. Scoped so the saved-tab title rule (.board-title in a card) can't shrink it. */
+.board-header-modern .board-title {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+    min-width: 0;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+}
+
+/* Medium widths: the title row and the action buttons each get a full row */
+@media (max-width: 1200px) {
+    .board-header-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .board-header-title-section {
+        flex-wrap: wrap;
+    }
+}
+
+.board-stat-item {
+    white-space: nowrap;
+}
+
 @media (max-width: 768px) {
     .board-view {
         padding: 1rem;
@@ -1458,7 +1487,7 @@
         align-items: stretch;
     }
 
-    .board-title {
+    .board-header-modern .board-title {
         font-size: 1.5rem;
     }
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Board, Folder, Tab } from '../../../types';
 import BoardModal from './BoardModal';
 import BoardSwitcher from './BoardSwitcher';
+import { useBoardFrame } from '../switcher/BoardStyleFrame';
 import ExportMenu from '../../ui/components/ExportMenu';
 import { copyBoardMarkdown, downloadBoardCsv, downloadBoardMarkdown } from '../../ui/utils/exportActions';
 import '../BoardView.css';
@@ -40,6 +41,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 }) => {
     const [showFolderModal, setShowFolderModal] = useState(false);
     const [showTabModal, setShowTabModal] = useState(false);
+    const frame = useBoardFrame();
 
     return (
         <div className="board-header-modern">
@@ -47,7 +49,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
             <div className="board-header-top">
                 <div className="board-header-title-section">
                     <h2 className="board-title">{boardName}</h2>
-                    <BoardSwitcher onShowToast={onShowToast} />
+                    <BoardSwitcher onShowToast={onShowToast} showSelect={frame.style === 'dropdown'} />
                     <div className="board-stats">
                         <span className="board-stat-item">
                             <svg
@@ -65,6 +67,22 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
                     </div>
                 </div>
                 <div className="board-view-actions">
+                    {frame.showAllBoards && (
+                        <button
+                            type="button"
+                            className="board-action-btn"
+                            onClick={frame.showAllBoards}
+                            title="Or pinch out on a trackpad"
+                        >
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                                <rect x="1" y="1" width="5" height="5" rx="1" />
+                                <rect x="8" y="1" width="5" height="5" rx="1" />
+                                <rect x="1" y="8" width="5" height="5" rx="1" />
+                                <rect x="8" y="8" width="5" height="5" rx="1" />
+                            </svg>
+                            <span>All boards</span>
+                        </button>
+                    )}
                     {board && (
                         <ExportMenu
                             label="Export board"
