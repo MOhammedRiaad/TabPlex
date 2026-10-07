@@ -150,6 +150,14 @@ describe('BoardSwitcher', () => {
         expect(active()).toBe('b1');
     });
 
+    it('can leave out the select and keep just the board menu', async () => {
+        const user = userEvent.setup();
+        render(<BoardSwitcher showSelect={false} />);
+        expect(screen.queryByRole('combobox', { name: 'Board' })).not.toBeInTheDocument();
+        await openMenu(user, 'Rename board');
+        expect(screen.getByRole('dialog', { name: 'Rename board' })).toBeInTheDocument();
+    });
+
     it('cannot delete the last board', async () => {
         useBoardStore.setState({ boards: [makeBoard({ id: 'b1', name: 'Only' })] });
         const user = userEvent.setup();

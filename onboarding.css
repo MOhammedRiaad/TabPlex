@@ -305,3 +305,106 @@ kbd {
         padding: 12px 24px;
     }
 }
+
+/* Board view picker */
+.board-style-step {
+    margin-bottom: 40px;
+    padding: 24px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background-color: var(--background-color);
+}
+
+.board-style-step h2 {
+    margin-bottom: 4px;
+    font-size: 20px;
+}
+
+.step-hint {
+    margin-bottom: 16px;
+    color: var(--text-light);
+    font-size: 14px;
+}
+
+.board-style-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.board-style-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--surface-color);
+    cursor: pointer;
+    transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
+}
+
+.board-style-card:hover {
+    border-color: var(--text-light);
+}
+
+.board-style-card:has(input:checked) {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 1px var(--primary-color);
+}
+
+.board-style-card:has(input:focus-visible) {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.board-style-card input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.board-style-card svg {
+    width: 30px;
+    height: 30px;
+    padding: 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--background-color);
+    fill: none;
+    stroke: var(--primary-color);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.board-style-name {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.board-style-name em {
+    margin-left: 6px;
+    color: var(--primary-color);
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.board-style-desc {
+    color: var(--text-light);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.board-style-saved {
+    min-height: 1.4em;
+    margin-top: 10px;
+    color: var(--secondary-color);
+    font-size: 13px;
+}

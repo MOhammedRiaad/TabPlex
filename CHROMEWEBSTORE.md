@@ -59,7 +59,7 @@ NEW TASK FROM TABS
 • Works from the Tasks view, the command palette, or a group you just organized
 
 ALSO INCLUDED
-• Boards: save tabs into coloured folders, search them, drag and drop; keep several boards and switch between them
+• Boards: save tabs into coloured folders, search them, drag and drop; keep several boards and switch between them with tabs, a side dock, a bookshelf, a carousel or a zoomed-out overview
 • Tasks: To Do / Doing / Done with priorities, due dates and checklists; pin tasks and notes to the top
 • Tags on tasks, notes and saved tabs, with a tag filter
 • Markdown notes, a Pomodoro focus timer and a whiteboard canvas

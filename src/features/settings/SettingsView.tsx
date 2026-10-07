@@ -6,6 +6,7 @@ import Toast from '../bookmarks/components/Toast';
 import { useParkResumeSettings } from '../tasks/hooks/useParkResumeSettings';
 import AiSummarySetting from './components/AiSummarySetting';
 import AiFeaturesSetting from '../ai/components/AiFeaturesSetting';
+import BoardStyleSetting from './components/BoardStyleSetting';
 import { DISPLAY_NAME_KEY, DISPLAY_NAME_MAX, saveDisplayName } from './utils/displayName';
 import './SettingsView.css';
 
@@ -136,6 +137,17 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                                 />
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                {/* Boards Section */}
+                <section className="settings-section">
+                    <h3 className="section-title">
+                        <span className="section-icon">🗂</span>
+                        Boards
+                    </h3>
+                    <div className="section-content">
+                        <BoardStyleSetting />
                     </div>
                 </section>
 

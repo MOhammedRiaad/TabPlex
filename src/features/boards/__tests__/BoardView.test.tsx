@@ -81,7 +81,8 @@ describe('BoardView', () => {
         useBoardStore.setState(s => ({ boards: [...s.boards, makeBoard({ id: 'b2', name: 'Home' })] }));
         useUIStore.setState({ activeBoardId: 'b1' });
         render(<BoardView />);
-        fireEvent.change(screen.getByRole('combobox', { name: 'Board' }), { target: { value: 'b2' } });
+        // Board tabs is the default style
+        fireEvent.click(screen.getByRole('tab', { name: /Home/ }));
         expect(screen.getByText('Elsewhere')).toBeInTheDocument();
         expect(screen.queryByText('Research')).not.toBeInTheDocument();
 
@@ -90,6 +91,21 @@ describe('BoardView', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Save' }));
         expect(state().folders.find(f => f.id === 'other')!.boardId).toBe('b1');
         expect(screen.queryByText('Elsewhere')).not.toBeInTheDocument();
+        act(() => useUIStore.getState().actions.setActiveBoard(null));
+    });
+
+    it('uses the board style saved in settings', async () => {
+        useBoardStore.setState(s => ({ boards: [...s.boards, makeBoard({ id: 'b2', name: 'Home' })] }));
+        await chrome.storage.local.set({ tabplex_board_style: 'dropdown' });
+        render(<BoardView />);
+        const select = await screen.findByRole('combobox', { name: 'Board' });
+        expect(screen.queryByRole('tab', { name: /Home/ })).not.toBeInTheDocument();
+
+        await act(() => chrome.storage.local.set({ tabplex_board_style: 'overview' }));
+        expect(select).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'All boards' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Open Home' }));
+        expect(screen.getByText('Elsewhere')).toBeInTheDocument();
         act(() => useUIStore.getState().actions.setActiveBoard(null));
     });
 
