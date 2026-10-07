@@ -4,29 +4,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TabPlex: tasks, tabs and focus in one private workspace</title>
+    <title>TabPlex: Tab Manager and Organizer for Edge and Chrome</title>
     <meta name="description"
-        content="TabPlex is a browser extension for Edge and Chrome that gives every task its own tabs. Park your work with a note and resume it in one click, organize loose tabs into groups, and keep everything on your device.">
-    <link rel="stylesheet" href="style.css">
+        content="Free tab manager for Edge and Chrome. Give each task its own tabs, park them with a note, resume in one click, and group loose tabs. Private, on-device.">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="canonical" href="https://mohammedriaad.github.io/TabPlex/">
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="128x128" href="images/icon-128.png">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="TabPlex">
+    <meta property="og:title" content="TabPlex: Tab Manager and Organizer for Edge and Chrome">
+    <meta property="og:description"
+        content="Free tab manager for Edge and Chrome. Give each task its own tabs, park them with a note, resume in one click, and group loose tabs. Private, on-device.">
+    <meta property="og:url" content="https://mohammedriaad.github.io/TabPlex/">
+    <meta property="og:image" content="https://mohammedriaad.github.io/TabPlex/images/1-today.png">
+    <meta property="og:image:width" content="1280">
+    <meta property="og:image:height" content="800">
+    <meta property="og:image:alt"
+        content="TabPlex Today view: a parked task with its note, today's tasks, quick actions and a focus timer">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TabPlex: Tab Manager and Organizer for Edge and Chrome">
+    <meta name="twitter:description"
+        content="Free tab manager for Edge and Chrome. Give each task its own tabs, park them with a note, resume in one click, and group loose tabs. Private, on-device.">
+    <meta name="twitter:image" content="https://mohammedriaad.github.io/TabPlex/images/1-today.png">
+    <meta name="twitter:image:alt"
+        content="TabPlex Today view: a parked task with its note, today's tasks, quick actions and a focus timer">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+
+    <script type="application/ld+json">
+    [
+        {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "TabPlex",
+            "description": "Free tab manager for Edge and Chrome. Give each task its own tabs, park them with a note, resume in one click, and group loose tabs. Private, on-device.",
+            "url": "https://mohammedriaad.github.io/TabPlex/",
+            "downloadUrl": "https://microsoftedge.microsoft.com/addons/detail/kaeaniaepejnapfgmkjgjkkgbgkaehed",
+            "applicationCategory": "BrowserApplication",
+            "operatingSystem": "Windows, macOS, Linux",
+            "browserRequirements": "Requires Microsoft Edge or Google Chrome (desktop)",
+            "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+            },
+            "isAccessibleForFree": true,
+            "image": "https://mohammedriaad.github.io/TabPlex/images/1-today.png",
+            "screenshot": [
+                "https://mohammedriaad.github.io/TabPlex/images/1-today.png",
+                "https://mohammedriaad.github.io/TabPlex/images/2-park-resume.png",
+                "https://mohammedriaad.github.io/TabPlex/images/3-organize-tabs.png",
+                "https://mohammedriaad.github.io/TabPlex/images/4-boards.png"
+            ],
+            "featureList": [
+                "Park and resume tasks with their tabs in Chrome tab groups",
+                "Organize loose tabs into tab groups, with on-device AI when available",
+                "Boards with folders of saved tabs and drag and drop",
+                "Tasks with To Do, Doing and Done columns, priorities, due dates and checklists",
+                "Markdown notes, a Pomodoro focus timer and a canvas",
+                "Bookmarks manager and saved tab sessions",
+                "Local data only: no account, no servers, no tracking"
+            ]
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "TabPlex",
+            "url": "https://mohammedriaad.github.io/TabPlex/",
+            "inLanguage": "en"
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+                {
+                    "@type": "Question",
+                    "name": "Is TabPlex free?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Yes. TabPlex is free on Microsoft Edge Add-ons."
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "Does TabPlex send my tabs or notes to a server?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "No. TabPlex has no account, no TabPlex server and no analytics. Your tasks, notes, boards and tabs are stored in your browser on this device only."
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "Can TabPlex read the pages I visit?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "No. TabPlex requests no website access. It only sees tab titles and addresses through the tabs permission, not the content of the pages."
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "Do I need Chrome's built-in AI to use TabPlex?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "No. On-device AI is optional and runs on your computer through Chrome's built-in model. Every feature still works without it."
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "Can I use TabPlex in Google Chrome?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "TabPlex is on Microsoft Edge Add-ons now, and the Chrome Web Store listing is coming soon. Until then, Chrome users can download the latest release from GitHub and load it in Chrome."
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "Can I export my data?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Yes. You can export everything to a file at any time, or delete all of your data in Settings."
+                    }
+                }
+            ]
+        }
+    ]
+    </script>
 </head>
 
 <body>
-    <div class="cursor-glow"></div>
+    <div class="cursor-glow" aria-hidden="true"></div>
 
     <nav class="navbar glass">
         <div class="container nav-container">
-            <a href="#" class="logo">
-                <div class="logo-icon">T</div>
+            <a href="./" class="logo">
+                <div class="logo-icon" aria-hidden="true">T</div>
                 <span>TabPlex</span>
             </a>
             <div class="nav-links">
                 <a href="#features">Features</a>
                 <a href="#how-it-works">How it works</a>
+                <a href="#faq">FAQ</a>
                 <a href="#privacy">Privacy</a>
             </div>
             <a href="https://microsoftedge.microsoft.com/addons/detail/kaeaniaepejnapfgmkjgjkkgbgkaehed" class="btn btn-primary btn-sm">Get TabPlex</a>
@@ -38,9 +164,9 @@
             <div class="hero-content fade-in-up">
                 <div class="badge">Now on Microsoft Edge Add-ons · Chrome Web Store coming soon</div>
                 <h1>Close your tabs, <span class="gradient-text">keep your train of thought.</span></h1>
-                <p class="hero-subtitle">TabPlex gives every task its own tabs. Park your work with a note when you
-                    switch, resume it in one click, and turn tab chaos into tidy groups. Tasks, notes, boards and a
-                    focus timer, all in one private workspace.</p>
+                <p class="hero-subtitle">TabPlex is a free tab manager for Microsoft Edge and Chrome. It gives every
+                    task its own tabs: park your work with a note when you switch, resume it in one click, and turn tab
+                    chaos into tidy groups. Tasks, notes, boards and a focus timer, all in one private workspace.</p>
                 <div class="hero-actions">
                     <!-- TODO(chrome-store): add an "Add to Chrome" button with the Chrome Web Store URL -->
                     <a href="https://microsoftedge.microsoft.com/addons/detail/kaeaniaepejnapfgmkjgjkkgbgkaehed" class="btn btn-primary btn-lg icon-btn">
@@ -60,9 +186,9 @@
             </div>
             <div class="hero-image float-animation fade-in-up delay-200">
                 <div class="glass-card image-wrapper">
-                    <img src="images/1-today.png" width="1280" height="800"
+                    <img src="images/1-today.png" width="1280" height="800" fetchpriority="high" decoding="async"
                         alt="TabPlex Today view: a parked task with its note, today's tasks, quick actions and a focus timer">
-                    <div class="shine"></div>
+                    <div class="shine" aria-hidden="true"></div>
                 </div>
             </div>
         </div>
@@ -77,7 +203,7 @@
 
             <div class="feature-row">
                 <div class="feature-content fade-in-left">
-                    <div class="feature-icon bg-purple">⏸</div>
+                    <div class="feature-icon bg-purple" aria-hidden="true">⏸</div>
                     <h3>Park &amp; Resume</h3>
                     <p>A task can own a set of tabs. Start it and its tabs open in a labelled Chrome tab group. Switching
                         to something else? Park it with a one-line "where I left off" note and the tabs close. Resume
@@ -91,7 +217,7 @@
                 </div>
                 <div class="feature-image fade-in-right">
                     <div class="glass-card">
-                        <img src="images/2-park-resume.png" width="480" height="375" loading="lazy"
+                        <img src="images/2-park-resume.png" width="480" height="375" loading="lazy" decoding="async"
                             alt="Parking a task: a dialog asks where you left off and lists the tabs to save">
                     </div>
                 </div>
@@ -99,7 +225,7 @@
 
             <div class="feature-row reverse">
                 <div class="feature-content fade-in-right">
-                    <div class="feature-icon bg-blue">✨</div>
+                    <div class="feature-icon bg-blue" aria-hidden="true">✨</div>
                     <h3>Organize tabs in one click</h3>
                     <p>TabPlex suggests Chrome tab groups for your loose tabs: by what you're working on with
                         Chrome's built-in AI, or by site when AI isn't available. Rename, recolour or drop tabs in a
@@ -112,7 +238,7 @@
                 </div>
                 <div class="feature-image fade-in-left">
                     <div class="glass-card">
-                        <img src="images/3-organize-tabs.png" width="720" height="350" loading="lazy"
+                        <img src="images/3-organize-tabs.png" width="720" height="350" loading="lazy" decoding="async"
                             alt="Organize tabs: suggested groups named React Effects and Lisbon Trip, ready to create">
                     </div>
                 </div>
@@ -120,7 +246,7 @@
 
             <div class="feature-row">
                 <div class="feature-content fade-in-left">
-                    <div class="feature-icon bg-purple">📋</div>
+                    <div class="feature-icon bg-purple" aria-hidden="true">📋</div>
                     <h3>Boards for the tabs you keep</h3>
                     <p>Save tabs into folders, search them, drag them around, and pull in pages from your browser
                         history. Tasks get a Kanban view with priorities, due dates and checklists.</p>
@@ -132,7 +258,7 @@
                 </div>
                 <div class="feature-image fade-in-right">
                     <div class="glass-card">
-                        <img src="images/4-boards.png" width="616" height="296" loading="lazy"
+                        <img src="images/4-boards.png" width="616" height="296" loading="lazy" decoding="async"
                             alt="Boards view with folders of saved tabs">
                     </div>
                 </div>
@@ -140,33 +266,33 @@
 
             <div class="grid-features">
                 <div class="grid-card glass fade-in-up delay-100">
-                    <div class="card-icon">🍅</div>
-                    <h4>Focus timer</h4>
+                    <div class="card-icon" aria-hidden="true">🍅</div>
+                    <h3>Focus timer</h3>
                     <p>A built-in Pomodoro timer that can start with a task and pause when you park it.</p>
                 </div>
                 <div class="grid-card glass fade-in-up delay-200">
-                    <div class="card-icon">📝</div>
-                    <h4>Markdown notes</h4>
+                    <div class="card-icon" aria-hidden="true">📝</div>
+                    <h3>Markdown notes</h3>
                     <p>Capture ideas next to your tasks. Everything is saved in your browser, on this device.</p>
                 </div>
                 <div class="grid-card glass fade-in-up delay-300">
-                    <div class="card-icon">📊</div>
-                    <h4>Local insights</h4>
+                    <div class="card-icon" aria-hidden="true">📊</div>
+                    <h3>Local insights</h3>
                     <p>See how often you switched context and how many tabs parking closed for you.</p>
                 </div>
                 <div class="grid-card glass fade-in-up delay-100">
-                    <div class="card-icon">🔖</div>
-                    <h4>Bookmarks &amp; sessions</h4>
-                    <p>Browse and organize your Chrome bookmarks, and save browsing sessions to restore later.</p>
+                    <div class="card-icon" aria-hidden="true">🔖</div>
+                    <h3>Bookmarks &amp; sessions</h3>
+                    <p>Browse and organize your Chrome bookmarks, and save tab sessions to restore later.</p>
                 </div>
                 <div class="grid-card glass fade-in-up delay-200">
-                    <div class="card-icon">🎨</div>
-                    <h4>Canvas</h4>
+                    <div class="card-icon" aria-hidden="true">🎨</div>
+                    <h3>Canvas</h3>
                     <p>A whiteboard for sketching plans and diagrams beside your work.</p>
                 </div>
                 <div class="grid-card glass fade-in-up delay-300">
-                    <div class="card-icon">🌗</div>
-                    <h4>Light &amp; dark</h4>
+                    <div class="card-icon" aria-hidden="true">🌗</div>
+                    <h3>Light &amp; dark</h3>
                     <p>Follows your system theme, or pick one yourself.</p>
                 </div>
             </div>
@@ -181,23 +307,63 @@
             </div>
             <ol class="steps">
                 <li class="grid-card glass fade-in-up delay-100">
-                    <span class="step-number">1</span>
-                    <h4>Start a task</h4>
+                    <span class="step-number" aria-hidden="true">1</span>
+                    <h3>Start a task</h3>
                     <p>Add the tabs you're using to a task, or just start it. Its tabs open in a Chrome tab group
                         named after the task.</p>
                 </li>
                 <li class="grid-card glass fade-in-up delay-200">
-                    <span class="step-number">2</span>
-                    <h4>Park it</h4>
+                    <span class="step-number" aria-hidden="true">2</span>
+                    <h3>Park it</h3>
                     <p>Type where you left off. The tabs close, and the task remembers them and your note.</p>
                 </li>
                 <li class="grid-card glass fade-in-up delay-300">
-                    <span class="step-number">3</span>
-                    <h4>Resume</h4>
+                    <span class="step-number" aria-hidden="true">3</span>
+                    <h3>Resume</h3>
                     <p>One click on Today reopens the group and shows your note. Closing the group by hand parks it
                         safely too.</p>
                 </li>
             </ol>
+        </div>
+    </section>
+
+    <section id="faq" class="section">
+        <div class="container">
+            <div class="section-header text-center fade-in-up">
+                <h2>Frequently asked <span class="gradient-text">questions</span></h2>
+                <p>The short answers about price, privacy and browsers.</p>
+            </div>
+            <div class="faq-list fade-in-up">
+                <details class="faq-item glass">
+                    <summary>Is TabPlex free?</summary>
+                    <p>Yes. TabPlex is free on Microsoft Edge Add-ons.</p>
+                </details>
+                <details class="faq-item glass">
+                    <summary>Does TabPlex send my tabs or notes to a server?</summary>
+                    <p>No. TabPlex has no account, no TabPlex server and no analytics. Your tasks, notes, boards and
+                        tabs are stored in your browser on this device only.</p>
+                </details>
+                <details class="faq-item glass">
+                    <summary>Can TabPlex read the pages I visit?</summary>
+                    <p>No. TabPlex requests no website access. It only sees tab titles and addresses, not the content
+                        of the pages.</p>
+                </details>
+                <details class="faq-item glass">
+                    <summary>Do I need Chrome's built-in AI to use TabPlex?</summary>
+                    <p>No. On-device AI is optional and runs on your computer through Chrome's built-in model. Every
+                        feature still works without it.</p>
+                </details>
+                <details class="faq-item glass">
+                    <summary>Can I use TabPlex in Google Chrome?</summary>
+                    <p>TabPlex is on Microsoft Edge Add-ons now, and the Chrome Web Store listing is coming soon. Until
+                        then, Chrome users can <a href="https://github.com/MOhammedRiaad/TabPlex/releases">download the
+                            latest release from GitHub</a> and load it in Chrome.</p>
+                </details>
+                <details class="faq-item glass">
+                    <summary>Can I export my data?</summary>
+                    <p>Yes. Export everything to a file at any time, or delete all of your data in Settings.</p>
+                </details>
+            </div>
         </div>
     </section>
 
@@ -238,20 +404,21 @@
             <div class="footer-content">
                 <div class="footer-brand">
                     <div class="logo">
-                        <div class="logo-icon">T</div>
+                        <div class="logo-icon" aria-hidden="true">T</div>
                         <span>TabPlex</span>
                     </div>
                     <p>Tasks, tabs and focus in one private workspace.</p>
                 </div>
                 <div class="footer-links">
                     <div class="link-group">
-                        <h4>Product</h4>
+                        <h3>Product</h3>
                         <a href="#features">Features</a>
                         <a href="#how-it-works">How it works</a>
+                        <a href="#faq">FAQ</a>
                         <a href="https://github.com/MOhammedRiaad/TabPlex/releases">Releases</a>
                     </div>
                     <div class="link-group">
-                        <h4>Legal</h4>
+                        <h3>Legal</h3>
                         <a href="privacy.html">Privacy policy</a>
                     </div>
                 </div>
