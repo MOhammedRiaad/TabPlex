@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.0](https://github.com/MOhammedRiaad/TabPlex/compare/v1.0.1...v1.1.0) (2026-10-05)
+
+### ✨ Features
+
+* **tasks:** add addTaskAndSync and explicit tab attach ([3d3c1f8](https://github.com/MOhammedRiaad/TabPlex/commit/3d3c1f8c6b7a18a4e5177ca0a5f777b00cbf8684))
+* **tasks:** add new task from tabs dialog and entry points ([3c8a946](https://github.com/MOhammedRiaad/TabPlex/commit/3c8a946e8ac0ffb0e480d93d1c882f03d7bb2121))
+* **tasks:** create & park from the new task from tabs dialog ([356b84b](https://github.com/MOhammedRiaad/TabPlex/commit/356b84b88f951ec5f03950466bd5f5190d0e0d0b)), closes [#13](https://github.com/MOhammedRiaad/TabPlex/issues/13) [#25](https://github.com/MOhammedRiaad/TabPlex/issues/25)
+* **tasks:** draft tasks from tabs with on-device AI ([08f0143](https://github.com/MOhammedRiaad/TabPlex/commit/08f01437ebe1a80360111972922ebd6611795d6f))
+* **tasks:** one task form for creating and editing ([f63df92](https://github.com/MOhammedRiaad/TabPlex/commit/f63df92003b69be3bb67cda4350daeb54a4cf0b0)), closes [#24](https://github.com/MOhammedRiaad/TabPlex/issues/24)
+* **tasks:** pin tasks and notes to the top ([e21999e](https://github.com/MOhammedRiaad/TabPlex/commit/e21999e9ab3c36df585400f247a4a2b82ed7b519)), closes [#14](https://github.com/MOhammedRiaad/TabPlex/issues/14)
+
+### 🐛 Bug Fixes
+
+* **ai:** free the summarizer after parking and drop the name length cap ([b6d82cb](https://github.com/MOhammedRiaad/TabPlex/commit/b6d82cb117fcb8141654f3f48f23823ec758ab5f))
+* **tasks:** keep on-device park summaries to two plain sentences ([6ddbc3a](https://github.com/MOhammedRiaad/TabPlex/commit/6ddbc3a5abd56a05faad4a7c6f83909f410aa955))
+* **tasks:** show task cards in windows narrower than 1024 px ([733de25](https://github.com/MOhammedRiaad/TabPlex/commit/733de2552c9ead016a01c6db45ee0a010c7ed9e6))
+
 ## [1.0.1](https://github.com/MOhammedRiaad/TabPlex/compare/v1.0.0...v1.0.1) (2026-10-04)
 
 ### 🐛 Bug Fixes
