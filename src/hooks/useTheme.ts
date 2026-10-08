@@ -9,7 +9,7 @@ interface UseThemeReturn {
     toggleTheme: () => void;
 }
 
-const THEME_STORAGE_KEY = 'tabboard_theme';
+export const THEME_STORAGE_KEY = 'tabboard_theme';
 
 /**
  * Custom hook for managing theme with system detection and persistence
