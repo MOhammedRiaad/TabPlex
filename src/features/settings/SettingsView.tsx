@@ -457,8 +457,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                     <div className="section-content">
                         <div className="setting-item">
                             <div className="setting-info">
-                                <h4>TabBoard</h4>
-                                <p>Version 1.0.0</p>
+                                <h4>TabPlex</h4>
+                                <p>Version {__APP_VERSION__}</p>
                                 <p>
                                     A powerful browser extension for organizing your tabs, tasks, and browsing sessions
                                 </p>
