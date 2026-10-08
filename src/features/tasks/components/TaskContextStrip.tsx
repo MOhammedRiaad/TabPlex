@@ -87,7 +87,7 @@ const TaskContextStrip: React.FC<TaskContextStripProps> = ({ task, compact = fal
 
             {state === 'parked' && ctx?.resumeNote && <p className="task-context-note">“{ctx.resumeNote}”</p>}
             {state === 'parked' && ctx?.aiSummary && (
-                <p className="task-context-summary-ai" title="Written on your device by Chrome's built-in AI">
+                <p className="task-context-summary-ai" title="Written on your device by your browser's built-in AI">
                     <span aria-hidden="true">✨</span> {cleanSummary(ctx.aiSummary)}
                 </p>
             )}

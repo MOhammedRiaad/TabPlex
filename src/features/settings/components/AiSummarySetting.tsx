@@ -8,10 +8,10 @@ interface AiSummarySettingProps {
 
 const STATUS_TEXT: Record<SummaryAvailability, string> = {
     available: 'Ready on this device.',
-    downloadable: 'Needs a one-time model download by Chrome (a few GB). It starts when you turn this on.',
-    downloading: 'Chrome is downloading the model…',
-    unavailable: "This device doesn't meet Chrome's requirements for built-in AI.",
-    unsupported: "This browser doesn't support Chrome's built-in AI (Chrome 138+ on desktop).",
+    downloadable: 'Needs a one-time model download by your browser (a few GB). It starts when you turn this on.',
+    downloading: 'Your browser is downloading the model…',
+    unavailable: "This device doesn't meet your browser's requirements for built-in AI.",
+    unsupported: "This browser doesn't support built-in AI (desktop Chrome 138+, or a preview build of Edge).",
 };
 
 /** Park & Resume: on-device AI summaries (Chrome built-in Summarizer API) */
@@ -51,8 +51,8 @@ const AiSummarySetting: React.FC<AiSummarySettingProps> = ({ enabled, onChange }
             <div className="setting-info">
                 <h4>On-device AI summaries</h4>
                 <p>
-                    When you park a task, Chrome&apos;s built-in AI writes a one-line summary of what you were doing. It
-                    runs on your computer: tab titles and addresses never leave it.
+                    When you park a task, your browser&apos;s built-in AI writes a one-line summary of what you were
+                    doing. It runs on your computer: tab titles and addresses never leave it.
                 </p>
                 <p className="setting-status">
                     {progress !== null

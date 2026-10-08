@@ -62,7 +62,7 @@ const AiFeaturesSetting: React.FC = () => {
             ))}
             <p className="setting-status">
                 Your tabs&apos; titles and addresses, and the notes you use a helper on, are processed on this computer
-                by Chrome&apos;s built-in AI. Nothing is sent to TabPlex or anyone else.
+                by your browser&apos;s built-in AI. Nothing is sent to TabPlex or anyone else.
             </p>
         </>
     );
