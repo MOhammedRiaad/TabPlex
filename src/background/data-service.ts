@@ -1,5 +1,6 @@
 import { ExtensionMessage, Board, Folder, Tab, Task, Note, Session, HistoryItem } from '../types';
 import { STORAGE_KEYS } from './storage';
+import { ACTIVE_CONTEXT_KEY } from '../utils/taskContext';
 
 const COLLECTIONS = ['boards', 'folders', 'tabs', 'tasks', 'notes', 'sessions', 'history'] as const;
 
@@ -24,6 +25,12 @@ interface ImportPayload {
     notes: Note[];
     sessions: Session[];
     history: HistoryItem[];
+}
+
+/** After an import, the active task may no longer exist: then no task is active */
+async function clearActiveContextIfGone(tasks: Task[]): Promise<void> {
+    const { [ACTIVE_CONTEXT_KEY]: activeId } = await chrome.storage.local.get([ACTIVE_CONTEXT_KEY]);
+    if (activeId && !tasks.some(task => task.id === activeId)) await chrome.storage.local.remove(ACTIVE_CONTEXT_KEY);
 }
 
 export function handleDataMessage(message: ExtensionMessage, _sendResponse: (response: unknown) => void) {
@@ -81,6 +88,7 @@ export function handleDataMessage(message: ExtensionMessage, _sendResponse: (res
                 Promise.all(
                     COLLECTIONS.map(name => chrome.storage.local.set({ [STORAGE_KEYS[name]]: payload[name] ?? [] }))
                 )
+                    .then(() => clearActiveContextIfGone(payload.tasks ?? []))
                     .then(() => {
                         // Notify the UI about the import completion
                         chrome.runtime

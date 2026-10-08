@@ -484,6 +484,17 @@ describe('message validation', () => {
 });
 
 describe('special cases', () => {
+    it.each([
+        ['clears the active task when the import no longer has it', 'gone', undefined],
+        ['keeps the active task when the import still has it', 'kept', 'kept'],
+    ])('IMPORT_ALL_DATA %s', async (_name, activeId, expected) => {
+        await chrome.storage.local.set({ tabplex_active_context_task_id: activeId });
+        const { sendResponse } = call(handlers.data, 'IMPORT_ALL_DATA', { tasks: [makeTask({ id: 'kept' })] });
+        await flush();
+        expect(sendResponse).toHaveBeenCalledWith({ success: true });
+        expect(store().tabplex_active_context_task_id).toBe(expected);
+    });
+
     it('UPDATE_TASK keeps the stored context (owned by context-service)', async () => {
         const stored = makeTask({ context: { state: 'parked', tabs: [{ url: 'https://a', title: 'A' }] } });
         await chrome.storage.local.set({ tabboard_tasks: [stored] });

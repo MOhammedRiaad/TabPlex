@@ -66,6 +66,25 @@ export const BACKGROUND_TASKS_KEY = 'tabboard_tasks';
 export const ACTIVE_CONTEXT_KEY = 'tabplex_active_context_task_id';
 export const PARK_RESUME_SETTINGS_KEY = 'tabplex_park_resume_settings';
 
+// The background service worker can change tasks while no TabPlex tab is open (e.g. a task context
+// auto-parked when its tab group was closed). Prefer whichever copy was updated most recently.
+export async function reconcileTasksWithBackground(local: Task[]): Promise<Task[]> {
+    try {
+        const result = await chrome.storage.local.get([BACKGROUND_TASKS_KEY]);
+        const remote = (result[BACKGROUND_TASKS_KEY] as Task[] | undefined) ?? [];
+        const remoteById = new Map(remote.map(t => [t.id, t]));
+        return local.map(task => {
+            const other = remoteById.get(task.id);
+            if (!other) return task;
+            const newer = (other.updatedAt ?? '') > (task.updatedAt ?? '') ? other : task;
+            // Task contexts are owned by the background service worker
+            return { ...newer, context: other.context ?? task.context };
+        });
+    } catch {
+        return local;
+    }
+}
+
 export const DEFAULT_PARK_RESUME_SETTINGS: ParkResumeSettings = {
     closeTabsOnPark: true,
     autoAddNewTabs: true,
