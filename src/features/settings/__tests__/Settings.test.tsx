@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
+import pkg from '../../../../package.json';
 import SettingsView from '../SettingsView';
 import AiSummarySetting from '../components/AiSummarySetting';
 import * as db from '../../../utils/storage';
@@ -138,6 +139,11 @@ describe('SettingsView', () => {
         expect(fakeChrome().tabs.create).toHaveBeenCalledWith(
             expect.objectContaining({ url: expect.stringContaining('onboarding.html') })
         );
+    });
+
+    it('shows the package.json version, which the release pipeline bumps', () => {
+        renderSettings();
+        expect(screen.getByText(`Version ${pkg.version}`)).toBeInTheDocument();
     });
 });
 
