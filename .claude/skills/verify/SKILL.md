@@ -11,6 +11,7 @@ These checks are the definition of done (CI runs the same). Run from the repo ro
 npm run typecheck         # strict TS for src/ and e2e/ (noUnusedLocals/Parameters on)
 npm run lint              # eslint --max-warnings 0 — a single warning fails
 npm run format:check      # prettier
+npm run build:privacy -- --check  # landing-page/privacy.html matches PRIVACY.md
 npm run test:coverage     # vitest; fails below 85% statements/branches/functions/lines
 npm run build             # tsc && vite build -> dist/
 npm run check:bundle      # every JS chunk under 500 kB except the lazy tldraw canvas
@@ -22,6 +23,7 @@ If `node_modules` is missing, run `npm install` first.
 ## Fixing failures
 
 - **Prettier**: run `npm run format`, then re-check. Never hand-format against `.prettierrc` (4 spaces, single quotes, width 120, `arrowParens: avoid`).
+- **Privacy page**: `landing-page/privacy.html` is generated from `PRIVACY.md`. After any `PRIVACY.md` edit, run `npm run build:privacy` and commit the regenerated page with it.
 - **Lint**: fix the cause. Unused vars/args → remove or prefix with `_`. `no-explicit-any` → use a type from `src/types/index.ts` or `unknown` + narrowing. Only add `eslint-disable-next-line` with a reason, as in `safeSendResponse`.
 - **Types**: shared interfaces live in `src/types/index.ts`; store slice signatures in `src/store/slices/board/types.ts`. Update the type, don't cast around it.
 - **Tests**: read the assertion before touching it — a failing test is often a real bug. New code needs tests next to it
