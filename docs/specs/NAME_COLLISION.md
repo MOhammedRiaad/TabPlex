@@ -1,10 +1,10 @@
 # Spec: The "TabPlex" name collision: decide, then rename or coexist
 
-|             |                                                                                                             |
-| ----------- | ----------------------------------------------------------------------------------------------------------- |
-| **Status**  | Decision needed (owner) · last item on request · must be settled before the Chrome submission (ROADMAP #26) |
-| **Created** | 2026-10-05                                                                                                  |
-| **Size**    | M (rename: 1–2 days incl. store updates)                                                                    |
+|             |                                                                                                          |
+| ----------- | -------------------------------------------------------------------------------------------------------- |
+| **Status**  | Decided 2026-10-08: **C. Coexist**, with a descriptor after the name on the Chrome listing (ROADMAP D16) |
+| **Created** | 2026-10-05                                                                                               |
+| **Size**    | M (rename: 1–2 days incl. store updates)                                                                 |
 
 ## 1. Facts (checked 2026-10-05)
 
