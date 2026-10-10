@@ -4,15 +4,16 @@ import './ModelStatus.css';
 
 const STATUS_TEXT: Record<ModelAvailability, string> = {
     available: 'On-device AI ready.',
-    downloadable: 'On-device AI needs a one-time download by Chrome (a few GB). It starts the first time you use it.',
-    downloading: 'Chrome is downloading the on-device AI model…',
-    unavailable: "This device can't run Chrome's built-in AI. TabPlex will use simpler rules instead.",
-    unsupported: "This browser doesn't have Chrome's built-in AI. TabPlex will use simpler rules instead.",
+    downloadable:
+        'On-device AI needs a one-time download by your browser (a few GB). It starts the first time you use it.',
+    downloading: 'Your browser is downloading the on-device AI model…',
+    unavailable: "This device can't run your browser's built-in AI. TabPlex will use simpler rules instead.",
+    unsupported: "This browser doesn't have built-in AI. TabPlex will use simpler rules instead.",
 };
 
 interface ModelStatusProps {
     availability: ModelAvailability;
-    /** 0..1 while Chrome downloads the model, otherwise null */
+    /** 0..1 while the browser downloads the model, otherwise null */
     progress?: number | null;
     className?: string;
 }
