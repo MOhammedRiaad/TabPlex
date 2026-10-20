@@ -108,17 +108,17 @@ Message handlers that respond asynchronously must `return true` and guard agains
 
 ## Project skills (`.claude/skills/`)
 
-| Skill              | Use when                                                                               |
-| ------------------ | -------------------------------------------------------------------------------------- |
-| `verify`           | Before declaring any change done — typecheck, lint, format, tests + coverage, build    |
-| `write-tests`      | Adding a feature or fix, coverage under 85%, or writing unit/E2E tests                 |
-| `add-data-entity`  | Adding a new persisted domain (e.g. reminders) end to end                              |
-| `add-message-sync` | Adding/changing a UI ↔ background message or cross-tab sync                            |
-| `add-view`         | Adding a new page/route to the app                                                     |
-| `debug-extension`  | Something works in dev but not in the loaded extension, data not syncing, SW errors    |
-| `release`          | Shipping a version: how the automated GitHub release works, dry runs, Web Store upload |
-| `commit`           | Writing a commit that passes commitlint/husky                                          |
-| `built-in-ai`      | Anything using Chrome's built-in AI (Prompt API, Summarizer): Organize tabs, summaries |
+| Skill              | Use when                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| `verify`           | Before declaring any change done — typecheck, lint, format, tests + coverage, build         |
+| `write-tests`      | Adding a feature or fix, coverage under 85%, or writing unit/E2E tests                      |
+| `add-data-entity`  | Adding a new persisted domain (e.g. reminders) end to end                                   |
+| `add-message-sync` | Adding/changing a UI ↔ background message or cross-tab sync                                 |
+| `add-view`         | Adding a new page/route to the app                                                          |
+| `debug-extension`  | Something works in dev but not in the loaded extension, data not syncing, SW errors         |
+| `release`          | Shipping a version: how the automated GitHub release works, dry runs, Web Store upload      |
+| `commit`           | Writing a commit that passes commitlint/husky                                               |
+| `built-in-ai`      | Anything using the browser's built-in AI (Prompt API, Summarizer): Organize tabs, summaries |
 
 ## Chrome tooling for agents
 

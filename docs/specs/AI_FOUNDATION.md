@@ -418,16 +418,16 @@ Binary search keeps it to about 6 `measureInputUsage` calls for 60 tabs.
 
 ### 4.7 Error messages (`aiErrorMessage`)
 
-| Code              | Text shown to the user                                                     |
-| ----------------- | -------------------------------------------------------------------------- |
-| `unsupported`     | "This browser doesn't have Chrome's built-in AI (Chrome 138+ on desktop)." |
-| `unavailable`     | "This device doesn't meet Chrome's requirements for built-in AI."          |
-| `download-failed` | "Chrome couldn't download the on-device AI model. Try again later."        |
-| `too-large`       | "Too many tabs for the on-device model. Close a few and try again."        |
-| `bad-output`      | "The on-device AI gave an answer TabPlex couldn't use. Try again."         |
-| `timeout`         | "The on-device AI took too long. Try again."                               |
-| `aborted`         | "" (empty string: the UI shows nothing when the user cancelled)            |
-| not an `AiError`  | `error instanceof Error ? error.message : String(error)`                   |
+| Code              | Text shown to the user                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------ |
+| `unsupported`     | "This browser doesn't have built-in AI (desktop Chrome 138+, or a preview build of Edge)." |
+| `unavailable`     | "This device doesn't meet your browser's requirements for built-in AI."                    |
+| `download-failed` | "Your browser couldn't download the on-device AI model. Try again later."                  |
+| `too-large`       | "Too many tabs for the on-device model. Close a few and try again."                        |
+| `bad-output`      | "The on-device AI gave an answer TabPlex couldn't use. Try again."                         |
+| `timeout`         | "The on-device AI took too long. Try again."                                               |
+| `aborted`         | "" (empty string: the UI shows nothing when the user cancelled)                            |
+| not an `AiError`  | `error instanceof Error ? error.message : String(error)`                                   |
 
 ### 4.8 `hooks/useModelAvailability.ts`
 
@@ -459,19 +459,19 @@ One line of status, used in Settings and in both feature dialogs.
 ```ts
 interface ModelStatusProps {
     availability: ModelAvailability;
-    /** 0..1 while Chrome downloads the model, otherwise null */
+    /** 0..1 while the browser downloads the model, otherwise null */
     progress?: number | null;
     className?: string;
 }
 ```
 
-| `availability` (progress null) | Text                                                                                                |
-| ------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `available`                    | "On-device AI ready."                                                                               |
-| `downloadable`                 | "On-device AI needs a one-time download by Chrome (a few GB). It starts the first time you use it." |
-| `downloading`                  | "Chrome is downloading the on-device AI model…"                                                     |
-| `unavailable`                  | "This device can't run Chrome's built-in AI. TabPlex will use simpler rules instead."               |
-| `unsupported`                  | "This browser doesn't have Chrome's built-in AI. TabPlex will use simpler rules instead."           |
+| `availability` (progress null) | Text                                                                                                      |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `available`                    | "On-device AI ready."                                                                                     |
+| `downloadable`                 | "On-device AI needs a one-time download by your browser (a few GB). It starts the first time you use it." |
+| `downloading`                  | "Your browser is downloading the on-device AI model…"                                                     |
+| `unavailable`                  | "This device can't run your browser's built-in AI. TabPlex will use simpler rules instead."               |
+| `unsupported`                  | "This browser doesn't have built-in AI. TabPlex will use simpler rules instead."                          |
 
 When `progress !== null`: "Downloading on-device AI model… 42%".
 
@@ -490,7 +490,7 @@ Add a new section to `src/features/settings/SettingsView.tsx`, **directly after*
     Suggest tab groups by what you're working on. Without AI, tabs are grouped by site.
   Draft tasks from tabs                                   [x]
     Pre-fill the title, priority and steps of a new task from its tabs.
-  Your tabs' titles and addresses are processed on this computer by Chrome's built-in AI. Nothing is sent to TabPlex or anyone else.
+  Your tabs' titles and addresses are processed on this computer by your browser's built-in AI. Nothing is sent to TabPlex or anyone else.
 ```
 
 - The two checkboxes stay **enabled even when the model is unavailable** (the features still work without AI; the setting means "use AI when you can"). Show the status line so the user understands.
@@ -509,8 +509,8 @@ Add a new section to `src/features/settings/SettingsView.tsx`, **directly after*
 ## 6. Privacy and documentation (same PR)
 
 1. `PRIVACY.md`: under the section that describes the on-device summary, add:
-    > **On-device AI features (optional).** "Organize tabs" and "New task from tabs" can use Chrome's built-in AI model (Gemini Nano), which runs on your computer. TabPlex sends it the titles and addresses (without query strings) of the tabs you choose. The model's answer stays in your browser. No tab data is sent to TabPlex or any server. Turn these features off in Settings → On-device AI.
-2. `README.md` features list: one bullet, "✨ On-device AI: organize tabs into groups and draft tasks from your tabs. Runs locally with Chrome's built-in AI."
+    > **On-device AI features (optional).** "Organize tabs" and "New task from tabs" can use the browser's built-in AI model (Gemini Nano in Chrome), which runs on your computer. TabPlex sends it the titles and addresses (without query strings) of the tabs you choose. The model's answer stays in your browser. No tab data is sent to TabPlex or any server. Turn these features off in Settings → On-device AI.
+2. `README.md` features list: one bullet, "✨ On-device AI: organize tabs into groups and draft tasks from your tabs. Runs locally with your browser's built-in AI."
 3. **No new permissions.** `tabs`, `tabGroups` and `storage` are already in `manifest.json`. Confirm that `git diff manifest.json` is empty for this spec.
 
 ## 7. Edge cases

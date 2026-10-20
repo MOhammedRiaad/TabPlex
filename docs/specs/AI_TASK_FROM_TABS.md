@@ -20,7 +20,7 @@
 - **Create & start error toast:** "Created “{title}”, but couldn't start it: {message}" when START or the attach after it fails (§8.4 only said "toast with the message").
 - `cleanLine` (§5.2) also strips the emoji variation selector (U+FE0F) left behind by emoji like 🏖️. `fallbackDraft` imports `siteKey` from the Organize feature, which shipped first.
 - Entry points, toasts and the dialog layout are as specified. The organize spec's **Make a task** button is in its done phase list.
-- Manual acceptance M1–M9 (§12.6) still needs a device with Chrome's built-in AI; E2E covers the fallback path, Create & start in place, auto-park, the Organize hand-off and a stubbed model.
+- Manual acceptance M1–M9 (§12.6) still needs a device with built-in AI; E2E covers the fallback path, Create & start in place, auto-park, the Organize hand-off and a stubbed model.
 
 ## 0. How to use this spec
 

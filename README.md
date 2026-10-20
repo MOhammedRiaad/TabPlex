@@ -36,19 +36,19 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 - **Kanban-Style Workflow**: To Do, Doing, Done columns for visual progress tracking
 - **Rich Task Details**: Add descriptions, checklists, due dates, and priority levels
 - **Pinning**: Pin a task or note (📌) to keep it at the top of its column or list, on Today too
-- **Session names**: Sessions saved from your tabs get a readable name (`github.com, docs.google.com +3 more · Mon 5 Oct`), or a short on-device AI name when Chrome's built-in AI is available; rename any session or ask for a suggestion
+- **Session names**: Sessions saved from your tabs get a readable name (`github.com, docs.google.com +3 more · Mon 5 Oct`), or a short on-device AI name when built-in AI is available; rename any session or ask for a suggestion
 - **Export**: Copy or download a task (details, checklist, tabs, where you left off) as Markdown, or a board as Markdown or CSV, from the task card, the Boards header or the command palette
 - **Tags**: Tag tasks, notes and saved tabs (`#q4`, `#research`), filter the Tasks and Notes views by tag, and find tagged items with search
 - **Task-Tab Linking**: Associate web resources with specific tasks
-- **Park & Resume**: Each task keeps its own tabs. Start a task to open them in a named Chrome tab group, park it with a "where I left off" note to close them, and resume later in one click — everything stays on your device. Optional: start a Pomodoro with the task, on-device AI summaries of parked work (Chrome's built-in AI), and a notification that offers to add a page you open to the parked task whose tabs are on the same site (Settings → Park & Resume, off by default)
-- **On-device AI**: Chrome's built-in AI (Gemini Nano) runs on your computer, never in the cloud. Settings → On-device AI shows whether your device supports it and turns AI features on or off; every feature still works without it
+- **Park & Resume**: Each task keeps its own tabs. Start a task to open them in a named Chrome tab group, park it with a "where I left off" note to close them, and resume later in one click — everything stays on your device. Optional: start a Pomodoro with the task, on-device AI summaries of parked work (your browser's built-in AI), and a notification that offers to add a page you open to the parked task whose tabs are on the same site (Settings → Park & Resume, off by default)
+- **On-device AI**: your browser's built-in AI (Gemini Nano in Chrome) runs on your computer, never in the cloud. Settings → On-device AI shows whether your device supports it and turns AI features on or off; every feature still works without it
 - **Organize tabs**: One click on Today (or "Organize open tabs" in the command palette) suggests Chrome tab groups for your loose tabs, by what you're working on with on-device AI, or by site without it. Rename, recolour or drop tabs in a preview, then create the groups; Undo or Save to Boards afterwards. Pinned tabs and existing groups (including your active task) are never touched
 - **✨ New task from tabs**: drafts a task (title, priority, steps) from the tabs you pick, on-device. Start it from the Tasks view, the command palette ("New task from open tabs") or **Make a task** on a group you just organized; edit the draft, then **Create task** or **▶ Create & start** to group those tabs under the task right away, or **⏸ Create & park** to save them to the task and close them for later. Without on-device AI you get a suggested title and fill in the rest
 
 ### 📝 Note-Taking
 
 - **Markdown Support**: Rich text formatting with markdown editor
-- **✨ AI note helpers**: In the note editor, summarize a note, turn its to-dos into tasks, proofread it, or rewrite it shorter, clearer or more formal, with Chrome's built-in AI on your device. Every result is previewed first, and Undo restores the note. Hidden when on-device AI isn't available
+- **✨ AI note helpers**: In the note editor, summarize a note, turn its to-dos into tasks, proofread it, or rewrite it shorter, clearer or more formal, with your browser's built-in AI on your device. Every result is previewed first, and Undo restores the note. Hidden when on-device AI isn't available
 - **Context-Aware Notes**: Link notes to specific boards, folders, or tabs
 - **Quick Capture**: Fast note creation from any view
 
@@ -180,7 +180,7 @@ The application uses Zustand with a modular slice architecture:
 - **Chrome:** coming to the Chrome Web Store. Until then, download `tabplex-vX.Y.Z.zip` from the [latest GitHub release](https://github.com/MOhammedRiaad/TabPlex/releases), unzip it, open `chrome://extensions`, turn on **Developer mode** and click **Load unpacked** on the unzipped folder.
 - **Brave:** works (checked with Brave 1.96 on 2026-10-05: the full end-to-end suite passes). Install it the same way as Chrome; once TabPlex is on the Chrome Web Store, Brave installs it from there.
 
-On Edge and Brave, the on-device AI features may not be available (Brave reports Chrome's built-in AI as unavailable); TabPlex then groups tabs by site, suggests task titles without AI, and hides the note helpers.
+On Edge and Brave, the on-device AI features may not be available (Brave reports built-in AI as unavailable); TabPlex then groups tabs by site, suggests task titles without AI, and hides the note helpers.
 
 ### For Developers
 
