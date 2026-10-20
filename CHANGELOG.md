@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.0](https://github.com/MOhammedRiaad/TabPlex/compare/v1.2.0...v1.3.0) (2026-10-20)
+
+### ✨ Features
+
+* **export:** back up canvases and settings (export format 2.0.0) ([117bc86](https://github.com/MOhammedRiaad/TabPlex/commit/117bc862774f06e0f2a1f262416bd107248df20e))
+
+### 🐛 Bug Fixes
+
+* **ai:** say "your browser's built-in AI" instead of "Chrome's" ([6da55c6](https://github.com/MOhammedRiaad/TabPlex/commit/6da55c6c186c32418c58a9fbfc7f8c15550d8e8e))
+* **settings:** show the release version instead of a hard-coded one ([9bd2e61](https://github.com/MOhammedRiaad/TabPlex/commit/9bd2e613883e732fa03677933b25c4d5aea88fbb))
+
 ## [1.2.0](https://github.com/MOhammedRiaad/TabPlex/compare/v1.1.0...v1.2.0) (2026-10-07)
 
 ### ✨ Features
