@@ -46,14 +46,14 @@ PARK & RESUME
 
 ORGANIZE TABS
 • One click suggests tab groups for your loose tabs
-• With Chrome's built-in AI, tabs are grouped by what you're working on; without it, by site
+• With your browser's built-in AI, tabs are grouped by what you're working on; without it, by site
 • Rename, recolour or drop tabs in a preview before anything changes
 • Undo, or save the groups to Boards
 • Pinned tabs and existing groups (including your active task) are never touched
 
 NEW TASK FROM TABS
 • Turn the tabs you're looking at into a task in one step
-• With Chrome's built-in AI, TabPlex drafts the title, priority and next steps; without it, it suggests a title
+• With your browser's built-in AI, TabPlex drafts the title, priority and next steps; without it, it suggests a title
 • Edit the draft, then create the task, or create and start it: its tabs move into the task's group, nothing reopens
 • Or create and park it: the tabs are saved to the task and closed, ready to reopen later
 • Works from the Tasks view, the command palette, or a group you just organized
@@ -63,7 +63,7 @@ ALSO INCLUDED
 • Tasks: To Do / Doing / Done with priorities, due dates and checklists; pin tasks and notes to the top
 • Tags on tasks, notes and saved tabs, with a tag filter
 • Markdown notes, a Pomodoro focus timer and a whiteboard canvas
-• With Chrome's built-in AI: summarize a note, turn its to-dos into tasks, proofread or rewrite it, previewed before anything changes
+• With your browser's built-in AI: summarize a note, turn its to-dos into tasks, proofread or rewrite it, previewed before anything changes
 • Bookmarks manager and saved browsing sessions
 • Local insights: how often you switched context and how many tabs parking closed
 • Command palette (Ctrl+K), keyboard shortcuts, light and dark themes
@@ -171,7 +171,7 @@ TabPlex stores data **only on the user's device** and sends nothing to the devel
 
 The Release workflow publishes updates after the first version (`npm run publish:edge`; see `docs/MAINTENANCE_GUIDE.md` → Release Process). The first version was submitted by hand in Partner Center. The workflow needs the `EDGE_CLIENT_ID`, `EDGE_API_KEY` and `EDGE_PRODUCT_ID` repository secrets.
 
-Edge may not offer Chrome's built-in AI, so the Edge listing doesn't promise AI features (TabPlex falls back to grouping by site). Reuse the Chrome text with "Chrome" changed to "the browser", and drop the on-device AI lines.
+Edge may not offer built-in AI, so the Edge listing doesn't promise AI features (TabPlex falls back to grouping by site). Reuse the Chrome text as-is — it already says "your browser's built-in AI" — and drop the on-device AI lines.
 
 ### Single purpose description (as submitted)
 

@@ -147,12 +147,12 @@ If you turn on **On-device AI summaries** in Settings, TabPlex uses Chrome's bui
 
 - The input is the task title and description, your note, and the titles and addresses (host and path only, without query strings) of the parked tabs
 - Nothing is sent to TabPlex, Google or any other server by this feature
-- Chrome downloads the model once, directly from Google, the first time you turn the setting on; that download is managed by Chrome and contains none of your data
+- Your browser downloads the model once, directly from its provider, the first time you turn the setting on; that download is managed by the browser and contains none of your data
 - The summary is stored locally with the task and can be removed by parking again or deleting the task
 
 ### On-device AI features (optional)
 
-"Organize tabs", "New task from tabs", session names and the note helpers can use Chrome's built-in AI model (Gemini Nano), which runs on your computer:
+"Organize tabs", "New task from tabs", session names and the note helpers can use the browser's built-in AI model (Gemini Nano in Chrome), which runs on your computer:
 
 - TabPlex sends it the titles and addresses (host and path only, without query strings) of the tabs you choose, and any hint you type
 - The note helpers (✨ AI in the note editor) send it the text of the note you're editing, only when you pick a helper
