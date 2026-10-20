@@ -15,6 +15,10 @@ feature's spec first (`docs/specs/AI_*.md`).
   `fitInput`, `aiErrorMessage`. Never call `LanguageModel` directly.
 - Summarizer: `src/features/tasks/utils/aiSummary.ts`.
 - Tab text for prompts: `describeTabForAi` (`ai/utils/tabText.ts`) — host + path only, never query strings.
+- Edge Canary/Dev expose the same `LanguageModel` API (Phi-4-mini, behind a flag), and the wrappers feature-detect
+  it, so features also run there. Keep user-facing text browser-neutral ("your browser's built-in AI", not
+  "Chrome's"), and don't tune prompts to one model only (ROADMAP: Edge built-in AI;
+  [Edge Prompt API](https://learn.microsoft.com/en-us/microsoft-edge/web-platform/prompt-api)).
 
 ## Rules
 

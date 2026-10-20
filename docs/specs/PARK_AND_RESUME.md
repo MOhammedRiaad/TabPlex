@@ -215,19 +215,19 @@ Extend `features/analytics` with:
 
 ## 9. Edge cases
 
-| Case                                   | Behaviour                                                                                                                                        |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Start a task while another is active   | Auto-park the current one with no note. Toast: "Parked _X_. Started _Y_."                                                                        |
-| Task deleted while active              | Ungroup tabs (don't close), clear active state                                                                                                   |
-| Task marked done while active          | Ask: "Close its tabs?" Default yes, park without note                                                                                            |
-| Same URL in two tasks                  | Allowed. Resume opens a new browser tab even if the URL is open elsewhere (v1)                                                                   |
-| Tab's URL is now 404/expired           | Open anyway; the user decides                                                                                                                    |
-| Parked task with 50+ tabs              | Resume opens tabs with `discarded`-friendly `active: false`. Warn above 25: "Open 52 tabs?"                                                      |
-| TabPlex UI tab itself is in the window | Never add it to a context or close it                                                                                                            |
-| Multiple windows                       | Context lives in the window it was started in. Resume opens in the current window                                                                |
-| Browser restart while active           | Chrome may restore the group. On startup, if a group titled the same exists in a window, re-bind `chromeGroupId`; otherwise mark the task parked |
-| Export / import                        | `context` is part of `Task`, so it's included automatically. Verify in `exportImport.ts`                                                         |
-| Incognito tabs                         | Never captured                                                                                                                                   |
+| Case                                   | Behaviour                                                                                                                                                                    |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Start a task while another is active   | Auto-park the current one with no note. Toast: "Parked _X_. Started _Y_."                                                                                                    |
+| Task deleted while active              | Ungroup tabs (don't close), clear active state                                                                                                                               |
+| Task marked done while active          | Ask: "Close its tabs?" Default yes, park without note                                                                                                                        |
+| Same URL in two tasks                  | Allowed. Resume opens a new browser tab even if the URL is open elsewhere (v1)                                                                                               |
+| Tab's URL is now 404/expired           | Open anyway; the user decides                                                                                                                                                |
+| Parked task with 50+ tabs              | Resume opens tabs with `discarded`-friendly `active: false`. Warn above 25: "Open 52 tabs?"                                                                                  |
+| TabPlex UI tab itself is in the window | Never add it to a context or close it                                                                                                                                        |
+| Multiple windows                       | Context lives in the window it was started in. Resume opens in the current window                                                                                            |
+| Browser restart while active           | Chrome may restore the group. On startup, if a group titled the same exists in a window, re-bind `chromeGroupId`; otherwise mark the task parked                             |
+| Export / import                        | `context` is part of `Task`, so it's included automatically; export takes the background's newer copy. Park & Resume settings are in `EXTENSION_SETTING_KEYS` (format 2.0.0) |
+| Incognito tabs                         | Never captured                                                                                                                                                               |
 
 ## 10. Future (v2+)
 

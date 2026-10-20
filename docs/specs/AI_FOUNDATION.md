@@ -504,7 +504,7 @@ Add a new section to `src/features/settings/SettingsView.tsx`, **directly after*
 | `tabplex_ai_settings` | `chrome.storage.local` | `AiSettings` | `DEFAULT_AI_SETTINGS` |
 
 - No IndexedDB change and no `DB_VERSION` bump.
-- **Export/import:** settings are not part of `exportImport.ts` today (Park & Resume settings aren't either). Don't add them.
+- **Export/import:** since export format 2.0.0 (2026-10-08) the key is in `EXTENSION_SETTING_KEYS` in `exportImport.ts`, so backups include it.
 
 ## 6. Privacy and documentation (same PR)
 

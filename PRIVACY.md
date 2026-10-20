@@ -172,7 +172,7 @@ If you turn on **On-device AI summaries** in Settings, TabPlex uses Chrome's bui
 
 ### Data Portability
 
-- Export feature creates a complete JSON backup
+- Export feature creates a JSON backup of your boards, tabs, tasks, notes, sessions, history, canvases and settings (the optional tldraw canvas is not included yet)
 - Import feature restores data from backup
 - No vendor lock-in - your data is yours
 

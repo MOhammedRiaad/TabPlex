@@ -94,7 +94,7 @@ describe('createSession', () => {
         await expectAiError(createSession('sys'), 'download-failed');
         stubModel({ create: vi.fn().mockRejectedValue('weird') });
         const error = await createSession('sys').catch((e: unknown) => e);
-        expect((error as AiError).message).toBe('Chrome could not start the on-device model');
+        expect((error as AiError).message).toBe('The browser could not start the on-device model');
     });
 });
 
@@ -244,8 +244,8 @@ describe('fitInput', () => {
 
 describe('aiErrorMessage', () => {
     it.each([
-        ['unsupported', /Chrome 138\+ on desktop/],
-        ['unavailable', /doesn't meet Chrome's requirements/],
+        ['unsupported', /desktop Chrome 138\+, or a preview build of Edge/],
+        ['unavailable', /doesn't meet your browser's requirements/],
         ['download-failed', /couldn't download/],
         ['too-large', /Too many tabs/],
         ['bad-output', /couldn't use/],

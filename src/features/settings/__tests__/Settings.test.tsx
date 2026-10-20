@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
+import pkg from '../../../../package.json';
 import SettingsView from '../SettingsView';
 import AiSummarySetting from '../components/AiSummarySetting';
 import * as db from '../../../utils/storage';
@@ -139,6 +140,11 @@ describe('SettingsView', () => {
             expect.objectContaining({ url: expect.stringContaining('onboarding.html') })
         );
     });
+
+    it('shows the package.json version, which the release pipeline bumps', () => {
+        renderSettings();
+        expect(screen.getByText(`Version ${pkg.version}`)).toBeInTheDocument();
+    });
 });
 
 describe('AiSummarySetting', () => {
@@ -146,7 +152,7 @@ describe('AiSummarySetting', () => {
 
     it('is disabled where the browser has no built-in AI', async () => {
         render(<AiSummarySetting enabled={false} onChange={vi.fn()} />);
-        expect(await screen.findByText(/doesn't support Chrome's built-in AI/)).toBeInTheDocument();
+        expect(await screen.findByText(/doesn't support built-in AI/)).toBeInTheDocument();
         expect(screen.getByLabelText('On-device AI summaries')).toBeDisabled();
     });
 
@@ -189,7 +195,7 @@ describe('AiSummarySetting', () => {
         rerender(<AiSummarySetting enabled={false} onChange={onChange} />);
         fireEvent.click(screen.getByLabelText('On-device AI summaries'));
         expect(await screen.findByText(/not enough space/)).toBeInTheDocument();
-        expect(await screen.findByText(/doesn't meet Chrome's requirements/)).toBeInTheDocument();
+        expect(await screen.findByText(/doesn't meet your browser's requirements/)).toBeInTheDocument();
     });
 
     it('does not download when already available', async () => {

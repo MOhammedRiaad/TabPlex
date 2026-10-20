@@ -1,12 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     downloadExportFile,
+    EXPORT_VERSION,
+    EXTENSION_SETTING_KEYS,
     exportData,
     importData,
     importFromFile,
     isImportInThisTab,
     markImportInThisTab,
+    PAGE_SETTING_KEYS,
 } from '../exportImport';
+import { useTimerStore } from '../../store/timerStore';
+import { BACKGROUND_TASKS_KEY } from '../taskContext';
 import * as db from '../storage';
 import { makeFolder, makeTask } from '../../test/factories';
 import { fakeChrome, respondToMessages } from '../../test/chromeMock';
@@ -23,7 +28,7 @@ describe('export / import', () => {
         await db.addFolder(makeFolder());
         const json = await exportData();
         const parsed = JSON.parse(json);
-        expect(parsed.version).toBe('1.0.0');
+        expect(parsed.version).toBe(EXPORT_VERSION);
         expect(parsed.data.tasks[0].context.tabs).toHaveLength(1);
         expect(parsed.data.history).toEqual([]);
 
@@ -110,10 +115,98 @@ describe('export / import', () => {
     });
 
     it('rejects unsupported versions and invalid JSON', async () => {
-        await expect(importData(JSON.stringify({ version: '2.0.0', data: {} }))).rejects.toThrow(
+        await expect(importData(JSON.stringify({ version: '9.0.0', data: {} }))).rejects.toThrow(
             'Unsupported export version'
         );
         await expect(importData('{nope')).rejects.toThrow();
+    });
+
+    describe('canvases and settings (2.0.0)', () => {
+        const timerDefaults = useTimerStore.getState().settings;
+        afterEach(() => useTimerStore.getState().updateSettings(timerDefaults));
+
+        const canvases = [{ id: 'c1', name: 'Plan', elements: [{ id: 'e1', type: 'rectangle' }] }];
+        const canvasSettings = { gridSize: 20, showGrid: false };
+
+        async function seedEverything() {
+            await chrome.storage.local.set({ canvases, canvasSettings });
+            await chrome.storage.local.set(
+                Object.fromEntries(EXTENSION_SETTING_KEYS.map((key, i) => [key, { marker: `ext-${i}` }]))
+            );
+            PAGE_SETTING_KEYS.forEach((key, i) => localStorage.setItem(key, `page-${i}`));
+            useTimerStore.getState().updateSettings({ workDuration: 50, soundEnabled: false });
+        }
+
+        async function wipeEverything() {
+            await chrome.storage.local.clear();
+            localStorage.clear();
+            useTimerStore.getState().updateSettings(timerDefaults);
+        }
+
+        it('exports every canvas and listed setting, and restores them all', async () => {
+            await seedEverything();
+            const json = await exportData();
+            const parsed = JSON.parse(json);
+            expect(parsed.data.canvases).toEqual(canvases);
+            expect(parsed.data.canvasSettings).toEqual(canvasSettings);
+            expect(Object.keys(parsed.settings.extension).sort()).toEqual([...EXTENSION_SETTING_KEYS].sort());
+            expect(Object.keys(parsed.settings.page).sort()).toEqual([...PAGE_SETTING_KEYS].sort());
+            expect(parsed.settings.timer).toMatchObject({ workDuration: 50, soundEnabled: false });
+
+            await wipeEverything();
+            await importData(json);
+
+            const stored = await chrome.storage.local.get(null);
+            expect(stored.canvases).toEqual(canvases);
+            expect(stored.canvasSettings).toEqual(canvasSettings);
+            EXTENSION_SETTING_KEYS.forEach((key, i) => expect(stored[key]).toEqual({ marker: `ext-${i}` }));
+            PAGE_SETTING_KEYS.forEach((key, i) => expect(localStorage.getItem(key)).toBe(`page-${i}`));
+            expect(useTimerStore.getState().settings).toMatchObject({ workDuration: 50, soundEnabled: false });
+        });
+
+        it('leaves out the tldraw room, which names a database the file does not contain', async () => {
+            localStorage.setItem('tabboard_tldraw_room', 'room-1');
+            expect(JSON.parse(await exportData()).settings.page).not.toHaveProperty('tabboard_tldraw_room');
+        });
+
+        it('a 2.0.0 import is a full restore: settings missing from the file are removed', async () => {
+            await seedEverything();
+            const empty = { version: EXPORT_VERSION, timestamp: '', data: {}, settings: { extension: {}, page: {} } };
+            await importData(JSON.stringify(empty));
+
+            const stored = await chrome.storage.local.get(null);
+            expect(stored.canvases).toEqual([]);
+            expect(stored).not.toHaveProperty('canvasSettings');
+            EXTENSION_SETTING_KEYS.forEach(key => expect(stored).not.toHaveProperty(key));
+            PAGE_SETTING_KEYS.forEach(key => expect(localStorage.getItem(key)).toBeNull());
+            // No timer settings in the file: keep the current ones
+            expect(useTimerStore.getState().settings.workDuration).toBe(50);
+        });
+
+        it('a 1.0.0 import keeps the current canvases and settings', async () => {
+            await seedEverything();
+            await importData(JSON.stringify({ version: '1.0.0', timestamp: '', data: { tasks: [] } }));
+
+            const stored = await chrome.storage.local.get(null);
+            expect(stored.canvases).toEqual(canvases);
+            expect(stored[EXTENSION_SETTING_KEYS[0]]).toEqual({ marker: 'ext-0' });
+            expect(localStorage.getItem(PAGE_SETTING_KEYS[0])).toBe('page-0');
+        });
+    });
+
+    it("exports the background's newer task context when IndexedDB lags behind", async () => {
+        await db.addTask(
+            makeTask({ id: 't', updatedAt: '2026-10-01T00:00:00.000Z', context: { state: 'active', tabs: [] } })
+        );
+        const parked = makeTask({
+            id: 't',
+            updatedAt: '2026-10-02T00:00:00.000Z',
+            context: { state: 'parked', tabs: [{ url: 'https://p.dev', title: 'P' }] },
+        });
+        await chrome.storage.local.set({ [BACKGROUND_TASKS_KEY]: [parked] });
+
+        const [task] = JSON.parse(await exportData()).data.tasks;
+        expect(task.context).toEqual(parked.context);
     });
 
     it('surfaces export failures', async () => {

@@ -86,7 +86,7 @@ export function createSession(
         .catch((error: unknown) => {
             throw new AiError(
                 'download-failed',
-                error instanceof Error ? error.message : 'Chrome could not start the on-device model'
+                error instanceof Error ? error.message : 'The browser could not start the on-device model'
             );
         });
 }
@@ -225,9 +225,9 @@ export async function fitInput<I>(
 }
 
 const ERROR_TEXT: Record<AiErrorCode, string> = {
-    unsupported: "This browser doesn't have Chrome's built-in AI (Chrome 138+ on desktop).",
-    unavailable: "This device doesn't meet Chrome's requirements for built-in AI.",
-    'download-failed': "Chrome couldn't download the on-device AI model. Try again later.",
+    unsupported: "This browser doesn't have built-in AI (desktop Chrome 138+, or a preview build of Edge).",
+    unavailable: "This device doesn't meet your browser's requirements for built-in AI.",
+    'download-failed': "Your browser couldn't download the on-device AI model. Try again later.",
     'too-large': 'Too many tabs for the on-device model. Close a few and try again.',
     'bad-output': "The on-device AI gave an answer TabPlex couldn't use. Try again.",
     timeout: 'The on-device AI took too long. Try again.',

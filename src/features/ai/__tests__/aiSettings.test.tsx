@@ -39,9 +39,7 @@ describe('AI settings', () => {
         renderSettings();
         expect(screen.getByRole('heading', { level: 3, name: /On-device AI$/ })).toBeInTheDocument();
         expect(
-            await screen.findByText(
-                "This browser doesn't have Chrome's built-in AI. TabPlex will use simpler rules instead."
-            )
+            await screen.findByText("This browser doesn't have built-in AI. TabPlex will use simpler rules instead.")
         ).toBeInTheDocument();
         expect(screen.getByText(/processed on this computer/)).toBeInTheDocument();
 
@@ -131,7 +129,7 @@ describe('ModelStatus', () => {
     it.each([
         ['available', 'On-device AI ready.'],
         ['downloadable', /one-time download/],
-        ['downloading', /Chrome is downloading/],
+        ['downloading', /Your browser is downloading/],
         ['unavailable', /This device can't run/],
     ] as const)('explains %s', (availability, text) => {
         render(<ModelStatus availability={availability} />);

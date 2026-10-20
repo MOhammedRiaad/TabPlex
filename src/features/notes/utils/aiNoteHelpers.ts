@@ -144,7 +144,7 @@ export function insertSummary(content: string, summary: string): string {
 export function noteAiErrorMessage(error: unknown): string {
     if (isAiError(error, 'too-large')) return 'This note is too long for the on-device AI. Try it on a shorter note.';
     if (error instanceof Error && !isAiError(error) && /Summarizer/.test(error.message)) {
-        return "This browser doesn't have Chrome's built-in summarizer.";
+        return "This browser doesn't have a built-in summarizer.";
     }
     return aiErrorMessage(error);
 }

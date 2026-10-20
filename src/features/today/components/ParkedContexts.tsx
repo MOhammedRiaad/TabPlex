@@ -40,7 +40,7 @@ const ParkedContexts: React.FC = () => {
                                 {task.context?.aiSummary && (
                                     <p
                                         className="parked-context-ai"
-                                        title="Written on your device by Chrome's built-in AI"
+                                        title="Written on your device by your browser's built-in AI"
                                     >
                                         <span aria-hidden="true">✨</span> {cleanSummary(task.context.aiSummary)}
                                     </p>
