@@ -143,7 +143,7 @@ TabPlex requests the following permissions to function:
 
 ### On-device AI summaries (optional, off by default)
 
-If you turn on **On-device AI summaries** in Settings, TabPlex uses Chrome's built-in Summarizer API to write a one-line summary when you park a task. The model (Gemini Nano) runs inside Chrome on your computer:
+If you turn on **On-device AI summaries** in Settings, TabPlex uses your browser's built-in Summarizer API to write a one-line summary when you park a task. The model (Gemini Nano) runs inside your browser on your computer:
 
 - The input is the task title and description, your note, and the titles and addresses (host and path only, without query strings) of the parked tabs
 - Nothing is sent to TabPlex, Google or any other server by this feature
