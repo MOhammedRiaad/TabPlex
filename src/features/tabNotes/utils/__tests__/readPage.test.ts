@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChromeMock, fakeChrome, installChromeMock } from '../../../../test/chromeMock';
-import { PAGE_READ_CHAR_CAP, PAGE_READ_ELEMENT_CAP, PAGE_READ_TIMEOUT_MS } from '../../constants';
+import {
+    PAGE_ASLEEP_MESSAGE,
+    PAGE_READ_CHAR_CAP,
+    PAGE_READ_ELEMENT_CAP,
+    PAGE_READ_TIMEOUT_MESSAGE,
+    PAGE_READ_TIMEOUT_MS,
+} from '../../constants';
 import { PageSnapshot, ReadableTab } from '../../types';
 import { isPageSnapshot, PageReadFailure, readPage, snapshotTab } from '../readPage';
 
@@ -405,7 +411,36 @@ describe('snapshotTab', () => {
         fakeChrome().scripting.executeScript.mockImplementationOnce(() => new Promise<never>(() => undefined));
 
         const pending = snapshotTab(tab);
-        const assertion = expect(pending).rejects.toMatchObject({ code: 'timeout' });
+        const assertion = expect(pending).rejects.toMatchObject({
+            code: 'timeout',
+            message: PAGE_READ_TIMEOUT_MESSAGE,
+        });
+        await vi.advanceTimersByTimeAsync(PAGE_READ_TIMEOUT_MS - 1);
+        // Still waiting one tick before the limit: a slow tab gets the whole time
+        expect(vi.getTimerCount()).toBeGreaterThan(0);
+        await vi.advanceTimersByTimeAsync(1);
+
+        await assertion;
+    });
+
+    it('fails with "asleep" without waiting when the tab is frozen or discarded', async () => {
+        for (const state of [{ frozen: true }, { discarded: true }]) {
+            mock.browser.addTab({ url: 'https://a.dev/page' });
+            fakeChrome().tabs.get.mockResolvedValueOnce({ id: tab.id, url: tab.url, ...state } as never);
+            fakeChrome().scripting.executeScript.mockClear();
+
+            await expect(snapshotTab(tab)).rejects.toMatchObject({ code: 'asleep', message: PAGE_ASLEEP_MESSAGE });
+            expect(fakeChrome().scripting.executeScript).not.toHaveBeenCalled();
+        }
+    });
+
+    it('says "asleep" instead of "timeout" when the tab fell asleep while it was being read', async () => {
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+        fakeChrome().tabs.get.mockResolvedValueOnce({ id: tab.id, url: tab.url, frozen: false } as never);
+        fakeChrome().scripting.executeScript.mockImplementationOnce(() => new Promise<never>(() => undefined));
+
+        const assertion = expect(snapshotTab(tab)).rejects.toMatchObject({ code: 'asleep' });
+        fakeChrome().tabs.get.mockResolvedValueOnce({ id: tab.id, url: tab.url, frozen: true } as never);
         await vi.advanceTimersByTimeAsync(PAGE_READ_TIMEOUT_MS);
 
         await assertion;

@@ -6,7 +6,19 @@ export const PAGE_READ_CHAR_CAP = 60_000;
 /** Elements readPage visits before it stops */
 export const PAGE_READ_ELEMENT_CAP = 5_000;
 /** How long a page read may take before the tab fails with "timeout" */
-export const PAGE_READ_TIMEOUT_MS = 5_000;
+/**
+ * How long a tab gets to run the page reader. The reader itself takes milliseconds, so waiting longer only helps a tab
+ * that is still waking up or loading; a sleeping or frozen tab (Edge's sleeping tabs, efficiency mode) never answers.
+ */
+export const PAGE_READ_TIMEOUT_MS = 12_000;
+/**
+ * A frozen tab (Edge's efficiency mode, Chrome's tab freezing) or a discarded one runs no scripts until it is opened, so
+ * a script sent to it simply waits ("A frozen tab cannot execute tasks… It is unfrozen on activation").
+ */
+export const PAGE_ASLEEP_MESSAGE = 'This tab is asleep. Open it for a moment, then press Retry.';
+/** Shown when a tab doesn't answer: says what usually fixes it */
+export const PAGE_READ_TIMEOUT_MESSAGE =
+    "This tab didn't answer in time. If it is asleep or still loading, open it for a moment and press Retry.";
 
 /** Longer paragraphs are split at sentence ends */
 export const PARAGRAPH_MAX_CHARS = 2_000;

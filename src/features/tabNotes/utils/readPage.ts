@@ -6,6 +6,8 @@ import {
     PAGE_FIELD_MAX_CHARS,
     PAGE_READ_CHAR_CAP,
     PAGE_READ_ELEMENT_CAP,
+    PAGE_ASLEEP_MESSAGE,
+    PAGE_READ_TIMEOUT_MESSAGE,
     PAGE_READ_TIMEOUT_MS,
     PAGE_URL_MAX_CHARS,
 } from '../constants';
@@ -190,6 +192,16 @@ function failureFromInjection(error: unknown): PageReadFailure {
     return new PageReadFailure('failed', 'This page could not be read.');
 }
 
+/** True when the tab is frozen or discarded right now: a script sent to it would wait until the tab is opened */
+async function isAsleep(tabId: number): Promise<boolean> {
+    try {
+        const current = await chrome.tabs.get(tabId);
+        return Boolean(current.discarded || current.frozen);
+    } catch {
+        return false;
+    }
+}
+
 /**
  * Reads one tab's page (top frame only, read-only). Rejects with a PageReadFailure whose `code` says why.
  * Cancelling with `signal` rejects with an AbortError DOMException.
@@ -197,14 +209,23 @@ function failureFromInjection(error: unknown): PageReadFailure {
 export async function snapshotTab(tab: ReadableTab, signal?: AbortSignal): Promise<PageSnapshot> {
     const aborted = () => new DOMException('The page read was cancelled.', 'AbortError');
     if (signal?.aborted) throw aborted();
+    // A tab can fall asleep after it was listed (the dialog may stay open for minutes): don't wait on it
+    if (await isAsleep(tab.id)) throw new PageReadFailure('asleep', PAGE_ASLEEP_MESSAGE);
+    if (signal?.aborted) throw aborted();
 
     let timer: ReturnType<typeof setTimeout> | undefined;
     let onAbort: (() => void) | undefined;
     const limit = new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(
-            () => reject(new PageReadFailure('timeout', 'This page took too long to read.')),
-            PAGE_READ_TIMEOUT_MS
-        );
+        timer = setTimeout(() => {
+            // No answer: say so plainly when the cause is a tab that fell asleep meanwhile
+            isAsleep(tab.id).then(asleep =>
+                reject(
+                    asleep
+                        ? new PageReadFailure('asleep', PAGE_ASLEEP_MESSAGE)
+                        : new PageReadFailure('timeout', PAGE_READ_TIMEOUT_MESSAGE)
+                )
+            );
+        }, PAGE_READ_TIMEOUT_MS);
         onAbort = () => reject(aborted());
         signal?.addEventListener('abort', onAbort, { once: true });
     });
