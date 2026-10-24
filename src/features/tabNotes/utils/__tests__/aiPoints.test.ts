@@ -1,9 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AiSession } from '../../../ai/utils/promptApi';
+import { AiError } from '../../../ai/types';
 import { AI_FALLBACK_CHAR_BUDGET } from '../../../ai/constants';
 import { POINT_MAX_CHARS, POINTS_PER_SOURCE_MAX } from '../../constants';
 import { CleanPage, NoteSource } from '../../types';
-import { POINTS_SCHEMA, cleanPointText, extractPointsAi, looksCutOff, validatePoints } from '../aiPoints';
+import {
+    POINTS_SCHEMA,
+    cleanPointText,
+    extractPointsAi,
+    looksCutOff,
+    quickReasonOf,
+    quickResult,
+    validatePoints,
+} from '../aiPoints';
 import { extractPointsQuick } from '../quickPoints';
 
 const source: NoteSource = {
@@ -428,5 +437,68 @@ describe('extractPointsAi', () => {
         await expect(extractPointsAi(base, source, page, controller.signal)).rejects.toMatchObject({
             code: 'aborted',
         });
+    });
+});
+
+describe('quickReasonOf', () => {
+    it('keeps the code of the AI errors that mean a page could not be read by the model', () => {
+        expect(quickReasonOf(new AiError('too-large', 'Too much input'))).toBe('too-large');
+        expect(quickReasonOf(new AiError('timeout', 'took too long'))).toBe('timeout');
+        expect(quickReasonOf(new AiError('bad-output', 'not JSON'))).toBe('bad-output');
+    });
+
+    it('gives no-model for a browser or model that cannot run the AI', () => {
+        expect(quickReasonOf(new AiError('unsupported', "This browser doesn't have built-in AI"))).toBe('no-model');
+        expect(quickReasonOf(new AiError('unavailable', 'device too small'))).toBe('no-model');
+        expect(quickReasonOf(new AiError('download-failed', 'no user activation'))).toBe('no-model');
+    });
+
+    it('gives failed for any other error, and never reads its message', () => {
+        expect(quickReasonOf(new Error('https://secret.example/page text'))).toBe('failed');
+        expect(quickReasonOf('a string')).toBe('failed');
+        expect(quickReasonOf(new AiError('aborted', 'Cancelled'))).toBe('failed');
+    });
+});
+
+describe('extractPointsAi: why the quick view was used', () => {
+    it('gives too-large when the input is too large twice', async () => {
+        const { base } = baseWith(() => answering(QUOTA, QUOTA));
+        const result = await extractPointsAi(base, source, page, new AbortController().signal);
+        expect(result).toMatchObject({ mode: 'quick', quickReason: 'too-large' });
+    });
+
+    it('gives timeout when the model takes too long', async () => {
+        const { base } = baseWith(() => answering(new AiError('timeout', 'The on-device model took too long')));
+        const result = await extractPointsAi(base, source, page, new AbortController().signal);
+        expect(result).toMatchObject({ mode: 'quick', quickReason: 'timeout' });
+    });
+
+    it('gives bad-output when every model point is bad', async () => {
+        const { base } = baseWith(() => answering(json([UNGROUNDED]), json([UNGROUNDED])));
+        const result = await extractPointsAi(base, source, page, new AbortController().signal);
+        expect(result).toMatchObject({ mode: 'quick', quickReason: 'bad-output' });
+    });
+
+    it('gives no-model when the browser cannot clone a session', async () => {
+        const result = await extractPointsAi(session(), source, page, new AbortController().signal);
+        expect(result).toMatchObject({ mode: 'quick', quickReason: 'no-model' });
+    });
+
+    it('gives failed when the clone fails with a plain error', async () => {
+        const failing = session({ clone: vi.fn().mockRejectedValue(new Error('no memory')) });
+        const result = await extractPointsAi(failing, source, page, new AbortController().signal);
+        expect(result).toMatchObject({ mode: 'quick', quickReason: 'failed' });
+    });
+
+    it('sets no reason on an AI result, nor on a quick view with no failure', async () => {
+        const ai = await extractPointsAi(
+            baseWith(() => answering(json([GOOD]))).base,
+            source,
+            page,
+            new AbortController().signal
+        );
+        expect(ai).not.toHaveProperty('quickReason');
+        expect(quickResult(source, page)).not.toHaveProperty('quickReason');
+        expect(quickResult(source, page, 'timeout')).toMatchObject({ quickReason: 'timeout' });
     });
 });

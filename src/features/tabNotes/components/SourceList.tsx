@@ -1,7 +1,7 @@
 // The Sources of the Combined review (spec §9): one line per source that the note will cite, with Open and Remove source.
 // The By tab review shows the same actions on each source card instead.
 import React from 'react';
-import { QUICK_VIEW_LABEL } from '../constants';
+import { QUICK_VIEW_LABEL, quickReasonText } from '../constants';
 import { NoteSource } from '../types';
 import { hostOf } from '../utils/studyNote';
 
@@ -24,6 +24,11 @@ const SourceList: React.FC<SourceListProps> = ({ sources, onOpen, onRemoveSource
                         <span className="tabnotes-pick-title">{title}</span>
                         {host && <span className="tabnotes-host">{host}</span>}
                         {source.mode === 'quick' && <span className="tabnotes-tag">{QUICK_VIEW_LABEL}</span>}
+                        {source.mode === 'quick' && source.quickReason && (
+                            <span className="tabnotes-muted" title={quickReasonText(source.quickReason)}>
+                                {quickReasonText(source.quickReason)}
+                            </span>
+                        )}
                         <span className="tabnotes-card-actions">
                             <button
                                 type="button"

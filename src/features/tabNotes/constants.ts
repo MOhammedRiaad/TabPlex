@@ -1,4 +1,5 @@
 // Limits, thresholds and word lists for "Summarize open tabs into a note". Pure data, safe to import anywhere in the UI.
+import type { QuickReason } from './types';
 
 /** Characters readPage collects from one page (the function receives this as an argument) */
 export const PAGE_READ_CHAR_CAP = 60_000;
@@ -449,6 +450,15 @@ export const STOPWORDS: ReadonlySet<string> = new Set([
 export const STUDY_NOTE_TITLE = 'Study notes';
 /** Plain-text labels in the note's Sources list (spec §10.1, §13) */
 export const QUICK_VIEW_LABEL = 'quick view';
+/** Why a quick view happened, in words: shown next to the quick view tag and after it in the Sources list */
+const QUICK_REASON_TEXT: Record<QuickReason, string> = {
+    'too-large': 'page too long for the model',
+    timeout: 'the model took too long',
+    'bad-output': "the model's answer was unusable",
+    'no-model': "the model isn't available",
+    failed: 'the model failed',
+};
+export const quickReasonText = (reason: QuickReason): string => QUICK_REASON_TEXT[reason];
 export const LONG_PAGE_LABEL = 'first part of a long page';
 export const NOT_ENGLISH_LABEL = 'Not in English: points may be weaker';
 /** A section for a read page that produced no points */

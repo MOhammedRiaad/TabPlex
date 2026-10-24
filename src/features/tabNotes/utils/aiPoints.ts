@@ -13,7 +13,7 @@ import {
     TAB_POINTS_TIMEOUT_MS,
     TOPIC_HINT_MAX_CHARS,
 } from '../constants';
-import { CleanPage, KeyPoint, NoteSource } from '../types';
+import { CleanPage, KeyPoint, NoteSource, QuickReason } from '../types';
 import { clipText, extractPointsQuick, pageTextOf } from './quickPoints';
 import { numbersIn, support } from './textSimilarity';
 
@@ -59,6 +59,36 @@ export interface PointsResult {
     truncated: boolean;
     /** 'quick' when the model was not used for this page: the points are the quick view's */
     mode: 'ai' | 'quick';
+    /** Set only with mode 'quick' when the model failed or could not start (see quickReasonOf) */
+    quickReason?: QuickReason;
+}
+
+/**
+ * The code for why the model was not used for a page. Only the code is kept: never the error message, page text or URL.
+ * 'no-model' covers a browser without the API, a model that is unavailable, a failed download and a browser that can't
+ * clone a session.
+ */
+export function quickReasonOf(error: unknown): QuickReason {
+    if (isAiError(error, 'too-large')) return 'too-large';
+    if (isAiError(error, 'timeout')) return 'timeout';
+    if (isAiError(error, 'bad-output')) return 'bad-output';
+    if (isAiError(error, 'unsupported') || isAiError(error, 'unavailable') || isAiError(error, 'download-failed')) {
+        return 'no-model';
+    }
+    return 'failed';
+}
+
+/**
+ * The quick view of one page. `quickReason` is given only when the model was asked for and failed or could not start;
+ * a quick view the user chose has none.
+ */
+export function quickResult(source: NoteSource, page: CleanPage, quickReason?: QuickReason): PointsResult {
+    return {
+        points: extractPointsQuick(source, page),
+        truncated: page.truncated,
+        mode: 'quick',
+        ...(quickReason ? { quickReason } : {}),
+    };
 }
 
 /**
@@ -168,12 +198,6 @@ export async function extractPointsAi(
 ): Promise<PointsResult> {
     if (signal.aborted) throw new AiError('aborted', 'Cancelled');
 
-    const quick = (): PointsResult => ({
-        points: extractPointsQuick(source, page),
-        truncated: page.truncated,
-        mode: 'quick',
-    });
-
     const units = promptUnitsOf(page);
     const totalParagraphs = units.filter(unit => unit.paragraph).length;
     const header = `Page: ${describeTabForAi({ title: source.title, url: source.url })}`;
@@ -218,7 +242,7 @@ export async function extractPointsAi(
         return { points, truncated: result.truncated || page.truncated, mode: 'ai' };
     } catch (error) {
         if (signal.aborted || isAiError(error, 'aborted')) throw new AiError('aborted', 'Cancelled');
-        return quick();
+        return quickResult(source, page, quickReasonOf(error));
     } finally {
         session?.destroy();
     }

@@ -6,13 +6,22 @@ import { useBoardStore } from '../../../store/boardStore';
 import { generateNoteId } from '../../../utils/idGenerator';
 import { AiSession, aiErrorMessage, createSession, isAiError } from '../../ai/utils/promptApi';
 import { AiError } from '../../ai/types';
-import { POINTS_SYSTEM, extractPointsAi } from '../utils/aiPoints';
+import { POINTS_SYSTEM, extractPointsAi, quickResult } from '../utils/aiPoints';
 import { groupTopics } from '../utils/groupTopics';
 import { cleanPage } from '../utils/pageText';
-import { extractPointsQuick } from '../utils/quickPoints';
 import { PageReadFailure, snapshotTab } from '../utils/readPage';
 import { buildStudyNote, hostOf, resolveStudyNoteTitle } from '../utils/studyNote';
-import { KeyPoint, NoteSource, ReadableTab, RunTab, StudyNoteDraft, StudyNoteView, TabRunState, Topic } from '../types';
+import {
+    KeyPoint,
+    NoteSource,
+    QuickReason,
+    ReadableTab,
+    RunTab,
+    StudyNoteDraft,
+    StudyNoteView,
+    TabRunState,
+    Topic,
+} from '../types';
 
 export type TabNotesStatus = 'idle' | 'running' | 'done' | 'cancelled';
 
@@ -160,7 +169,8 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
         entry: RunTab,
         base: AiSession | null,
         abort: AbortController,
-        total: number
+        total: number,
+        runReason: QuickReason | undefined
     ): Promise<void> => {
         const { tab, ref, state: before } = entry;
         const verb = base ? 'Reading and summarizing' : 'Reading';
@@ -183,8 +193,13 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
             };
             const found = base
                 ? await extractPointsAi(base, source, page, abort.signal)
-                : { points: extractPointsQuick(source, page), truncated: page.truncated, mode: 'quick' as const };
-            const finished: NoteSource = { ...source, mode: found.mode, truncated: found.truncated };
+                : quickResult(source, page, runReason);
+            const finished: NoteSource = {
+                ...source,
+                mode: found.mode,
+                truncated: found.truncated,
+                ...(found.quickReason ? { quickReason: found.quickReason } : {}),
+            };
             updateRun(abort, state => ({
                 sources: [...state.sources.filter(s => s.ref !== ref), finished].sort((a, b) => a.ref - b.ref),
                 points: [...state.points.filter(p => p.sourceRef !== ref), ...found.points].sort(
@@ -239,9 +254,11 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
                 }
             }
             updateRun(abort, { mode: base ? 'ai' : 'quick', downloadProgress: null });
+            // The model was asked for but could not start: every page of this run is a quick view for that reason
+            const runReason: QuickReason | undefined = sessions && !base ? 'no-model' : undefined;
             for (const entry of entries) {
                 if (abort.signal.aborted) break;
-                await readTab(entry, base, abort, total);
+                await readTab(entry, base, abort, total, runReason);
             }
         };
 

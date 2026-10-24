@@ -2,7 +2,7 @@
 // editable, and removing a point or the source only changes what the note will contain (spec §9).
 import React from 'react';
 import { KeyPoint, NoteSource } from '../types';
-import { NO_POINTS_LINE, QUICK_VIEW_LABEL } from '../constants';
+import { NO_POINTS_LINE, QUICK_VIEW_LABEL, quickReasonText } from '../constants';
 import { hostOf } from '../utils/studyNote';
 
 interface SourceCardProps {
@@ -27,6 +27,11 @@ const SourceCard: React.FC<SourceCardProps> = ({ source, points, onEdit, onRemov
                 </h3>
                 {host && <span className="tabnotes-host">{host}</span>}
                 {source.mode === 'quick' && <span className="tabnotes-tag">{QUICK_VIEW_LABEL}</span>}
+                {source.mode === 'quick' && source.quickReason && (
+                    <span className="tabnotes-muted" title={quickReasonText(source.quickReason)}>
+                        {quickReasonText(source.quickReason)}
+                    </span>
+                )}
                 <span className="tabnotes-card-actions">
                     <button
                         type="button"

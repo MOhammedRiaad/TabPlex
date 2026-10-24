@@ -217,6 +217,43 @@ describe('starting a run', () => {
         expect(state().sources[0].mode).toBe('quick');
     });
 
+    it('copies the reason of a failed page onto its source, and keeps the other sources AI', async () => {
+        let calls = 0;
+        stubModel(async () => {
+            calls += 1;
+            if (calls === 1) throw new AiError('timeout', 'The on-device model took too long');
+            return answer();
+        });
+        actions().start([readable(1, URL_A), readable(2, URL_B)], true);
+        await runEnded();
+
+        expect(state().sources.map(s => [s.ref, s.mode, s.quickReason])).toEqual([
+            [1, 'quick', 'timeout'],
+            [2, 'ai', undefined],
+        ]);
+        expect(state().sources[1]).not.toHaveProperty('quickReason');
+    });
+
+    it('gives every source the no-model reason when the model could not start', async () => {
+        vi.stubGlobal('LanguageModel', {
+            create: vi.fn(() => Promise.reject(new Error('no user activation'))),
+            availability: vi.fn(async () => 'downloadable'),
+        });
+        actions().start([readable(1, URL_A), readable(2, URL_B)], true);
+        await runEnded();
+
+        expect(state().sources.map(s => s.quickReason)).toEqual(['no-model', 'no-model']);
+    });
+
+    it('sets no reason on a quick view the user chose', async () => {
+        stubModel();
+        actions().start([readable(1, URL_A)], false);
+        await runEnded();
+
+        expect(state().sources[0]).toMatchObject({ mode: 'quick' });
+        expect(state().sources[0]).not.toHaveProperty('quickReason');
+    });
+
     it('ignores a second start while a run is going', async () => {
         stubModel(hangPrompt);
         actions().start([readable(1, URL_A)], true);

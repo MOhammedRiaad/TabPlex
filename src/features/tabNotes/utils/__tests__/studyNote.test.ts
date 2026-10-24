@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { parseMarkdownToHtml } from '../../../notes/components/NoteCard';
 import { parseMarkdown } from '../../../ui/components/MarkdownEditor';
-import { KeyPoint, NoteSource, StudyNoteDraft, Topic } from '../../types';
+import { quickReasonText } from '../../constants';
+import { KeyPoint, NoteSource, QuickReason, StudyNoteDraft, Topic } from '../../types';
 import { buildStudyNote, defaultStudyNoteTitle, hostOf, linkUrl, safeInline } from '../studyNote';
 
 const DATE = new Date(2026, 9, 24);
@@ -166,6 +167,29 @@ describe('buildStudyNote (By tab)', () => {
         );
         expect(note.indexOf('## First')).toBeLessThan(note.indexOf('## Second'));
         expect(note).not.toContain('removed page');
+    });
+
+    it('adds the reason after quick view in the Sources line only when the model failed', () => {
+        const note = buildStudyNote(
+            draftOf(
+                [source(1, { mode: 'quick', quickReason: 'too-large' }), source(2, { mode: 'quick' })],
+                [point(1, 'A point.'), point(2, 'Another point.')]
+            ),
+            { date: DATE }
+        );
+        const lines = note.split('\n');
+        expect(lines[lines.length - 2]).toBe(
+            '- [1] [Page 1](https://example.com/p1) · example.com · quick view (page too long for the model)'
+        );
+        expect(lines[lines.length - 1]).toBe('- [2] [Page 2](https://example.com/p2) · example.com · quick view');
+    });
+
+    it('writes each reason as plain text that the note cannot misread', () => {
+        const reasons: QuickReason[] = ['too-large', 'timeout', 'bad-output', 'no-model', 'failed'];
+        for (const reason of reasons) {
+            const text = quickReasonText(reason);
+            expect(safeInline(text)).toBe(text);
+        }
     });
 
     it('labels quick, long and non-English sources in the Sources list', () => {

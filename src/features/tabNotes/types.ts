@@ -2,6 +2,12 @@
 
 export type UnreadableReason = 'pdf' | 'asleep' | 'loading' | 'blocked-site';
 
+/**
+ * Why a page is a quick view although the model was asked for: a code only, never page text, URLs or error messages.
+ * 'no-model' also covers a run whose model could not start.
+ */
+export type QuickReason = 'too-large' | 'timeout' | 'bad-output' | 'no-model' | 'failed';
+
 export interface ReadableTab {
     id: number;
     windowId: number;
@@ -70,6 +76,8 @@ export interface NoteSource {
     url: string;
     /** 'quick' when the model was not used for this page (or failed) */
     mode: 'ai' | 'quick';
+    /** Set only when mode is 'quick' because the model failed or could not start; a quick view the user chose has none */
+    quickReason?: QuickReason;
     truncated: boolean;
     notEnglish: boolean;
 }

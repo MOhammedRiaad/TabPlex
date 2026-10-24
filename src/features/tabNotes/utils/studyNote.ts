@@ -1,7 +1,14 @@
 // The study note's Markdown (spec §10). Pure: the store creates the note from it and the tests render it through both
 // Markdown renderers. Only the links written here, from source URLs, can exist in the note. Page and model text goes
 // through safeInline first, so it can't become a heading, a list, a quote or a link.
-import { LONG_PAGE_LABEL, NOT_ENGLISH_LABEL, NO_POINTS_LINE, QUICK_VIEW_LABEL, STUDY_NOTE_TITLE } from '../constants';
+import {
+    LONG_PAGE_LABEL,
+    NOT_ENGLISH_LABEL,
+    NO_POINTS_LINE,
+    QUICK_VIEW_LABEL,
+    STUDY_NOTE_TITLE,
+    quickReasonText,
+} from '../constants';
 import { NoteSource, StudyNoteDraft } from '../types';
 import { sourcesOf } from './groupTopics';
 
@@ -123,7 +130,11 @@ function sourceLine(source: NoteSource): string {
     const parts = [`[${source.ref}] ${href ? `[${label}](${href})` : label}`];
     const host = hostOf(source.url);
     if (host) parts.push(host);
-    if (source.mode === 'quick') parts.push(QUICK_VIEW_LABEL);
+    if (source.mode === 'quick') {
+        parts.push(
+            source.quickReason ? `${QUICK_VIEW_LABEL} (${quickReasonText(source.quickReason)})` : QUICK_VIEW_LABEL
+        );
+    }
     if (source.truncated) parts.push(LONG_PAGE_LABEL);
     if (source.notEnglish) parts.push(NOT_ENGLISH_LABEL);
     return `- ${parts.join(' · ')}`;
