@@ -176,8 +176,8 @@ const TabNotesPanel: React.FC = () => {
     );
     const view = draft.view;
     const canCombine = combined.length > 0;
-    // While a run is going the cards show as they arrive (By tab); the topics are shown once the run has finished
-    const showCombined = !running && view === 'combined';
+    // The review fills in live: topics show as soon as the word grouping exists (view is 'byTab' until then)
+    const showCombined = view === 'combined';
     const failures = failuresOf(run.tabs);
     const notRead = run.tabs.filter(entry => entry.state === 'not-read');
     const deniedNow = denied.filter(origin => missing.includes(origin));

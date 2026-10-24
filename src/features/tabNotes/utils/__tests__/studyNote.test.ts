@@ -509,3 +509,70 @@ describe('buildStudyNote (Combined)', () => {
         expect(root.querySelectorAll('a')[0].getAttribute('href')).toBe('https://example.com/a%5F%28b%29');
     });
 });
+
+describe('the Combined disclaimer, by what was used (spec §10.1)', () => {
+    const AI_COMBINED =
+        "_From 2 tabs, combined by topic by your browser's built-in AI on this device. It can be wrong: check the sources before relying on it._";
+    const AI_SOME_WORDS =
+        "_From 2 tabs, combined by topic by your browser's built-in AI on this device. Some topics were grouped by shared words. It can be wrong: check the sources before relying on it._";
+    const AI_WORDS =
+        "_From 2 tabs, summarized by your browser's built-in AI on this device. Topics were grouped by shared words. It can be wrong: check the sources before relying on it._";
+    const QUICK =
+        '_Quick view of 2 tabs: sentences taken from the pages and grouped by shared words, without AI. Check the sources for the full picture._';
+
+    const sources: NoteSource[] = [source(1, { title: 'Page 1' }), source(2, { title: 'Page 2' })];
+    const points: KeyPoint[] = [
+        point(1, 'Resolvers keep each answer until its TTL runs out.'),
+        point(2, 'Resolvers keep each answer until its TTL runs out.'),
+        point(1, 'Negative answers are cached too.', 2),
+        point(2, 'Negative answers stay in the cache for a while.', 2),
+    ];
+    /** A shared topic whose one bullet cites both pages; `combinedBy` is what the review shows for it */
+    const sharedTopic = (id: string, combinedBy: 'ai' | 'words'): Topic => ({
+        id,
+        heading: `Topic ${id}`,
+        kind: 'shared',
+        combinedBy,
+        bullets: [
+            {
+                id: `b${id}`,
+                text: 'Resolvers keep each answer until its TTL runs out.',
+                pointIds: ['p1-1', 'p2-1'],
+                origin: combinedBy === 'ai' ? 'ai' : 'point',
+                edited: false,
+            },
+        ],
+        conflicts: [],
+    });
+    const combinedWith = (view: StudyNoteDraft['view'], topics: Topic[], list: NoteSource[] = sources): string =>
+        buildStudyNote({ view, sources: list, points, combined: topics }, { date: DATE }).split('\n\n')[1];
+
+    it('says combined by topic when every shared topic was combined by the AI, with AI points', () => {
+        expect(combinedWith('combined', [sharedTopic('t1', 'ai'), sharedTopic('t2', 'ai')])).toBe(AI_COMBINED);
+    });
+
+    it('adds that some topics were grouped by shared words when only some were combined by the AI', () => {
+        expect(combinedWith('combined', [sharedTopic('t1', 'ai'), sharedTopic('t2', 'words')])).toBe(AI_SOME_WORDS);
+    });
+
+    it('does not claim the AI combined anything when every topic is grouped by words, with AI points', () => {
+        expect(combinedWith('combined', [sharedTopic('t1', 'words')])).toBe(AI_WORDS);
+        expect(combinedWith('combined', [sharedTopic('t1', 'words')])).not.toContain('combined by topic');
+    });
+
+    it('uses the quick line with quick points, whatever the topics say', () => {
+        const quick = sources.map(item => ({ ...item, mode: 'quick' as const }));
+        expect(combinedWith('combined', [sharedTopic('t1', 'words')], quick)).toBe(QUICK);
+    });
+
+    it('never says combined by topic in the By tab layout', () => {
+        const note = buildStudyNote(
+            { view: 'byTab', sources, points, combined: [sharedTopic('t1', 'ai')] },
+            { date: DATE }
+        );
+        expect(note.split('\n\n')[1]).toBe(
+            "_From 2 tabs, summarized by your browser's built-in AI on this device. It can be wrong: check the sources before relying on it._"
+        );
+        expect(note).not.toContain('combined by topic');
+    });
+});

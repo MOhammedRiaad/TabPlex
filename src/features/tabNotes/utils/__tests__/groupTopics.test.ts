@@ -578,3 +578,34 @@ describe('groupTopics on the E2E pages (the quick view of e2e/pages)', () => {
         expect(groupTopics(E2E_POINTS, E2E_SOURCES)).toEqual(topics);
     });
 });
+
+describe('groupTopics: a shared topic name never joins points by itself', () => {
+    // Two different tags that a model named the same ("OOP"), with nothing else in common
+    const canonical = new Map([
+        ['Classes', 'OOP'],
+        ['Inheritance', 'OOP'],
+    ]);
+    const unrelated: KeyPoint[] = [
+        { id: 'p1-1', sourceRef: 1, text: 'Alpha stores widgets in the warehouse.', topicHint: 'Classes' },
+        { id: 'p2-1', sourceRef: 2, text: 'Zebras migrate across the savanna each year.', topicHint: 'Inheritance' },
+    ];
+
+    it('does not make a shared topic from two points that share no words, however the name is shared', () => {
+        const topics = groupTopics(unrelated, [source(1), source(2)], canonical);
+        expect(topics.filter(topic => topic.kind === 'shared')).toEqual([]);
+    });
+
+    it('still joins two points with the same name when they share words', () => {
+        const related: KeyPoint[] = [
+            { id: 'p1-1', sourceRef: 1, text: 'Resolvers cache each answer for its TTL.', topicHint: 'Classes' },
+            {
+                id: 'p2-1',
+                sourceRef: 2,
+                text: 'Each resolver cache keeps the answer for its TTL.',
+                topicHint: 'Inheritance',
+            },
+        ];
+        const topics = groupTopics(related, [source(1), source(2)], canonical);
+        expect(topics.filter(topic => topic.kind === 'shared')).toHaveLength(1);
+    });
+});

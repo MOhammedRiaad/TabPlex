@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useBoardStore } from '../../../../store/boardStore';
 import { AiError } from '../../../ai/types';
-import { extractPointsAi } from '../../utils/aiPoints';
+import { POINTS_SYSTEM, extractPointsAi } from '../../utils/aiPoints';
+import { COMBINE_SYSTEM, TOPICS_SYSTEM } from '../../utils/aiTopics';
+import { sourcesOf } from '../../utils/groupTopics';
 import { PageReadFailure, snapshotTab } from '../../utils/readPage';
-import { PageSnapshot, ReadableTab } from '../../types';
+import { PageSnapshot, ReadableTab, Topic } from '../../types';
 import { createNoteFromDraft, draftOf, failuresOf, useTabNotesStore } from '../tabNotesStore';
 
 vi.mock('../../utils/readPage', async importOriginal => {
@@ -74,24 +76,64 @@ function hang<T = string>(signal?: AbortSignal): Promise<T> {
     });
 }
 
-/** Makes a fake model: the base session is created in the click, and each page gets a clone that runs `prompt` */
-function stubModel(prompt: Prompt = answerPrompt, createGate?: Promise<void>) {
+type SessionKind = 'points' | 'topics' | 'combine';
+
+const KIND_OF_SYSTEM: Record<string, SessionKind> = {
+    [POINTS_SYSTEM]: 'points',
+    [TOPICS_SYSTEM]: 'topics',
+    [COMBINE_SYSTEM]: 'combine',
+};
+
+interface StubOptions {
+    /** Holds every session start until the test resolves it */
+    createGate?: Promise<void>;
+    /** The answers of the topic-names and combine calls. Defaults: no groups, and an answer the checks reject. */
+    topicsPrompt?: Prompt;
+    combinePrompt?: Prompt;
+    /** Makes the session of this kind fail to start (no user activation, no download) */
+    failCreate?: SessionKind;
+}
+
+const noGroupsPrompt: Prompt = async () => JSON.stringify({ groups: [] });
+
+/**
+ * Makes a fake model. Each base session (one per system prompt, as in the run) is created in the click; `clones` holds
+ * the clones of the points session, `topicClones` and `combineClones` those of the other two.
+ */
+function stubModel(prompt: Prompt = answerPrompt, options: StubOptions = {}) {
     const clones: FakeSession[] = [];
-    const base: FakeSession = {
+    const topicClones: FakeSession[] = [];
+    const combineClones: FakeSession[] = [];
+    const baseWith = (answer: Prompt, sink: FakeSession[]): FakeSession => ({
         prompt: vi.fn(),
         destroy: vi.fn(),
         clone: vi.fn(async () => {
-            const clone: FakeSession = { prompt: vi.fn(prompt), destroy: vi.fn() };
-            clones.push(clone);
+            const clone: FakeSession = { prompt: vi.fn(answer), destroy: vi.fn() };
+            sink.push(clone);
             return clone;
         }),
+    });
+    const bases: Record<SessionKind, FakeSession> = {
+        points: baseWith(prompt, clones),
+        topics: baseWith(options.topicsPrompt ?? noGroupsPrompt, topicClones),
+        combine: baseWith(options.combinePrompt ?? answerPrompt, combineClones),
     };
-    const create = vi.fn(async () => {
-        await createGate;
-        return base;
+    const create = vi.fn(async (createOptions: { initialPrompts: { content: string }[] }) => {
+        const kind = KIND_OF_SYSTEM[createOptions.initialPrompts[0].content];
+        if (kind === options.failCreate) throw new Error('no user activation');
+        await options.createGate;
+        return bases[kind];
     });
     vi.stubGlobal('LanguageModel', { create, availability: vi.fn(async () => 'available') });
-    return { base, create, clones };
+    return {
+        base: bases.points,
+        topics: bases.topics,
+        combine: bases.combine,
+        create,
+        clones,
+        topicClones,
+        combineClones,
+    };
 }
 
 /** Waits until the run has ended (done or cancelled) */
@@ -118,35 +160,41 @@ afterEach(() => {
 });
 
 describe('starting a run', () => {
-    it('creates the model session inside the click, before any await', async () => {
+    it('creates the three base sessions inside the click, before any await, each with its own system prompt', async () => {
         const { create } = stubModel();
         actions().start([readable(1, URL_A)], true);
 
-        expect(create).toHaveBeenCalledTimes(1);
+        expect(create).toHaveBeenCalledTimes(3);
+        expect(create.mock.calls.map(call => call[0].initialPrompts[0].content)).toEqual([
+            POINTS_SYSTEM,
+            TOPICS_SYSTEM,
+            COMBINE_SYSTEM,
+        ]);
         expect(snapshotTab).not.toHaveBeenCalled();
         expect(state().status).toBe('running');
         expect(state().mode).toBe('ai');
         await runEnded();
     });
 
-    it('creates the retry session inside the retry click, before any await', async () => {
+    it('creates only the points session for the retry, inside the retry click, before any await', async () => {
         const { create } = stubModel();
         vi.mocked(snapshotTab).mockRejectedValueOnce(new PageReadFailure('closed', 'This tab was closed.'));
         actions().start([readable(1, URL_A)], true);
         await runEnded();
-        expect(create).toHaveBeenCalledTimes(1);
+        expect(create).toHaveBeenCalledTimes(3);
 
         actions().retryTab(1);
-        expect(create).toHaveBeenCalledTimes(2);
+        expect(create).toHaveBeenCalledTimes(4);
+        expect(create.mock.calls[3][0].initialPrompts[0].content).toBe(POINTS_SYSTEM);
         await runEnded();
     });
 
     it('reads a run with the model: sources, points, and every session destroyed', async () => {
-        const { base, create, clones } = stubModel();
+        const { base, topics, combine, create, clones, combineClones } = stubModel();
         actions().start([readable(1, URL_A), readable(2, URL_B), readable(3, URL_C)], true);
         await runEnded();
 
-        expect(create).toHaveBeenCalledTimes(1);
+        expect(create).toHaveBeenCalledTimes(3);
         expect(state().status).toBe('done');
         expect(state().sources.map(s => [s.ref, s.tabId, s.mode])).toEqual([
             [1, 1, 'ai'],
@@ -159,10 +207,14 @@ describe('starting a run', () => {
             ['p3-1', 3, POINT_TEXT],
         ]);
         expect(state().tabs.map(t => t.state)).toEqual(['read', 'read', 'read']);
-        // Each page works on its own clone, and every clone and the base are destroyed
+        // Each page works on its own clone, and every clone and the base sessions are destroyed. The three shared
+        // points of the pages make one shared topic, which the combine call works on (its answer is rejected here).
         expect(clones).toHaveLength(3);
-        for (const clone of clones) expect(clone.destroy).toHaveBeenCalledTimes(1);
+        expect(combineClones).toHaveLength(1);
+        for (const clone of [...clones, ...combineClones]) expect(clone.destroy).toHaveBeenCalledTimes(1);
         expect(base.destroy).toHaveBeenCalledTimes(1);
+        expect(topics.destroy).toHaveBeenCalledTimes(1);
+        expect(combine.destroy).toHaveBeenCalledTimes(1);
         expect(state().progress).toBe('');
         expect(state().abort).toBeNull();
     });
@@ -267,12 +319,12 @@ describe('starting a run', () => {
     it('shows the model download while the model starts', async () => {
         const monitorTarget = new EventTarget();
         const base: FakeSession = { prompt: vi.fn(), destroy: vi.fn(), clone: vi.fn() };
-        let finish: () => void = () => undefined;
+        const finishers: (() => void)[] = [];
         const create = vi.fn(
             (options: { monitor: (target: EventTarget) => void }) =>
                 new Promise<FakeSession>(resolve => {
                     options.monitor(monitorTarget);
-                    finish = () => resolve(base);
+                    finishers.push(() => resolve(base));
                 })
         );
         vi.stubGlobal('LanguageModel', { create, availability: vi.fn(async () => 'downloadable') });
@@ -282,7 +334,9 @@ describe('starting a run', () => {
 
         expect(state().downloadProgress).toBe(0.5);
         expect(state().progress).toBe('Downloading the on-device model…');
-        finish();
+        // All three sessions start (the download is the points model's)
+        expect(finishers).toHaveLength(3);
+        finishers.forEach(finish => finish());
         await runEnded();
         expect(state().downloadProgress).toBeNull();
     });
@@ -291,7 +345,7 @@ describe('starting a run', () => {
 describe('cancelling', () => {
     it('keeps finished sources and marks the rest "not read", not failed', async () => {
         let calls = 0;
-        const { base, clones } = stubModel(async (_input, options) => {
+        const { base, topics, combine, clones } = stubModel(async (_input, options) => {
             calls += 1;
             if (calls === 1) return answer();
             actions().cancel();
@@ -306,6 +360,8 @@ describe('cancelling', () => {
         expect(state().tabs.map(t => t.state)).toEqual(['read', 'not-read', 'not-read']);
         expect(failuresOf(state().tabs)).toEqual([]);
         expect(base.destroy).toHaveBeenCalledTimes(1);
+        expect(topics.destroy).toHaveBeenCalledTimes(1);
+        expect(combine.destroy).toHaveBeenCalledTimes(1);
         for (const clone of clones) expect(clone.destroy).toHaveBeenCalledTimes(1);
     });
 
@@ -331,7 +387,7 @@ describe('cancelling', () => {
         const gate = new Promise<void>(resolve => {
             finishCreate = resolve;
         });
-        const { base } = stubModel(answerPrompt, gate);
+        const { base, topics, combine } = stubModel(answerPrompt, { createGate: gate });
         actions().start([readable(1, URL_A)], true);
         actions().cancel();
         await runEnded();
@@ -342,16 +398,20 @@ describe('cancelling', () => {
 
         finishCreate();
         await vi.waitFor(() => expect(base.destroy).toHaveBeenCalledTimes(1));
+        expect(topics.destroy).toHaveBeenCalledTimes(1);
+        expect(combine.destroy).toHaveBeenCalledTimes(1);
     });
 
     it('closing the dialog ends the run, clears the state and drops late results', async () => {
-        const { base } = stubModel(hangPrompt);
+        const { base, topics, combine } = stubModel(hangPrompt);
         actions().start([readable(1, URL_A)], true);
         await vi.waitFor(() => expect(state().tabs[0]?.state).toBe('reading'));
         actions().close();
 
         expect(state()).toMatchObject({ status: 'idle', tabs: [], sources: [], points: [], abort: null });
         await vi.waitFor(() => expect(base.destroy).toHaveBeenCalledTimes(1));
+        await vi.waitFor(() => expect(topics.destroy).toHaveBeenCalledTimes(1));
+        expect(combine.destroy).toHaveBeenCalledTimes(1);
         expect(state()).toMatchObject({ status: 'idle', sources: [], points: [] });
     });
 
@@ -412,7 +472,7 @@ describe('failures and retries', () => {
             1: () => new PageReadFailure('no-access', "TabPlex doesn't have access to this site."),
             2: () => new PageReadFailure('pdf', "Can't read PDFs yet."),
         });
-        const { base } = stubModel();
+        const { base, topics, combine } = stubModel();
         actions().start([readable(1, URL_A), readable(2, URL_B)], true);
         await runEnded();
 
@@ -420,6 +480,8 @@ describe('failures and retries', () => {
         expect(state().sources).toEqual([]);
         expect(failuresOf(state().tabs)).toHaveLength(2);
         expect(base.destroy).toHaveBeenCalledTimes(1);
+        expect(topics.destroy).toHaveBeenCalledTimes(1);
+        expect(combine.destroy).toHaveBeenCalledTimes(1);
     });
 
     it('retry does nothing for a tab that is not failed, for an unknown tab, or while a run is going', async () => {
@@ -564,5 +626,309 @@ describe('the grouping into topics', () => {
 
         expect(draftOf(state()).combined?.[0].bullets[0].text).toBe('Edited: resolvers cache answers for the TTL.');
         expect(state().combined.map(topic => topic.bullets.map(bullet => bullet.pointIds))).toEqual(before);
+    });
+});
+
+describe('the AI topic names and combining', () => {
+    /** Three sentences on different subjects: two of them are on two pages each, so there are two shared topics */
+    const TOPIC_X = 'DNS caching stores answers from resolvers for the time given by the TTL field of each record.';
+    const TOPIC_Y = 'Sourdough bread rises slowly while wild yeast ferments the dough in a warm kitchen.';
+    const TOPIC_Z = 'Bicycle chains need regular oiling to stay quiet and run smoothly on wet roads.';
+    const TOPIC_OF: Record<string, string> = {
+        [TOPIC_X]: 'DNS caching',
+        [TOPIC_Y]: 'Sourdough bread',
+        [TOPIC_Z]: 'Bicycle chains',
+    };
+    const FILLER_ONE = 'The rest of this page is general background that does not repeat the points above at all.';
+    const FILLER_TWO = 'It is here only to fill the page, so that the text is long enough to be read as an article.';
+    /** Page A (ref 1) has all three subjects, page B (ref 2) the bread, page C (ref 3) the DNS caching */
+    const BODIES: Record<string, string[]> = {
+        [URL_A]: [TOPIC_X, TOPIC_Y, TOPIC_Z, FILLER_ONE],
+        [URL_B]: [TOPIC_Y, FILLER_ONE, FILLER_TWO],
+        [URL_C]: [TOPIC_X, FILLER_ONE, FILLER_TWO],
+    };
+
+    /** The points answer: every subject sentence on the page, with its topic name */
+    const pointsFor: Prompt = async input =>
+        JSON.stringify({
+            points: [TOPIC_X, TOPIC_Y, TOPIC_Z]
+                .filter(text => input.includes(text))
+                .map(text => ({ text, topic: TOPIC_OF[text] })),
+        });
+
+    /** Merges the first two points of the topic into one statement (their own text), citing both labels */
+    const mergeFirstTwo: Prompt = async input => {
+        const [first, second] = [...input.matchAll(/^([a-z]+) \(page \d+\): (.*)$/gm)];
+        return JSON.stringify({
+            heading: 'Shared topic',
+            statements: first && second ? [{ text: first[2], from: [first[1], second[1]] }] : [],
+        });
+    };
+
+    /** Each tab is read as the page for its URL; `failing` makes tab 2 fail to read while it is true */
+    function readTopicPages(failing: () => boolean = () => false) {
+        vi.mocked(snapshotTab).mockImplementation(async (tab: ReadableTab): Promise<PageSnapshot> => {
+            if (tab.id === 2 && failing()) throw new PageReadFailure('closed', 'This tab was closed.');
+            return {
+                href: tab.url,
+                contentType: 'text/html',
+                lang: 'en',
+                description: '',
+                truncated: false,
+                blocks: [
+                    { kind: 'heading', level: 2, text: 'Topics' },
+                    ...(BODIES[tab.url] ?? []).map(text => ({ kind: 'text' as const, text })),
+                ],
+            };
+        });
+    }
+
+    const startThree = () =>
+        actions().start(
+            [readable(1, URL_A, 'Page A'), readable(2, URL_B, 'Page B'), readable(3, URL_C, 'Page C')],
+            true
+        );
+    const sharedTopics = (): Topic[] => state().combined.filter(topic => topic.kind === 'shared');
+
+    it('combines each shared topic, cites both pages in its bullet, and destroys every session and clone', async () => {
+        const { base, topics, combine, clones, topicClones, combineClones } = stubModel(pointsFor, {
+            combinePrompt: mergeFirstTwo,
+        });
+        readTopicPages();
+        startThree();
+        await runEnded();
+
+        expect(state().status).toBe('done');
+        expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['ai', 'ai']);
+        const aiBullets = sharedTopics().flatMap(topic => topic.bullets.filter(bullet => bullet.origin === 'ai'));
+        expect(aiBullets.map(bullet => bullet.text)).toEqual(expect.arrayContaining([TOPIC_X, TOPIC_Y]));
+        expect(aiBullets.map(bullet => sourcesOf(bullet.pointIds, state().points))).toEqual(
+            expect.arrayContaining([
+                [1, 3],
+                [1, 2],
+            ])
+        );
+        // The headings and the bullet ids are unique over the whole review
+        const headings = state().combined.map(topic => topic.heading);
+        expect(new Set(headings).size).toBe(headings.length);
+        expect(headings).toContain('Shared topic (2)');
+        const ids = state().combined.flatMap(topic => topic.bullets.map(bullet => bullet.id));
+        expect(new Set(ids).size).toBe(ids.length);
+
+        // One topic-names call (three distinct names), one combine call per shared topic
+        expect(topicClones).toHaveLength(1);
+        expect(combineClones).toHaveLength(2);
+        expect(clones).toHaveLength(3);
+        for (const session of [...clones, ...topicClones, ...combineClones]) {
+            expect(session.destroy).toHaveBeenCalledTimes(1);
+        }
+        expect(base.destroy).toHaveBeenCalledTimes(1);
+        expect(topics.destroy).toHaveBeenCalledTimes(1);
+        expect(combine.destroy).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the steps in turn: finding the shared topics, then each topic being combined', async () => {
+        const seen: string[] = [];
+        stubModel(pointsFor, {
+            topicsPrompt: async input => {
+                seen.push(state().progress);
+                return noGroupsPrompt(input);
+            },
+            combinePrompt: async input => {
+                seen.push(state().progress);
+                return mergeFirstTwo(input);
+            },
+        });
+        readTopicPages();
+        startThree();
+        await runEnded();
+
+        expect(seen).toEqual(['Finding shared topics…', 'Combining topic 1 of 2…', 'Combining topic 2 of 2…']);
+    });
+
+    it('a cancel during the combine keeps the word grouping of the topics not combined yet', async () => {
+        let calls = 0;
+        stubModel(pointsFor, {
+            combinePrompt: async (input, options) => {
+                calls += 1;
+                if (calls === 1) return mergeFirstTwo(input);
+                actions().cancel();
+                return hang(options?.signal);
+            },
+        });
+        readTopicPages();
+        startThree();
+        await runEnded();
+
+        expect(state().status).toBe('cancelled');
+        expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['ai', 'words']);
+        expect(state().sources.map(source => source.ref)).toEqual([1, 2, 3]);
+    });
+
+    it('a cancel during the topic names keeps the word grouping and combines nothing', async () => {
+        const { combineClones } = stubModel(pointsFor, {
+            topicsPrompt: (_input, options) => {
+                actions().cancel();
+                return hang(options?.signal);
+            },
+            combinePrompt: mergeFirstTwo,
+        });
+        readTopicPages();
+        startThree();
+        await runEnded();
+
+        expect(state().status).toBe('cancelled');
+        expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['words', 'words']);
+        expect(combineClones).toHaveLength(0);
+    });
+
+    it.each([
+        ['a timeout', new AiError('timeout', 'The on-device model took too long'), 'timeout'],
+        ['too many points', new AiError('too-large', 'Too much input'), 'too-large'],
+        ['an unusable answer', new Error('model failed'), 'unusable'],
+    ] as const)(
+        'records why a combine failed (%s) on its topic, which stays word grouping, and combines the next',
+        async (_label, failure, note) => {
+            stubModel(pointsFor, {
+                combinePrompt: async input => {
+                    if (input.includes(TOPIC_X)) throw failure;
+                    return mergeFirstTwo(input);
+                },
+            });
+            readTopicPages();
+            startThree();
+            await runEnded();
+
+            const failed = sharedTopics().find(topic => topic.bullets.some(bullet => bullet.text === TOPIC_X));
+            expect(failed).toMatchObject({ combinedBy: 'words', combineNote: note });
+            const combined = sharedTopics().find(topic => topic.combinedBy === 'ai');
+            expect(combined?.combineNote).toBeUndefined();
+        }
+    );
+
+    it('a failed combine on one topic leaves that topic as word grouping and combines the next', async () => {
+        stubModel(pointsFor, {
+            combinePrompt: async input => {
+                if (input.includes(TOPIC_X)) throw new Error('model failed');
+                return mergeFirstTwo(input);
+            },
+        });
+        readTopicPages();
+        startThree();
+        await runEnded();
+
+        expect(state().status).toBe('done');
+        const failed = sharedTopics().find(topic => topic.bullets.some(bullet => bullet.text === TOPIC_X));
+        expect(failed?.combinedBy).toBe('words');
+        expect(sharedTopics().filter(topic => topic.combinedBy === 'ai')).toHaveLength(1);
+    });
+
+    it('a failed topic-names call keeps the word grouping and still combines every shared topic', async () => {
+        const { topicClones } = stubModel(pointsFor, {
+            topicsPrompt: async () => {
+                throw new Error('model failed');
+            },
+            combinePrompt: mergeFirstTwo,
+        });
+        readTopicPages();
+        startThree();
+        await runEnded();
+
+        expect(topicClones).toHaveLength(1);
+        expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['ai', 'ai']);
+    });
+
+    it('a points session that cannot start makes a quick view, and the other two sessions are destroyed', async () => {
+        const { topics, combine, topicClones, combineClones } = stubModel(pointsFor, {
+            failCreate: 'points',
+            combinePrompt: mergeFirstTwo,
+        });
+        readTopicPages();
+        startThree();
+        await runEnded();
+
+        expect(state().mode).toBe('quick');
+        expect(state().modelStatus).toContain('Making a quick view instead.');
+        expect(state().sources.map(source => source.quickReason)).toEqual(['no-model', 'no-model', 'no-model']);
+        expect(sharedTopics().every(topic => topic.combinedBy === 'words')).toBe(true);
+        expect(topicClones).toHaveLength(0);
+        expect(combineClones).toHaveLength(0);
+        await vi.waitFor(() => expect(topics.destroy).toHaveBeenCalledTimes(1));
+        expect(combine.destroy).toHaveBeenCalledTimes(1);
+    });
+
+    it('a topic-names session that cannot start keeps the AI points and combines the shared topics', async () => {
+        stubModel(pointsFor, { failCreate: 'topics', combinePrompt: mergeFirstTwo });
+        readTopicPages();
+        startThree();
+        await runEnded();
+
+        expect(state().mode).toBe('ai');
+        expect(state().modelStatus).toBe('');
+        expect(state().sources.map(source => source.mode)).toEqual(['ai', 'ai', 'ai']);
+        expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['ai', 'ai']);
+    });
+
+    it('a combine session that cannot start keeps the AI points and the word grouping, with the topic names', async () => {
+        const { topicClones } = stubModel(pointsFor, { failCreate: 'combine' });
+        readTopicPages();
+        startThree();
+        await runEnded();
+
+        expect(state().mode).toBe('ai');
+        expect(state().sources.map(source => source.mode)).toEqual(['ai', 'ai', 'ai']);
+        expect(topicClones).toHaveLength(1);
+        expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['words', 'words']);
+    });
+
+    it('with one tab read there is nothing to combine: no topic or combine call, and the sessions are destroyed', async () => {
+        const { topics, combine, topicClones, combineClones } = stubModel(pointsFor, { combinePrompt: mergeFirstTwo });
+        readTopicPages();
+        actions().start([readable(1, URL_A, 'Page A')], true);
+        await runEnded();
+
+        expect(state().mode).toBe('ai');
+        expect(state().combined).toEqual([]);
+        expect(topicClones).toHaveLength(0);
+        expect(combineClones).toHaveLength(0);
+        expect(topics.destroy).toHaveBeenCalledTimes(1);
+        expect(combine.destroy).toHaveBeenCalledTimes(1);
+    });
+
+    it('removing a source after the AI combine says the topics are grouped by words', async () => {
+        stubModel(pointsFor, { combinePrompt: mergeFirstTwo });
+        readTopicPages();
+        startThree();
+        await runEnded();
+        expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['ai', 'ai']);
+
+        // Page C leaves: the DNS caching topic is one source now, and the bread topic is grouped by words again
+        actions().removeSource(3);
+
+        expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['words']);
+        expect(sharedTopics()[0].bullets.map(bullet => bullet.text)).toEqual([TOPIC_Y]);
+        expect(draftOf(state()).combined?.some(topic => topic.combinedBy === 'ai')).toBe(false);
+    });
+
+    it('a retry regroups by words and calls neither the topic names nor the combine model', async () => {
+        let failPageB = true;
+        const { create, topicClones, combineClones } = stubModel(pointsFor, { combinePrompt: mergeFirstTwo });
+        readTopicPages(() => failPageB);
+        startThree();
+        await runEnded();
+
+        expect(state().tabs.map(tab => tab.state)).toEqual(['read', 'failed', 'read']);
+        expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['ai']);
+        expect(combineClones).toHaveLength(1);
+
+        failPageB = false;
+        actions().retryTab(2);
+        await runEnded();
+
+        // Only the points session is started for the retry, and no topic or combine call is made
+        expect(create).toHaveBeenCalledTimes(4);
+        expect(topicClones).toHaveLength(1);
+        expect(combineClones).toHaveLength(1);
+        expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['words', 'words']);
     });
 });

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import TabNotesDialog from '../TabNotesDialog';
 import { useTabNotesStore } from '../../store/tabNotesStore';
@@ -6,7 +6,7 @@ import { useBoardStore } from '../../../../store/boardStore';
 import { useUIActions, useUIStore } from '../../../ui/store/uiStore';
 import { AI_SETTINGS_KEY, DEFAULT_AI_SETTINGS } from '../../../ai/constants';
 import { ChromeMock, fakeChrome, installChromeMock } from '../../../../test/chromeMock';
-import { KeyPoint, NoteSource, PageSnapshot } from '../../types';
+import { KeyPoint, NoteSource, PageSnapshot, Topic } from '../../types';
 import { groupTopics } from '../../utils/groupTopics';
 
 /** Sentences of each test page, registered when the page is "read" so the model stub can find them */
@@ -329,7 +329,7 @@ describe('TabNotesDialog: summarizing', () => {
         openDialog();
         await screen.findByRole('button', { name: 'Summarize 1 tab' });
         await clickReady('Summarize 1 tab');
-        expect(create).toHaveBeenCalledTimes(1);
+        expect(create).toHaveBeenCalledTimes(3);
         await runEnded();
         expect(state().mode).toBe('ai');
     });
@@ -435,7 +435,7 @@ describe('TabNotesDialog: summarizing', () => {
         await screen.findByRole('region', { name: 'Source 2: Beta' });
         await runEnded();
         expect(screen.queryByText('Could not be read')).toBeNull();
-        expect(create).toHaveBeenCalledTimes(2);
+        expect(create).toHaveBeenCalledTimes(4);
     });
 });
 
@@ -762,5 +762,57 @@ describe('TabNotesDialog: the Combined review', () => {
         expect(screen.getByRole('radio', { name: 'By tab' })).toBeChecked();
         expect(screen.getByText("These tabs don't share a topic, so each has its own section.")).toBeInTheDocument();
         expect(screen.getByRole('region', { name: 'Source 3: Gamma' })).toBeInTheDocument();
+    });
+});
+
+describe('TabNotesDialog: the AI steps while the run is going', () => {
+    const alphaSource: NoteSource = {
+        ref: 1,
+        tabId: 1,
+        windowId: 1,
+        title: 'Alpha',
+        url: ALPHA,
+        mode: 'ai',
+        truncated: false,
+        notEnglish: false,
+    };
+    const betaSource: NoteSource = { ...alphaSource, ref: 2, tabId: 2, title: 'Beta', url: BETA };
+    const alphaPoint: KeyPoint = { id: 'p1-1', sourceRef: 1, text: 'Alpha caches DNS answers.', topicHint: '' };
+    const betaPoint: KeyPoint = { id: 'p2-1', sourceRef: 2, text: 'Beta caches DNS answers too.', topicHint: '' };
+
+    it('shows the progress line of each AI step as it runs', () => {
+        useTabNotesStore.setState({ status: 'running', mode: 'ai', progress: 'Finding shared topics…' });
+        openDialog();
+        expect(screen.getByText('Finding shared topics…')).toBeInTheDocument();
+
+        act(() => useTabNotesStore.setState({ progress: 'Combining topic 1 of 2…' }));
+        expect(screen.getByText('Combining topic 1 of 2…')).toBeInTheDocument();
+        expect(screen.queryByText('Finding shared topics…')).toBeNull();
+    });
+
+    it('shows each shared topic while the run is going, with the label of how it was combined', () => {
+        const combined: Topic = {
+            id: 't1',
+            heading: 'DNS caching',
+            kind: 'shared',
+            combinedBy: 'ai',
+            bullets: [
+                { id: 'b1', text: 'DNS answers are cached.', pointIds: ['p1-1', 'p2-1'], origin: 'ai', edited: false },
+            ],
+            conflicts: [],
+        };
+        useTabNotesStore.setState({
+            status: 'running',
+            mode: 'ai',
+            progress: 'Combining topic 1 of 1…',
+            sources: [alphaSource, betaSource],
+            points: [alphaPoint, betaPoint],
+            combined: [combined],
+        });
+        openDialog();
+
+        expect(screen.getByRole('heading', { name: 'DNS caching' })).toBeInTheDocument();
+        expect(screen.getByText('combined by AI')).toBeInTheDocument();
+        expect(screen.getByText('Combining topic 1 of 1…')).toBeInTheDocument();
     });
 });

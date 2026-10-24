@@ -14,6 +14,7 @@ import {
     SAME_SUBJECT_MAX_SHARE,
     SAME_SUBJECT_MIN_LETTERS,
     SAME_TOPIC_BONUS,
+    TAG_MIN_COSINE,
     SHINGLE_SIZE,
     TOPIC_HEADING_MAX_CHARS,
     TOPIC_SIMILARITY,
@@ -300,6 +301,15 @@ function distinctHeading(heading: string, taken: Set<string>): string {
 }
 
 /**
+ * The " (2)" rule of distinctHeading applied across a list of topics, in order. Used after the AI steps have renamed
+ * some topics, so their headings stay unique too.
+ */
+export function withDistinctHeadings(topics: Topic[]): Topic[] {
+    const taken = new Set<string>();
+    return topics.map(topic => ({ ...topic, heading: distinctHeading(topic.heading, taken) }));
+}
+
+/**
  * The "combined" view (spec §7.3): shared topics first (most sources, then lowest source ref, then most bullets), then
  * one section per source with the points that are not in a shared topic. Returns [] when combining is skipped (fewer
  * than two sources, or no cluster spans two sources): the caller shows the By tab view instead (§7.8).
@@ -312,6 +322,8 @@ export function groupTopics(points: KeyPoint[], sources: NoteSource[], canonical
     if (new Set(items.map(point => point.sourceRef)).size < 2) return [];
 
     const vectors = buildVectors(items.map(point => ({ text: point.text, boost: point.topicHint })));
+    // The words of the text alone (no topic name): the gate for the same-topic bonus, so a shared name cannot count by itself
+    const textVectors = buildVectors(items.map(point => ({ text: point.text })));
     const numbers = items.map(point => numbersIn(point.text));
     const names = items.map(point => nameOf(point.topicHint, canonical));
     const notEnglish = new Map(sources.map(source => [source.ref, source.notEnglish]));
@@ -331,7 +343,11 @@ export function groupTopics(points: KeyPoint[], sources: NoteSource[], canonical
             // "Classes", sits on a Portuguese and an English point), so only the words count. The model writes English
             // even for a Portuguese page, so those points can still join by wording.
             if (flags[i] !== flags[j]) return Math.min(1, cosine(vectors[i], vectors[j]));
-            const sameTopic = names[i] !== '' && names[i] === names[j] ? SAME_TOPIC_BONUS : 0;
+            const boosted = cosine(vectors[i], vectors[j]);
+            const plainWords = cosine(textVectors[i], textVectors[j]);
+            // A shared name joins two points only with some words in common (TAG_MIN_COSINE), never by the name alone
+            const sameTopic =
+                names[i] !== '' && names[i] === names[j] && plainWords >= TAG_MIN_COSINE ? SAME_TOPIC_BONUS : 0;
             const lead = leads[i];
             const sameSubject =
                 lead !== undefined &&
@@ -340,7 +356,7 @@ export function groupTopics(points: KeyPoint[], sources: NoteSource[], canonical
                 (pointsWithTerm.get(lead) ?? 0) < items.length * SAME_SUBJECT_MAX_SHARE
                     ? SAME_SUBJECT_BONUS
                     : 0;
-            return Math.min(1, cosine(vectors[i], vectors[j]) + sameTopic + sameSubject);
+            return Math.min(1, boosted + sameTopic + sameSubject);
         })
     );
 

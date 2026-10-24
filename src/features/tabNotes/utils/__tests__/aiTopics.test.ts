@@ -11,9 +11,11 @@ import {
     cleanTopicName,
     combineSchema,
     combineTopic,
+    combineTopicChecked,
     topicsSchema,
     validateCombine,
 } from '../aiTopics';
+import { COMBINE_TIMEOUT_MS } from '../../constants';
 import { CORPUS_POINTS } from './fixtures/pages';
 import { OOP_POINTS_TAGGED } from './fixtures/oop';
 
@@ -191,16 +193,17 @@ describe('canonicalTopics', () => {
                     groups: [
                         { name: 'Caching', members: [1, 1, 9, 0, 1.5, '2'] },
                         { name: 'Lone', members: [4, 4] },
-                        { name: 'Answers', members: [2, 5] },
+                        { name: 'Answers', members: [3, 4] },
                     ],
                 })
             )
         );
         const map = await canonicalTopics(base, TAGS, live());
         expect(map.get('DNS caching')).toBe('DNS caching');
-        expect(map.get('Negative caching')).toBe('Negative caching');
-        expect(map.get('TTL')).toBe('Answers');
-        expect(map.get('CPU caches')).toBe('Answers');
+        expect(map.get('Caching DNS answers')).toBe('Answers');
+        expect(map.get('Negative caching')).toBe('Answers');
+        expect(map.get('TTL')).toBe('TTL');
+        expect(map.get('CPU caches')).toBe('CPU caches');
     });
 
     it('keeps a tag in the first group when a second group repeats it', async () => {
@@ -208,14 +211,14 @@ describe('canonicalTopics', () => {
             answering(
                 json({
                     groups: [
-                        { name: 'First', members: [1, 3] },
-                        { name: 'Second', members: [3, 5] },
+                        { name: 'Caching', members: [1, 3] },
+                        { name: 'Caching', members: [3, 5] },
                     ],
                 })
             )
         );
         const map = await canonicalTopics(base, TAGS, live());
-        expect(map.get('Caching DNS answers')).toBe('First');
+        expect(map.get('Caching DNS answers')).toBe('Caching');
         expect(map.get('CPU caches')).toBe('CPU caches');
     });
 
@@ -225,7 +228,7 @@ describe('canonicalTopics', () => {
                 json({
                     groups: [
                         { name: '"**DNS caching**."', members: [1, 3] },
-                        { name: '', members: [2, 4] },
+                        { name: '', members: [4, 5] },
                     ],
                 })
             )
@@ -233,7 +236,8 @@ describe('canonicalTopics', () => {
         const map = await canonicalTopics(base, TAGS, live());
         expect(map.get('Caching DNS answers')).toBe('DNS caching');
         expect(map.get('TTL')).toBe('TTL');
-        expect(map.get('Negative caching')).toBe('TTL');
+        expect(map.get('Negative caching')).toBe('Negative caching');
+        expect(map.get('CPU caches')).toBe('Negative caching');
     });
 
     it('sends only the tags that fit, and ignores members that point at the tags left out', async () => {
@@ -250,6 +254,7 @@ describe('canonicalTopics', () => {
         );
         made.prompt = prompt;
         const map = await canonicalTopics(base, TAGS, live());
+        // TTL shares no word with DNS caching, so the model's pair is not taken; the group needs two plausible members
         expect(prompt.mock.calls[0][0]).toContain('1. DNS caching\n2. TTL');
         expect(prompt.mock.calls[0][0]).not.toContain('Caching DNS answers');
         expect(prompt.mock.calls[0][1]).toEqual({
@@ -257,19 +262,59 @@ describe('canonicalTopics', () => {
             omitResponseConstraintInput: true,
             signal: expect.any(AbortSignal),
         });
-        expect(map.get('TTL')).toBe('DNS caching');
+        expect(map.get('TTL')).toBe('TTL');
         expect(map.get('Caching DNS answers')).toBe('Caching DNS answers');
         expect(map.get('Negative caching')).toBe('Negative caching');
         expect(made.destroy).toHaveBeenCalledTimes(1);
     });
 
-    it('works on the real tags of the OOP fixture', async () => {
+    it('works on the real tags of the OOP fixture: a group of six subjects is ignored, so every tag keeps its name', async () => {
         const tags = [...new Set(OOP_POINTS_TAGGED.map(point => point.topicHint).filter(tag => tag !== ''))];
-        const { base } = baseWith(() => answering(json({ groups: [{ name: 'Objects', members: [1, 2] }] })));
+        const members = [1, 2, 3, 4, 5, 6];
+        const { base } = baseWith(() =>
+            answering(json({ groups: [{ name: 'Object-Oriented Programming (OOP)', members }] }))
+        );
         const map = await canonicalTopics(base, tags, live());
-        expect(map.get(tags[0])).toBe('Objects');
-        expect(map.get(tags[1])).toBe('Objects');
+        for (const tag of tags) expect(map.get(tag)).toBe(tag);
         expect(map.size).toBe(tags.length);
+    });
+
+    it('groups two tags of one subject when they share a word, such as an acronym', async () => {
+        const tags = ['Object-Oriented Programming (OOP)', 'OOP basics', 'TTL'];
+        const { base } = baseWith(() =>
+            answering(json({ groups: [{ name: 'Object-Oriented Programming (OOP)', members: [1, 2] }] }))
+        );
+        const map = await canonicalTopics(base, tags, live());
+        expect(map.get('OOP basics')).toBe('Object-Oriented Programming (OOP)');
+        expect(map.get('TTL')).toBe('TTL');
+    });
+
+    it('rejects a group of more than four tags as a whole, even when the names share a word', async () => {
+        const { base } = baseWith(() => answering(json({ groups: [{ name: 'Caching', members: [1, 3, 4, 5, 2] }] })));
+        const map = await canonicalTopics(base, TAGS, live());
+        for (const tag of TAGS) expect(map.get(tag)).toBe(tag);
+    });
+
+    it('accepts a group of tags that share words, with the model name when it shares a word too', async () => {
+        const { base } = baseWith(() => answering(json({ groups: [{ name: 'Name caches', members: [1, 3] }] })));
+        const map = await canonicalTopics(base, TAGS, live());
+        expect(map.get('DNS caching')).toBe('Name caches');
+        expect(map.get('Caching DNS answers')).toBe('Name caches');
+    });
+
+    it('uses the first member tag as the name when the model name shares no word with its members', async () => {
+        const { base } = baseWith(() => answering(json({ groups: [{ name: 'Networking', members: [1, 3] }] })));
+        const map = await canonicalTopics(base, TAGS, live());
+        expect(map.get('DNS caching')).toBe('DNS caching');
+        expect(map.get('Caching DNS answers')).toBe('DNS caching');
+    });
+
+    it('drops a member that shares no word with the others, and keeps the rest of the group', async () => {
+        const { base } = baseWith(() => answering(json({ groups: [{ name: 'Caching', members: [1, 2, 3] }] })));
+        const map = await canonicalTopics(base, TAGS, live());
+        expect(map.get('DNS caching')).toBe('Caching');
+        expect(map.get('Caching DNS answers')).toBe('Caching');
+        expect(map.get('TTL')).toBe('TTL');
     });
 
     it('falls back to the identity map when the model fails, and destroys the clone', async () => {
@@ -754,6 +799,111 @@ describe('combineTopic', () => {
         expect(made.destroy).toHaveBeenCalledTimes(1);
     });
 
+    it('sends at most COMBINE_MAX_POINTS points, and every other point comes back as its own bullet', async () => {
+        const many: KeyPoint[] = Array.from({ length: 10 }, (_, i) => ({
+            id: `p${(i % 2) + 1}-${i + 1}`,
+            sourceRef: (i % 2) + 1,
+            text: 'Caching keeps answers in the resolver cache.',
+            topicHint: '',
+        }));
+        const made = answering(MERGE);
+        const { base } = baseWith(() => made);
+        const result = await combineTopic(base, topicOf(many), many, live());
+        const input = vi.mocked(made.prompt).mock.calls[0][0];
+        expect(input).toContain('h (page 2)');
+        expect(input).not.toContain('i (page');
+        expect(vi.mocked(made.prompt).mock.calls[0][1]?.responseConstraint).toEqual(
+            combineSchema(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
+        );
+        expect(result.combinedBy).toBe('ai');
+        // Nothing is lost: all ten points are in some bullet
+        expect(pointIdsOf(result)).toEqual(many.map(point => point.id).sort((a, b) => a.localeCompare(b)));
+    });
+
+    it('gives the combine call its own time limit, COMBINE_TIMEOUT_MS', async () => {
+        vi.useFakeTimers();
+        try {
+            const hang = (_input: string, options?: { signal?: AbortSignal }) =>
+                new Promise<string>((_resolve, reject) =>
+                    options?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+                );
+            const made = session({ prompt: vi.fn(hang) });
+            const { base } = baseWith(() => made);
+            const pending = combineTopicChecked(base, topic, DNS_POINTS, live());
+            await vi.advanceTimersByTimeAsync(COMBINE_TIMEOUT_MS + 1);
+            expect(await pending).toEqual({ topic, reason: 'timeout' });
+            expect(made.destroy).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('reports timeout when the model is too slow', async () => {
+        vi.useFakeTimers();
+        try {
+            const hang = (_input: string, options?: { signal?: AbortSignal }) =>
+                new Promise<string>((_resolve, reject) =>
+                    options?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+                );
+            const { base } = baseWith(() => session({ prompt: vi.fn(hang) }));
+            const pending = combineTopicChecked(base, topic, DNS_POINTS, live());
+            await vi.advanceTimersByTimeAsync(COMBINE_TIMEOUT_MS + 1);
+            expect(await pending).toEqual({ topic, reason: 'timeout' });
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('reports too-large when the model rejects the input as too big for its context', async () => {
+        const made = answering(Object.assign(new Error('too big'), { name: 'QuotaExceededError' }));
+        const { base } = baseWith(() => made);
+        expect(await combineTopicChecked(base, topic, DNS_POINTS, live())).toEqual({ topic, reason: 'too-large' });
+    });
+
+    it('reports too-large when not even two points fit the context window', async () => {
+        const made = session({ contextWindow: 4, measureContextUsage: vi.fn(async () => 999) });
+        const { base } = baseWith(() => made);
+        expect(await combineTopicChecked(base, topic, DNS_POINTS, live())).toEqual({ topic, reason: 'too-large' });
+    });
+
+    it('reports unusable when the model fails or its answer cannot be used', async () => {
+        const failing = answering(new Error('model crashed'));
+        expect(await combineTopicChecked(baseWith(() => failing).base, topic, DNS_POINTS, live())).toEqual({
+            topic,
+            reason: 'unusable',
+        });
+        const useless = answering('not json', 'not json');
+        expect(await combineTopicChecked(baseWith(() => useless).base, topic, DNS_POINTS, live())).toEqual({
+            topic,
+            reason: 'unusable',
+        });
+    });
+
+    it('gives no reason when the answer is usable but merges nothing', async () => {
+        const single = json({ heading: 'DNS caching', statements: [{ text: A.text, from: ['a'] }] });
+        const { base } = baseWith(() => answering(single));
+        expect(await combineTopicChecked(base, topic, DNS_POINTS, live())).toEqual({ topic });
+    });
+
+    it('gives the merged topic with no reason on success', async () => {
+        const { base } = baseWith(() => answering(MERGE));
+        const result = await combineTopicChecked(base, topic, DNS_POINTS, live());
+        expect(result.reason).toBeUndefined();
+        expect(result.topic.combinedBy).toBe('ai');
+    });
+
+    it('throws AiError aborted on a cancel, with no reason', async () => {
+        const controller = new AbortController();
+        const hang = (_input: string, options?: { signal?: AbortSignal }) =>
+            new Promise<string>((_resolve, reject) =>
+                options?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+            );
+        const { base } = baseWith(() => session({ prompt: vi.fn(hang) }));
+        const pending = combineTopicChecked(base, topic, DNS_POINTS, controller.signal);
+        controller.abort();
+        await expect(pending).rejects.toMatchObject({ code: 'aborted' });
+    });
+
     it('asks again once for unusable output, then merges on the second answer', async () => {
         const made = answering('not json', MERGE);
         const { base } = baseWith(() => made);
@@ -806,5 +956,59 @@ describe('combineTopic', () => {
         });
         expect(await combineTopic(base, topicOf([A]), [A], live())).toEqual(topicOf([A]));
         expect(clone).not.toHaveBeenCalled();
+    });
+});
+
+describe('validateCombine: answers of the real on-device model (two pages on inheritance)', () => {
+    const real = (n: number, text: string): KeyPoint => ({
+        id: `p${n}-1`,
+        sourceRef: n,
+        text,
+        topicHint: 'Inheritance',
+    });
+    const points = [
+        real(
+            1,
+            'Inheritance allows creating new classes (subclasses) based on existing classes (superclasses). Subclasses inherit properties and methods from their superclasses, promoting code reusability and establishing hierarchical relationships between classes. This relates to the concept of polymorphism.'
+        ),
+        real(
+            2,
+            "Inheritance enables a child class to acquire properties and methods from a parent class, promoting code reusability. A child class inherits the parent's characteristics, adding its own unique attributes."
+        ),
+    ];
+    const topic = topicOf(points, { heading: 'Inheritance' });
+
+    it('accepts one statement that covers both pages and cites both', () => {
+        // Raw answer of the combine prompt that asks for one statement that includes what EACH point says
+        const merged = validateCombine(
+            answer('Class Inheritance', [
+                {
+                    text: 'Inheritance allows the creation of new classes (subclasses) based on existing classes (superclasses), enabling subclasses to acquire properties and methods from their parent classes. This promotes code reusability and establishes a hierarchical relationship between classes.',
+                    from: ['a', 'b'],
+                },
+            ]),
+            topic,
+            points
+        );
+        expect(merged.combinedBy).toBe('ai');
+        expect(merged.bullets).toHaveLength(1);
+        expect(merged.bullets[0].origin).toBe('ai');
+        expect(sourcesOf(merged.bullets[0].pointIds, points)).toEqual([1, 2]);
+    });
+
+    it('keeps the word grouping when the statement only says what one page says, though it cites both', () => {
+        // Raw answer of the earlier prompt: the second label does not support the statement
+        const unchanged = validateCombine(
+            answer('Inheritance Overview', [
+                {
+                    text: 'Inheritance allows creating new classes (subclasses) based on existing classes (superclasses).',
+                    from: ['a', 'b'],
+                },
+            ]),
+            topic,
+            points
+        );
+        expect(unchanged.combinedBy).toBe('words');
+        expect(unchanged.bullets.map(bullet => bullet.pointIds)).toEqual([['p1-1'], ['p2-1']]);
     });
 });

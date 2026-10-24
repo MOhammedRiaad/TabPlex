@@ -1,7 +1,7 @@
 // One topic of the Combined view (spec §9): a read-only heading, its bullets with a "(n)" chip for each source they
 // cite, and a ⚠ row for each conflict. Chips open the source exactly like the Open button. Page text is rendered as text.
 import React from 'react';
-import { QUICK_VIEW_LABEL, quickReasonText } from '../constants';
+import { QUICK_VIEW_LABEL, combineNoteText, quickReasonText } from '../constants';
 import { KeyPoint, NoteSource, Topic } from '../types';
 import { hostOf } from '../utils/studyNote';
 import { sourcesOf } from '../utils/groupTopics';
@@ -43,7 +43,13 @@ const TopicCard: React.FC<TopicCardProps> = ({ topic, points, sources, onOpen })
         <section className="tabnotes-card tabnotes-topic" aria-label={topic.heading}>
             <div className="tabnotes-card-head">
                 <h3 className="tabnotes-topic-title">{topic.heading}</h3>
-                {shared && <span className="tabnotes-tag">grouped by shared words (no AI)</span>}
+                {shared && topic.combinedBy === 'ai' && <span className="tabnotes-tag">combined by AI</span>}
+                {shared && topic.combinedBy === 'words' && (
+                    <span className="tabnotes-tag">grouped by shared words (no AI)</span>
+                )}
+                {shared && topic.combinedBy === 'words' && topic.combineNote && (
+                    <span className="tabnotes-muted">{combineNoteText(topic.combineNote)}</span>
+                )}
                 {soleSource?.mode === 'quick' && <span className="tabnotes-tag">{QUICK_VIEW_LABEL}</span>}
                 {soleSource?.mode === 'quick' && soleSource.quickReason && (
                     <span className="tabnotes-muted" title={quickReasonText(soleSource.quickReason)}>

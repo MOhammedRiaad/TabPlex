@@ -113,6 +113,9 @@ export interface TopicConflict {
     text: string;
 }
 
+/** Why a shared topic kept its word grouping after the combine call (see Topic.combineNote) */
+export type CombineNote = 'timeout' | 'too-large' | 'unusable';
+
 export interface Topic {
     /** Run-local counter, "t1" */
     id: string;
@@ -123,6 +126,11 @@ export interface Topic {
     sourceRef?: number;
     /** null for kind === 'source' */
     combinedBy: 'ai' | 'words' | null;
+    /**
+     * Set on a shared topic whose combine call failed (or was too slow, or too large): why it stays as its word grouping.
+     * A code only, never page text or the error message. Absent when the topic was not combined by choice or by success.
+     */
+    combineNote?: CombineNote;
     bullets: TopicBullet[];
     conflicts: TopicConflict[];
 }

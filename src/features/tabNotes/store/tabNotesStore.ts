@@ -1,13 +1,15 @@
 // State for "Summarize open tabs into a note" (spec §8). Not persisted: the dialog reads it and closing the dialog
 // clears it. A run reads its tabs one at a time (snapshot, clean, points), and a page's text is dropped as soon as its
-// points are made. Page text and model output are untrusted: see utils/studyNote.ts.
+// points are made. Then the word grouping is shown, and the AI steps (topic names, combining each shared topic) replace
+// it topic by topic. Page text and model output are untrusted: see utils/studyNote.ts.
 import { create } from 'zustand';
 import { useBoardStore } from '../../../store/boardStore';
 import { generateNoteId } from '../../../utils/idGenerator';
 import { AiSession, aiErrorMessage, createSession, isAiError } from '../../ai/utils/promptApi';
 import { AiError } from '../../ai/types';
 import { POINTS_SYSTEM, extractPointsAi, quickResult } from '../utils/aiPoints';
-import { groupTopics } from '../utils/groupTopics';
+import { COMBINE_SYSTEM, CombineResult, TOPICS_SYSTEM, canonicalTopics, combineTopicChecked } from '../utils/aiTopics';
+import { groupTopics, withDistinctHeadings } from '../utils/groupTopics';
 import { cleanPage } from '../utils/pageText';
 import { PageReadFailure, snapshotTab } from '../utils/readPage';
 import { buildStudyNote, hostOf, resolveStudyNoteTitle } from '../utils/studyNote';
@@ -26,26 +28,58 @@ import {
 export type TabNotesStatus = 'idle' | 'running' | 'done' | 'cancelled';
 
 /**
- * The model sessions one run creates in its click. Each page works on a clone of `points`. PR B adds `topics` and
- * `combine` here, with the same rule: created synchronously, destroyed when the run ends.
+ * The base sessions of one run, each with its own system prompt (built-in-ai rule 3). Pages, topics and shared topics
+ * each work on a clone. `topics` and `combine` are absent for a retry, which only regroups by words.
  */
 export interface TabNoteSessions {
     points: Promise<AiSession>;
+    topics?: Promise<AiSession>;
+    combine?: Promise<AiSession>;
 }
 
-/** Synchronous: createSession is called here, before any await (built-in-ai rule 2) */
-export function startTabNoteSessions(onProgress: (fraction: number) => void): TabNoteSessions {
+type BaseKey = keyof TabNoteSessions;
+const GROUPING_KEYS: BaseKey[] = ['topics', 'combine'];
+const ALL_KEYS: BaseKey[] = ['points', 'topics', 'combine'];
+
+/**
+ * Synchronous: createSession is called here, before any await (built-in-ai rule 2). `grouping` false (a retry) creates
+ * the points session only. Every rejection is handled here, so none is unhandled; each caller handles it where it awaits.
+ */
+export function startTabNoteSessions(onProgress: (fraction: number) => void, grouping = true): TabNoteSessions {
     const points = createSession(POINTS_SYSTEM, onProgress);
-    points.catch(() => undefined); // every caller handles the rejection where it awaits
-    return { points };
+    points.catch(() => undefined);
+    if (!grouping) return { points };
+    const topics = createSession(TOPICS_SYSTEM);
+    const combine = createSession(COMBINE_SYSTEM);
+    topics.catch(() => undefined);
+    combine.catch(() => undefined);
+    return { points, topics, combine };
 }
 
-/** Destroys base sessions as soon as they exist (they may still be starting). Never rejects. */
-function destroyBase(sessions: TabNoteSessions | null): void {
-    sessions?.points.then(
-        session => session.destroy(),
-        () => undefined
-    );
+/**
+ * Destroys the given base sessions as soon as they exist (they may still be starting), once each: `closed` remembers
+ * the ones already handled. Never rejects.
+ */
+function destroyBase(sessions: TabNoteSessions | null, keys: BaseKey[], closed: Set<Promise<AiSession>>): void {
+    for (const key of keys) {
+        const session = sessions?.[key];
+        if (!session || closed.has(session)) continue;
+        closed.add(session);
+        session.then(
+            value => value.destroy(),
+            () => undefined
+        );
+    }
+}
+
+/** The started base session, or null when it could not start or the run was cancelled before it did */
+async function startedOf(session: Promise<AiSession> | undefined, signal: AbortSignal): Promise<AiSession | null> {
+    if (!session) return null;
+    try {
+        return await untilAborted(session, signal);
+    } catch {
+        return null;
+    }
 }
 
 /** Rejects with an 'aborted' AiError as soon as the signal fires, even if the session is still starting */
@@ -100,6 +134,21 @@ export interface TabNotesActions {
 const groupedOf = (sources: NoteSource[], points: KeyPoint[]): Topic[] => groupTopics(points, sources);
 
 /**
+ * After the AI steps: headings made unique (" (2)") and bullet ids "b1", "b2"… unique across the whole list (the ids
+ * the combine step makes repeat per topic).
+ */
+function finishTopics(topics: Topic[]): Topic[] {
+    let number = 0;
+    return withDistinctHeadings(topics).map(topic => ({
+        ...topic,
+        bullets: topic.bullets.map(bullet => {
+            number += 1;
+            return { ...bullet, id: `b${number}` };
+        }),
+    }));
+}
+
+/**
  * Topic bullets show their points' current text, so an edit in the By tab also shows in the Combined view. Bullets
  * keep their ids and their points, so the grouping does not move.
  */
@@ -133,7 +182,10 @@ export interface TabNotesState {
     points: KeyPoint[];
     /** The layout the user picked. The review shows 'combined' only when `combined` has topics (draftOf) */
     view: StudyNoteView;
-    /** groupTopics(points, sources): shared topics, then each tab's leftovers. [] means nothing to combine. */
+    /**
+     * The topics of the Combined view: the word grouping (groupTopics) as soon as the pages are read, then each shared
+     * topic the AI combined replaces its word grouping (combinedBy 'ai'). [] means nothing to combine.
+     */
     combined: Topic[];
     /** Set while a run is going; close() clears it, so a finished run stops writing */
     abort: AbortController | null;
@@ -220,10 +272,52 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
     };
 
     /**
-     * Starts the sessions and the run for `entries`. Everything before the first await is synchronous, so the session
-     * is created inside the click (built-in-ai rule 2).
+     * The AI steps after the pages are read (spec §7.4, §7.5, §8). Topic names regroup the points; then each shared
+     * topic is combined in turn and replaces its word grouping as soon as it is done. A step that fails keeps what it
+     * had (never a failed run); only a cancel stops the steps.
      */
-    const execute = (entries: RunTab[], useAi: boolean): void => {
+    const combineWithAi = async (sessions: TabNoteSessions, abort: AbortController): Promise<void> => {
+        const { signal } = abort;
+        // One source has nothing to combine: the models are not waited for
+        if (get().sources.length < 2) return;
+        const topicsBase = await startedOf(sessions.topics, signal);
+        const combineBase = await startedOf(sessions.combine, signal);
+        if (topicsBase) {
+            updateRun(abort, { progress: 'Finding shared topics…' });
+            const hints = get().points.map(point => point.topicHint);
+            // canonicalTopics gives the identity map on any failure; it only throws on a cancel
+            const canonical = await canonicalTopics(topicsBase, hints, signal, get().sources.length).catch(
+                () => undefined
+            );
+            if (signal.aborted) return;
+            const { sources, points } = get();
+            updateRun(abort, { combined: groupTopics(points, sources, canonical) });
+        }
+        if (!combineBase) return;
+
+        const shared = get().combined.filter(topic => topic.kind === 'shared');
+        for (const [index, topic] of shared.entries()) {
+            if (signal.aborted) return;
+            updateRun(abort, { progress: `Combining topic ${index + 1} of ${shared.length}…` });
+            let outcome: CombineResult;
+            try {
+                outcome = await combineTopicChecked(combineBase, topic, get().points, signal);
+            } catch {
+                return; // only a cancel throws: the other topics keep their word grouping
+            }
+            // A failed topic stays its word grouping, with the code of why (Topic.combineNote)
+            const result: Topic = outcome.reason ? { ...outcome.topic, combineNote: outcome.reason } : outcome.topic;
+            updateRun(abort, state => ({
+                combined: state.combined.map(item => (item.id === topic.id ? result : item)),
+            }));
+        }
+    };
+
+    /**
+     * Starts the sessions and the run for `entries`. Everything before the first await is synchronous, so the sessions
+     * are created inside the click (built-in-ai rule 2). `grouping` is false for a retry: it only regroups by words.
+     */
+    const execute = (entries: RunTab[], useAi: boolean, grouping: boolean): void => {
         const abort = new AbortController();
         set({
             status: 'running',
@@ -233,10 +327,13 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
             downloadProgress: null,
         });
         const sessions = useAi
-            ? startTabNoteSessions(fraction =>
-                  updateRun(abort, { downloadProgress: fraction, progress: 'Downloading the on-device model…' })
+            ? startTabNoteSessions(
+                  fraction =>
+                      updateRun(abort, { downloadProgress: fraction, progress: 'Downloading the on-device model…' }),
+                  grouping
               )
             : null;
+        const closed = new Set<Promise<AiSession>>();
         const total = get().tabs.length;
 
         const work = async (): Promise<void> => {
@@ -252,6 +349,8 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
                         });
                     }
                 }
+                // Without the points model the run is a quick view: the other sessions are not needed
+                if (!base) destroyBase(sessions, GROUPING_KEYS, closed);
             }
             updateRun(abort, { mode: base ? 'ai' : 'quick', downloadProgress: null });
             // The model was asked for but could not start: every page of this run is a quick view for that reason
@@ -260,17 +359,20 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
                 if (abort.signal.aborted) break;
                 await readTab(entry, base, abort, total, runReason);
             }
+            // The word grouping is the fallback: the review shows it as soon as the pages are read
+            updateRun(abort, state => ({ combined: groupedOf(state.sources, state.points) }));
+            if (base && sessions && grouping && !abort.signal.aborted) await combineWithAi(sessions, abort);
         };
 
         work().finally(() => {
-            destroyBase(sessions);
+            destroyBase(sessions, ALL_KEYS, closed);
             updateRun(abort, state => ({
                 status: abort.signal.aborted ? 'cancelled' : 'done',
                 progress: '',
                 downloadProgress: null,
                 abort: null,
                 tabs: state.tabs.map(entry => (entry.state === 'waiting' ? { ...entry, state: 'not-read' } : entry)),
-                combined: groupedOf(state.sources, state.points),
+                combined: finishTopics(state.combined),
             }));
         });
     };
@@ -285,14 +387,15 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
                     (tab, index): RunTab => ({ ref: index + 1, tab, state: 'waiting', message: '' })
                 );
                 set({ ...RESET, tabs: entries });
-                execute(entries, useAi);
+                execute(entries, useAi, true);
             },
 
             retryTab: tabId => {
                 const state = get();
                 const entry = state.tabs.find(item => item.tab.id === tabId);
                 if (!entry || entry.state !== 'failed' || state.status === 'running') return;
-                execute([entry], state.mode === 'ai');
+                // A retry never calls the model for topics: it regroups by words
+                execute([entry], state.mode === 'ai', false);
             },
 
             cancel: () => get().abort?.abort(),

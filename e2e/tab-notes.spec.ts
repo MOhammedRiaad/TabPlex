@@ -63,14 +63,19 @@ function notesInBackground(serviceWorker: Worker) {
     });
 }
 
+/** How the stand-in answers the combine call of a shared topic (see stubModel) */
+type CombineAnswer = 'merge' | 'unknown-label' | 'invented-number' | 'hang';
+
 /**
- * Stand-in for Chrome's built-in model, installed in the TabPlex page before it loads. Answers the points prompt by
- * quoting the first sentences of the page, which pass the grounding checks. With `hang`, it never answers: the run
- * waits until it is cancelled.
+ * Stand-in for Chrome's built-in model, installed in the TabPlex page before it loads. Every call is answered by its
+ * schema: points by quoting the first sentences of the page (which pass the grounding checks), topic names with no
+ * groups, and a combine call by merging the first two labelled points of the topic into one statement (`merge`).
+ * `unknown-label` and `invented-number` give answers the checks must reject. With `hang` every call never answers, and
+ * with `combine: 'hang'` only the combine calls don't: the run waits until it is cancelled.
  */
-async function stubModel(app: Page, options: { hang?: boolean } = {}) {
+async function stubModel(app: Page, options: { hang?: boolean; combine?: CombineAnswer } = {}) {
     await app.addInitScript(
-        ({ hang }) => {
+        ({ hang, combine }) => {
             const sentencesOf = (input: string) =>
                 input
                     .split('\n')
@@ -79,18 +84,58 @@ async function stubModel(app: Page, options: { hang?: boolean } = {}) {
                     .flatMap(line => line.split(/(?<=\.)\s+/))
                     .filter(sentence => sentence.length >= 40 && sentence.length <= 200 && sentence.endsWith('.'))
                     .slice(0, 3);
+            const never = (signal?: AbortSignal) =>
+                new Promise<string>((_resolve, reject) =>
+                    signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+                );
+            const combineAnswer = (input: string) => {
+                // Combine input lines are "a (page 1): text". The pair from two pages that shares the most words is merged.
+                const points = [...input.matchAll(/^([a-z]+) \(page (\d+)\): (.*)$/gm)].map(m => ({
+                    label: m[1],
+                    page: m[2],
+                    text: m[3],
+                }));
+                const wordsOf = (text: string) => new Set(text.toLowerCase().match(/[a-z]+/g) ?? []);
+                let best: { a: (typeof points)[number]; b: (typeof points)[number]; score: number } | null = null;
+                for (const a of points) {
+                    for (const b of points) {
+                        if (a.page === b.page) continue;
+                        const shared = [...wordsOf(a.text)].filter(word => wordsOf(b.text).has(word)).length;
+                        const score = shared / Math.max(1, wordsOf(a.text).size);
+                        if (!best || score > best.score) best = { a, b, score };
+                    }
+                }
+                if (!best) return JSON.stringify({ heading: 'DNS caching', statements: [] });
+                const { a, b } = best;
+                if (combine === 'unknown-label') {
+                    return JSON.stringify({
+                        heading: 'DNS caching',
+                        statements: [{ text: a.text, from: ['zz', 'yy'] }],
+                    });
+                }
+                if (combine === 'invented-number') {
+                    const text = `${a.text} The TTL is 3600 seconds.`;
+                    return JSON.stringify({ heading: 'DNS caching', statements: [{ text, from: [a.label, b.label] }] });
+                }
+                return JSON.stringify({
+                    heading: 'DNS caching',
+                    statements: [{ text: a.text, from: [a.label, b.label] }],
+                });
+            };
             const session = (): unknown => ({
                 contextWindow: 100_000,
                 measureContextUsage: async (text: string) => text.length,
                 clone: async () => session(),
-                prompt: (input: string, promptOptions?: { signal?: AbortSignal }) => {
-                    if (hang) {
-                        return new Promise((_resolve, reject) =>
-                            promptOptions?.signal?.addEventListener('abort', () =>
-                                reject(new DOMException('Aborted', 'AbortError'))
-                            )
-                        );
+                prompt: (input: string, promptOptions?: { signal?: AbortSignal; responseConstraint?: object }) => {
+                    const schema = promptOptions?.responseConstraint as { properties?: object } | undefined;
+                    const fields = Object.keys(schema?.properties ?? {});
+                    if (hang) return never(promptOptions?.signal);
+                    if (fields.includes('statements')) {
+                        return combine === 'hang'
+                            ? never(promptOptions?.signal)
+                            : Promise.resolve(combineAnswer(input));
                     }
+                    if (fields.includes('groups')) return Promise.resolve(JSON.stringify({ groups: [] }));
                     const points = sentencesOf(input).map(text => ({ text, topic: 'DNS caching' }));
                     return Promise.resolve(JSON.stringify({ points }));
                 },
@@ -101,7 +146,7 @@ async function stubModel(app: Page, options: { hang?: boolean } = {}) {
                 create: async () => session(),
             };
         },
-        { hang: options.hang ?? false }
+        { hang: options.hang ?? false, combine: options.combine ?? 'merge' }
     );
     await app.reload();
 }
@@ -206,6 +251,85 @@ test.describe('Summarize open tabs (page access on)', () => {
         expect(note.content).toContain(`- ${FIRST_SENTENCE}`);
         expect(note.content).toContain("summarized by your browser's built-in AI on this device");
         expect(note.tags).toEqual(['study']);
+    });
+
+    test('the shared topics are combined by the AI, and the note says so and cites two pages in a bullet', async ({
+        app,
+        context,
+        serviceWorker,
+    }) => {
+        await stubModel(app);
+        await openPages(context, PAGES);
+        const dialog = await openSummarize(app);
+
+        await dialog.getByRole('button', { name: 'Summarize 4 tabs' }).click();
+        await expect(dialog.getByRole('button', { name: 'Create note' })).toBeEnabled();
+        await expect(dialog.getByText('combined by AI').first()).toBeVisible();
+        await dialog.getByRole('button', { name: 'Create note' }).click();
+
+        await expect(dialog).toHaveCount(0);
+        await expect.poll(async () => (await notesInBackground(serviceWorker)).length).toBe(1);
+        const [note] = await notesInBackground(serviceWorker);
+        expect(note.content).toContain(
+            "_From 4 tabs, combined by topic by your browser's built-in AI on this device. It can be wrong: check the sources before relying on it._"
+        );
+        expect(note.content).not.toContain('grouped by shared words');
+        // A bullet of a shared topic cites at least two of the pages it was combined from
+        const [topics] = note.content.split('## Only in one source');
+        const citingTwo = topics
+            .split('\n')
+            .filter(line => line.startsWith('- ') && (line.match(/\]\(https:/g) ?? []).length >= 2);
+        expect(citingTwo.length).toBeGreaterThan(0);
+    });
+
+    // A combine answer the checks reject leaves that topic as its word grouping, and nothing is dropped from the note
+    for (const answer of ['unknown-label', 'invented-number'] as const) {
+        test(`a combine answer with ${answer} keeps the topics by shared words and every page in the note`, async ({
+            app,
+            context,
+            serviceWorker,
+        }) => {
+            await stubModel(app, { combine: answer });
+            await openPages(context, PAGES);
+            const dialog = await openSummarize(app);
+
+            await dialog.getByRole('button', { name: 'Summarize 4 tabs' }).click();
+            await expect(dialog.getByRole('button', { name: 'Create note' })).toBeEnabled();
+            await expect(dialog.getByText('grouped by shared words (no AI)').first()).toBeVisible();
+            await expect(dialog.getByText('combined by AI')).toHaveCount(0);
+            await dialog.getByRole('button', { name: 'Create note' }).click();
+
+            await expect(dialog).toHaveCount(0);
+            await expect.poll(async () => (await notesInBackground(serviceWorker)).length).toBe(1);
+            const [note] = await notesInBackground(serviceWorker);
+            expect(note.content).toContain('Topics were grouped by shared words.');
+            expect(note.content).not.toContain('combined by topic');
+            expect(note.content).not.toContain('The TTL is 3600 seconds.');
+            expect(note.content).toContain(FIRST_SENTENCE);
+            for (const url of PAGES) expect(note.content).toContain(`](${url})`);
+        });
+    }
+
+    test('Cancel while combining keeps the word grouping of the topics', async ({ app, context, serviceWorker }) => {
+        await stubModel(app, { combine: 'hang' });
+        await openPages(context, PAGES);
+        const dialog = await openSummarize(app);
+
+        await dialog.getByRole('button', { name: 'Summarize 4 tabs' }).click();
+        await expect(dialog.getByText(/^Combining topic 1 of \d+…$/)).toBeVisible();
+        await expect(dialog.getByText('grouped by shared words (no AI)').first()).toBeVisible();
+        await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+        // The run stops with the word grouping kept: the review is there and can be saved
+        await expect(dialog.getByRole('button', { name: 'Create note' })).toBeEnabled();
+        await expect(dialog.getByText('grouped by shared words (no AI)').first()).toBeVisible();
+        await dialog.getByRole('button', { name: 'Create note' }).click();
+
+        await expect(dialog).toHaveCount(0);
+        await expect.poll(async () => (await notesInBackground(serviceWorker)).length).toBe(1);
+        const [note] = await notesInBackground(serviceWorker);
+        expect(note.content).toContain('Topics were grouped by shared words.');
+        expect(note.content).not.toContain('combined by topic');
     });
 
     test('Cancel during the run creates no note', async ({ app, context, serviceWorker }) => {

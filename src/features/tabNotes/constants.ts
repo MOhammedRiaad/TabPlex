@@ -1,5 +1,5 @@
 // Limits, thresholds and word lists for "Summarize open tabs into a note". Pure data, safe to import anywhere in the UI.
-import type { QuickReason } from './types';
+import type { CombineNote, QuickReason } from './types';
 
 /** Characters readPage collects from one page (the function receives this as an argument) */
 export const PAGE_READ_CHAR_CAP = 60_000;
@@ -61,7 +61,7 @@ export const POINTS_PER_SOURCE_MAX = 6;
 /** Share of a point's words that must appear in its page (grounding, §7.2) */
 export const GROUNDING_MIN = 0.6;
 /** Per-page model step: covers both attempts of promptJson */
-export const TAB_POINTS_TIMEOUT_MS = 90_000;
+export const TAB_POINTS_TIMEOUT_MS = 150_000;
 
 /**
  * A point that ends on one of these words was cut off by the model ("…from superclasses, forming an"). English and
@@ -169,6 +169,8 @@ export const QUICK_SECTION_START_BONUS = 0.1;
 export const TOPIC_SIMILARITY = 0.21;
 /** Word grouping: added to the similarity of two points whose topic names are the same (capped at 1) */
 export const SAME_TOPIC_BONUS = 0.3;
+/** Word grouping: the same-topic bonus only applies when the two points' own cosine is at least this (a name alone never joins unrelated points) */
+export const TAG_MIN_COSINE = 0.05;
 /** Word grouping: most points in one topic */
 export const MAX_POINTS_PER_TOPIC = 12;
 /** Word grouping: most shared topics in one note; the rest are dissolved into their sources' sections */
@@ -189,10 +191,18 @@ export const TOPIC_NAMES_MIN_TAGS = 3;
 export const TOPIC_NAMES_MIN_SOURCES = 2;
 /** A group of tags needs at least this many members to be named */
 export const NAME_GROUP_MIN_MEMBERS = 2;
+/** A group of tags with more members than this is ignored: a small model merges whole subjects into one group */
+export const NAME_GROUP_MAX_MEMBERS = 4;
+/** Time limit of the topic-names call (one short call) */
+export const TOPICS_TIMEOUT_MS = 60_000;
 /** Longest canonical topic name (§7.4), cut on a word boundary */
 export const TOPIC_NAME_MAX_CHARS = 40;
 /** Combining (§7.5): a shared topic needs this many points before the model is asked */
 export const COMBINE_MIN_POINTS = 2;
+/** Most points of one topic sent to the model (in point order); the rest stay their own bullets */
+export const COMBINE_MAX_POINTS = 8;
+/** Time limit of one combine call (a topic with descriptive points on a long page takes longer than 45 s) */
+export const COMBINE_TIMEOUT_MS = 90_000;
 /** Citation check (§7.6 rule 3): share of a statement's words found in one cited point plus the topic heading */
 export const CITE_MIN = 0.3;
 /** Conflict text (§7.6 rule 9): share of its words found in the points it cites, else the text is dropped */
@@ -473,6 +483,13 @@ const QUICK_REASON_TEXT: Record<QuickReason, string> = {
     failed: 'the model failed',
 };
 export const quickReasonText = (reason: QuickReason): string => QUICK_REASON_TEXT[reason];
+/** Why a topic was left as its word grouping after the combine call (Topic.combineNote), in the same style */
+const COMBINE_NOTE_TEXT: Record<CombineNote, string> = {
+    timeout: 'the model took too long',
+    'too-large': 'too many points for the model',
+    unusable: "the model's answer was unusable",
+};
+export const combineNoteText = (note: CombineNote): string => COMBINE_NOTE_TEXT[note];
 export const LONG_PAGE_LABEL = 'first part of a long page';
 export const NOT_ENGLISH_LABEL = 'Not in English: points may be weaker';
 /** A section for a read page that produced no points */

@@ -9,7 +9,7 @@ import {
     STUDY_NOTE_TITLE,
     quickReasonText,
 } from '../constants';
-import { NoteSource, StudyNoteDraft } from '../types';
+import { NoteSource, StudyNoteDraft, Topic } from '../types';
 import { sourcesOf } from './groupTopics';
 
 export interface StudyNoteOptions {
@@ -101,13 +101,22 @@ function disclaimerFor(sources: NoteSource[]): string {
     return `_Quick view of ${count}: sentences taken from the pages, without AI. Check the sources for the full picture._`;
 }
 
-/** The Combined layout's disclaimer. Topics are always grouped by shared words here, never by a model. */
-function combinedDisclaimerFor(sources: NoteSource[]): string {
+/**
+ * The Combined layout's disclaimer (spec §10.1), by what was used: the points (AI or quick view) and how each shared
+ * topic was combined ('ai' or 'words').
+ */
+function combinedDisclaimerFor(sources: NoteSource[], topics: Topic[]): string {
     const count = countOf(sources);
-    if (sources.some(source => source.mode === 'ai')) {
+    if (!sources.some(source => source.mode === 'ai')) {
+        return `_Quick view of ${count}: sentences taken from the pages and grouped by shared words, without AI. Check the sources for the full picture._`;
+    }
+    const shared = topics.filter(topic => topic.kind === 'shared');
+    const combinedByAi = shared.filter(topic => topic.combinedBy === 'ai').length;
+    if (combinedByAi === 0) {
         return `_From ${count}, summarized by your browser's built-in AI on this device. Topics were grouped by shared words. It can be wrong: check the sources before relying on it._`;
     }
-    return `_Quick view of ${count}: sentences taken from the pages and grouped by shared words, without AI. Check the sources for the full picture._`;
+    const someByWords = combinedByAi < shared.length ? ' Some topics were grouped by shared words.' : '';
+    return `_From ${count}, combined by topic by your browser's built-in AI on this device.${someByWords} It can be wrong: check the sources before relying on it._`;
 }
 
 /** "## Title ([n](url))" then one bullet per point. The heading carries the only reference of its section. */
@@ -153,7 +162,7 @@ function combinedBody(draft: StudyNoteDraft, sources: NoteSource[]): string[] {
     const sourceOf = new Map(sources.map(source => [source.ref, source]));
     const pointOf = new Map(draft.points.map(point => [point.id, point]));
     const topics = draft.combined ?? [];
-    const blocks = [combinedDisclaimerFor(sources)];
+    const blocks = [combinedDisclaimerFor(sources, topics)];
 
     const shared = topics.filter(topic => topic.kind === 'shared');
     shared.forEach((topic, index) => {
