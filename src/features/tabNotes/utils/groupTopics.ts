@@ -45,10 +45,10 @@ function trimEdges(text: string): string {
 }
 
 /**
- * A heading for a topic or a source section: Markdown, quotes, emoji and trailing punctuation removed, cut at
- * TOPIC_HEADING_MAX_CHARS on a word boundary. Never empty: "Topic <number>" when nothing is left.
+ * Text for a heading: Markdown, quotes, emoji and trailing punctuation removed, cut at `max` on a word boundary. May be
+ * '' when nothing is left (the callers decide the fallback).
  */
-export function cleanTopicHeading(text: string, number: number): string {
+export function cleanHeadingText(text: string, max = TOPIC_HEADING_MAX_CHARS): string {
     let clean = text
         .replace(MARKDOWN_LINK, '$1')
         .replace(/[*_`~]+/g, ' ')
@@ -58,8 +58,15 @@ export function cleanTopicHeading(text: string, number: number): string {
         previous = clean;
         clean = clean.replace(LEADING_MARK, '');
     } while (clean !== previous);
-    const clipped = trimEdges(clipText(trimEdges(clean.replace(/\s+/g, ' ')), TOPIC_HEADING_MAX_CHARS));
-    return clipped || `Topic ${number}`;
+    return trimEdges(clipText(trimEdges(clean.replace(/\s+/g, ' ')), max));
+}
+
+/**
+ * A heading for a topic or a source section (see cleanHeadingText), cut at TOPIC_HEADING_MAX_CHARS. Never empty:
+ * "Topic <number>" when nothing is left.
+ */
+export function cleanTopicHeading(text: string, number: number): string {
+    return cleanHeadingText(text) || `Topic ${number}`;
 }
 
 /** The sources of some points: sorted, unique source refs of the points with these ids (the only source of a bullet) */

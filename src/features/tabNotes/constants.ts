@@ -183,6 +183,20 @@ export const CONFLICT_SIMILARITY = 0.6;
 export const SHINGLE_SIZE = 3;
 /** Longest topic heading (§7.8), cut on a word boundary */
 export const TOPIC_HEADING_MAX_CHARS = 60;
+
+/** Topic names (§7.4): fewer distinct tags, or fewer sources, and the model is not asked to group the tags */
+export const TOPIC_NAMES_MIN_TAGS = 3;
+export const TOPIC_NAMES_MIN_SOURCES = 2;
+/** A group of tags needs at least this many members to be named */
+export const NAME_GROUP_MIN_MEMBERS = 2;
+/** Longest canonical topic name (§7.4), cut on a word boundary */
+export const TOPIC_NAME_MAX_CHARS = 40;
+/** Combining (§7.5): a shared topic needs this many points before the model is asked */
+export const COMBINE_MIN_POINTS = 2;
+/** Citation check (§7.6 rule 3): share of a statement's words found in one cited point plus the topic heading */
+export const CITE_MIN = 0.3;
+/** Conflict text (§7.6 rule 9): share of its words found in the points it cites, else the text is dropped */
+export const CONFLICT_TEXT_MIN = 0.5;
 /**
  * Same subject (second round, tuned on the DNS and OOP corpora): two points from different sources whose leading
  * content term is the same word get this bonus to their similarity. A bonus only: it never merges by itself. Started
