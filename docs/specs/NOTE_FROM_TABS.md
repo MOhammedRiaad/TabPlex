@@ -2,7 +2,7 @@
 
 |                |                                                                                                                                                      |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**     | Proposed · ROADMAP #29                                                                                                                               |
+| **Status**     | Implemented · ROADMAP #29 · see "Implementation notes"                                                                                               |
 | **Created**    | 2026-10-24                                                                                                                                           |
 | **Revised**    | 2026-10-24: overlapping tabs are combined by topic with a link to every source (§7); review fixes listed in §0                                       |
 | **Size**       | XL (8–10 days, delivered as two PRs, §19). ROADMAP's scale stops at L; this is about two L items                                                     |
@@ -966,3 +966,43 @@ Run the `verify` skill before each commit and the `commit` skill for messages. F
 - [ ] Page text is never stored or logged; only the user-approved note is saved.
 - [ ] `PRIVACY.md`, `landing-page/privacy.html`, README, `CHROMEWEBSTORE.md` and ROADMAP updated;
       `grep -rn "features/tabNotes" src/background` returns nothing.
+
+## Implementation notes (2026-10-24)
+
+Built on `feature/note-from-tabs` in the order of §19, with the PR A / PR B split dropped (one branch, one PR). Everything
+below differs from the text above because a real page or the real on-device model showed the first design was wrong.
+The unit tests carry the real answers as fixtures.
+
+- **Language.** The `lang` attribute is often wrong, so a page is called not-English from its text as well
+  (`readsAsEnglish`). The model answers in English even for a Portuguese page, so for such a page grounding checks the
+  numbers only (word overlap can't work across languages). Grouping uses a per-point check, `pointLanguage`: an English
+  point and a non-English point never join; the topic-name and same-subject bonuses are ignored across sources of
+  different languages.
+- **Word grouping thresholds.** `TOPIC_SIMILARITY` is 0.21, not 0.3: the quick view's verbatim sentences share too few
+  words. Two small signals keep recall up without false merges: `SAME_SUBJECT_BONUS` (0.25, the shared rare first word of
+  two points, never a merge by itself) and `TAG_MIN_COSINE` (0.05: a shared topic name alone can't join unrelated
+  points). Tuned on three corpora (DNS, OOP untagged and tagged, the E2E pages); zero false merges on all of them.
+- **Topic names (AI).** A small model groups far too much (it put every OOP tag in one group), so a group is accepted only
+  with at most 4 members whose names share a word stem; the model's group name is used only if it shares a stem.
+- **Combine prompt (AI).** "Say each idea once" made the model write one page's idea and cite both labels, which the
+  citation check (rightly) rejects. The prompt now asks for one statement of 2 or 3 sentences that includes what each
+  point says. Only the first 8 points of a topic are sent (`COMBINE_MAX_POINTS`).
+- **Descriptive points.** Points are 2 or 3 sentences (up to 480 characters), asked for in the prompt; the quick view adds
+  the next sentence of the paragraph when it fits. Points that stop mid-sentence ("…forming an") are dropped
+  (`looksCutOff`).
+- **Time limits.** Points 150 s per page (a long Portuguese page needed it), topic names 60 s, combine 90 s per topic.
+- **Visible reasons.** A page that fell back to the quick view says why (`quickReason`: too long, too slow, unusable
+  answer, model unavailable), and a topic the model couldn't combine says why (`combineNote`). Only codes are kept, never
+  page text or URLs.
+- **Editing.** Removing a source in the Combined view applies the §9 bullet rules (`topicEdits.removeSource`) instead of
+  regrouping, so AI merges and edits survive. **Regroup topics** (with a confirmation) is the way back to the word
+  grouping. Moving an edited multi-point bullet to its own section restores each point's original text.
+- **Links.** `linkUrl` encodes only the path, query and fragment (an encoded `_` in a host would break it) and drops
+  credentials.
+- **Renderer.** The note card now shows list lines as bullets (it showed raw `- `), and a long note stays inside its card
+  (grid row and flex height fixes).
+- **Quick view limits.** Two pages that say the same thing in different words may stay in separate bullets of one topic;
+  the AI combine is what merges them. Without AI, only near-identical sentences collapse into one bullet.
+
+**Not done:** a manual check on a fresh profile (no site-access warning at install), in Edge, and with a screen reader;
+the Combined review has no drag and drop; the model's wording can still be clumsy, which the note says.

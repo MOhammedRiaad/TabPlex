@@ -236,9 +236,10 @@
 <li>TabPlex sends it the titles and addresses (host and path only, without query strings) of the tabs you choose, and any hint you type</li>
 <li>The note helpers (✨ AI in the note editor) send it the text of the note you&#39;re editing, only when you pick a helper</li>
 <li>&quot;Summarize open tabs&quot; sends it the text of the pages you pick, one page at a time, only when you click Summarize. Page text is held in memory while it is summarized and is not stored. Only the key points you keep are saved, in a note, with a link to each page</li>
+<li>To combine pages that cover the same topic, &quot;Summarize open tabs&quot; then sends the model the short key points it already made (not the page text) so it can name matching topics and rewrite the points of one topic into a single statement. TabPlex checks every statement against the points it came from, works out which pages each statement comes from itself, and keeps the original points when the answer doesn&#39;t match</li>
 <li>The model&#39;s answer stays in your browser, and nothing changes until you confirm it</li>
 <li>No tab or note data is sent to TabPlex, Google or any other server by these features</li>
-<li>Without the model (another browser, or a device that can&#39;t run it) the features use simple local rules instead. &quot;Summarize open tabs&quot; then makes a quick view: sentences taken from the page, still on your device</li>
+<li>Without the model (another browser, or a device that can&#39;t run it) the features use simple local rules instead. &quot;Summarize open tabs&quot; then makes a quick view (sentences taken from the page) and groups them by shared words, still on your device</li>
 <li>Turn them off in Settings → On-device AI</li>
 </ul>
 <h2>Your Data Rights</h2>

@@ -59,8 +59,10 @@ NEW TASK FROM TABS
 • Works from the Tasks view, the command palette, or a group you just organized
 
 SUMMARIZE OPEN TABS
-• Pick the tabs you're studying from and save one note with a few key points per page and a link to every source
-• With your browser's built-in AI the points are written on your device; without it you get a quick view made of sentences from the page
+• Pick the tabs you're studying from and save one note with key points from each page and a link to every source
+• Pages that cover the same topic are combined under one heading, with a link to each page that said it; what only one page says stays in its own section
+• With your browser's built-in AI the points are written and combined on your device; without it you get a quick view made of sentences from the page, grouped by shared words
+• Rename topics, edit or move points, and remove a source before the note is created
 • Your browser asks for access to only the sites you pick, and only when you use it; remove it any time in Settings
 • Check, edit or remove any point before the note is created
 
@@ -215,6 +217,7 @@ Most recent first. Versions come from semantic-release (`CHANGELOG.md`); a store
 
 - On-device AI (Organize tabs by topic, task drafts, park summaries, note helpers) needs desktop Chrome with built-in AI on capable hardware. Without it, Organize tabs groups by site, New task from tabs suggests only a title, summaries are off and the note editor has no ✨ AI menu.
 - Edge: the AI features are hidden or fall back, because Edge may not offer the same built-in model.
+- Summarize open tabs: with built-in AI a run uses three model sessions (points, topic names, combining), takes a few minutes for several long pages, and the model's wording can be clumsy or wrong, which the note says. Pages in other languages get English points. Without AI it makes a quick view that groups sentences by shared words.
 
 ### Rejection History
 
