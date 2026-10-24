@@ -1,12 +1,14 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import TabNotesDialog from '../TabNotesDialog';
+import { REGROUP_CONFIRM, RETRY_CONFIRM } from '../../constants';
 import { useTabNotesStore } from '../../store/tabNotesStore';
 import { useBoardStore } from '../../../../store/boardStore';
 import { useUIActions, useUIStore } from '../../../ui/store/uiStore';
 import { AI_SETTINGS_KEY, DEFAULT_AI_SETTINGS } from '../../../ai/constants';
 import { ChromeMock, fakeChrome, installChromeMock } from '../../../../test/chromeMock';
-import { KeyPoint, NoteSource, PageSnapshot, Topic } from '../../types';
+import { KeyPoint, NoteSource, PageSnapshot, ReadableTab, RunTab, Topic } from '../../types';
 import { groupTopics } from '../../utils/groupTopics';
 
 /** Sentences of each test page, registered when the page is "read" so the model stub can find them */
@@ -811,8 +813,325 @@ describe('TabNotesDialog: the AI steps while the run is going', () => {
         });
         openDialog();
 
-        expect(screen.getByRole('heading', { name: 'DNS caching' })).toBeInTheDocument();
+        // The heading is a read-only input while the run is going
+        expect(screen.getByRole('textbox', { name: 'Topic heading' })).toHaveValue('DNS caching');
+        expect(screen.getByRole('textbox', { name: 'Topic heading' })).toBeDisabled();
         expect(screen.getByText('combined by AI')).toBeInTheDocument();
         expect(screen.getByText('Combining topic 1 of 1…')).toBeInTheDocument();
+    });
+});
+
+describe('TabNotesDialog: editing the Combined review', () => {
+    const GAMMA = 'https://gamma.test/g';
+
+    const sourceAt = (ref: number, title: string, url: string, tabId: number): NoteSource => ({
+        ref,
+        tabId,
+        windowId: 1,
+        title,
+        url,
+        mode: 'ai',
+        truncated: false,
+        notEnglish: false,
+    });
+
+    const POINTS_EDIT: KeyPoint[] = [
+        { id: 'p1-1', sourceRef: 1, text: 'The default TTL for a cached DNS answer is 300 seconds.', topicHint: '' },
+        { id: 'p1-2', sourceRef: 1, text: 'Resolvers keep each answer until its TTL runs out.', topicHint: '' },
+        { id: 'p2-1', sourceRef: 2, text: 'The default TTL for a cached DNS answer is 3600 seconds.', topicHint: '' },
+        { id: 'p2-2', sourceRef: 2, text: 'Resolvers keep each answer until its TTL runs out.', topicHint: '' },
+        { id: 'p2-3', sourceRef: 2, text: 'Subclasses inherit their parent methods.', topicHint: '' },
+        { id: 'p3-1', sourceRef: 3, text: 'fetch() returns a promise that resolves to the response.', topicHint: '' },
+        { id: 'p3-2', sourceRef: 3, text: 'Subclasses inherit from their parents.', topicHint: '' },
+    ];
+
+    /** DNS caching (two bullets, one conflict), Inheritance (shared by Beta and Gamma), and Gamma's own section */
+    const TOPICS_EDIT = (): Topic[] => [
+        {
+            id: 't1',
+            heading: 'DNS caching',
+            kind: 'shared',
+            combinedBy: 'words',
+            bullets: [
+                {
+                    id: 'b1',
+                    text: 'Resolvers keep each answer until its TTL runs out.',
+                    pointIds: ['p1-2', 'p2-2'],
+                    origin: 'point',
+                    edited: false,
+                },
+                {
+                    id: 'b2',
+                    text: 'The default TTL for a cached DNS answer is 300 seconds.',
+                    pointIds: ['p1-1'],
+                    origin: 'point',
+                    edited: false,
+                },
+            ],
+            conflicts: [{ pointIds: ['p1-1', 'p2-1'], text: '' }],
+        },
+        {
+            id: 't2',
+            heading: 'Inheritance',
+            kind: 'shared',
+            combinedBy: 'words',
+            bullets: [
+                {
+                    id: 'b3',
+                    text: 'Subclasses inherit their parent methods.',
+                    pointIds: ['p2-3'],
+                    origin: 'point',
+                    edited: false,
+                },
+                {
+                    id: 'b4',
+                    text: 'Subclasses inherit from their parents.',
+                    pointIds: ['p3-2'],
+                    origin: 'point',
+                    edited: false,
+                },
+            ],
+            conflicts: [],
+        },
+        {
+            id: 't3',
+            heading: 'Gamma',
+            kind: 'source',
+            sourceRef: 3,
+            combinedBy: null,
+            bullets: [
+                {
+                    id: 'b5',
+                    text: 'fetch() returns a promise that resolves to the response.',
+                    pointIds: ['p3-1'],
+                    origin: 'point',
+                    edited: false,
+                },
+            ],
+            conflicts: [],
+        },
+    ];
+
+    /** Opens the review of the three tabs with these topics (Combined on screen) */
+    function openReview(topics: Topic[] = TOPICS_EDIT(), points: KeyPoint[] = POINTS_EDIT) {
+        const alpha = browser.addTab({ url: ALPHA, title: 'Alpha' });
+        const beta = browser.addTab({ url: BETA, title: 'Beta' });
+        const gamma = browser.addTab({ url: GAMMA, title: 'Gamma' });
+        const sources = [
+            sourceAt(1, 'Alpha', ALPHA, alpha.id),
+            sourceAt(2, 'Beta', BETA, beta.id),
+            sourceAt(3, 'Gamma', GAMMA, gamma.id),
+        ];
+        useTabNotesStore.setState({
+            status: 'done',
+            view: 'combined',
+            sources,
+            points,
+            combined: topics,
+            combinedEdited: false,
+        });
+        openDialog();
+        return sources;
+    }
+
+    const dnsCard = () => screen.getByRole('region', { name: 'DNS caching' });
+
+    it('renames a topic: the heading is committed on blur, announced, and the new name is kept', async () => {
+        const user = userEvent.setup();
+        openReview();
+        const heading = within(dnsCard()).getByRole('textbox', { name: 'Topic heading' });
+        await user.clear(heading);
+        await user.type(heading, 'Caching of DNS answers');
+        await user.tab();
+
+        expect(state().combined[0].heading).toBe('Caching of DNS answers');
+        expect(screen.getByRole('status')).toHaveTextContent('Renamed to Caching of DNS answers');
+        expect(screen.getByRole('region', { name: 'Caching of DNS answers' })).toBeInTheDocument();
+    });
+
+    it('edits a bullet, and Create note saves the edited text with its references', async () => {
+        const user = userEvent.setup();
+        openReview();
+        await user.click(within(dnsCard()).getAllByRole('button', { name: 'Edit bullet 1 of DNS caching' })[0]);
+        const area = within(dnsCard()).getByRole('textbox', { name: 'Text of bullet 1 of DNS caching' });
+        await user.clear(area);
+        await user.type(area, 'Resolvers cache each answer for its TTL.');
+        await user.click(within(dnsCard()).getByRole('button', { name: 'Save' }));
+
+        expect(within(dnsCard()).getByText('edited')).toBeInTheDocument();
+        expect(screen.getByRole('status')).toHaveTextContent('Bullet saved');
+
+        await user.click(screen.getByRole('button', { name: 'Create note' }));
+        const [note] = useBoardStore.getState().notes;
+        expect(note.content).toContain(
+            '- Resolvers cache each answer for its TTL. ([1](https://alpha.test/a), [2](https://beta.test/b))'
+        );
+    });
+
+    it('cancelling an edit keeps the bullet as it was, and the focus returns to its Edit button', async () => {
+        const user = userEvent.setup();
+        openReview();
+        await user.click(within(dnsCard()).getAllByRole('button', { name: 'Edit bullet 1 of DNS caching' })[0]);
+        await user.click(within(dnsCard()).getByRole('button', { name: 'Cancel' }));
+        expect(within(dnsCard()).getAllByRole('button', { name: 'Edit bullet 1 of DNS caching' })[0]).toHaveFocus();
+        expect(within(dnsCard()).queryByText('edited')).toBeNull();
+    });
+
+    it('removes a bullet; the focus goes to the bullet above when it was the last one', async () => {
+        const user = userEvent.setup();
+        openReview();
+        await user.click(within(dnsCard()).getByRole('button', { name: 'Remove bullet 2 of DNS caching' }));
+
+        expect(within(dnsCard()).queryByText(/default TTL/, { selector: '.tabnotes-bullet-text' })).toBeNull();
+        expect(within(dnsCard()).getByText('Resolvers keep each answer until its TTL runs out.')).toBeInTheDocument();
+        expect(screen.getByRole('status')).toHaveTextContent('Bullet removed');
+        expect(screen.getByRole('button', { name: 'Edit bullet 1 of DNS caching' })).toHaveFocus();
+        expect(state().points).toHaveLength(POINTS_EDIT.length);
+    });
+
+    it("removing the only shared bullet of a topic turns what is left into that source's own section", async () => {
+        const user = userEvent.setup();
+        openReview();
+        await user.click(within(dnsCard()).getByRole('button', { name: 'Remove bullet 1 of DNS caching' }));
+
+        expect(screen.queryByRole('region', { name: 'DNS caching' })).toBeNull();
+        const alpha = within(screen.getByRole('region', { name: 'Only in one source' })).getByRole('region', {
+            name: 'Alpha',
+        });
+        expect(within(alpha).getByText('The default TTL for a cached DNS answer is 300 seconds.')).toBeInTheDocument();
+        expect(screen.getByRole('status')).toHaveTextContent('Bullet removed');
+    });
+
+    it('removes a conflict and announces it', async () => {
+        const user = userEvent.setup();
+        openReview();
+        await user.click(within(dnsCard()).getByRole('button', { name: 'Remove conflict 1 of DNS caching' }));
+        expect(within(dnsCard()).queryByText(/Sources differ/)).toBeNull();
+        expect(screen.getByRole('status')).toHaveTextContent('Conflict removed');
+    });
+
+    it('moves a bullet to Own section: its points go to their sources, named by the source', async () => {
+        const user = userEvent.setup();
+        openReview();
+        await user.selectOptions(
+            within(dnsCard()).getAllByRole('combobox', { name: 'Move bullet to' })[0],
+            'Own section'
+        );
+
+        expect(screen.getByRole('status')).toHaveTextContent('Moved to Own section');
+        const own = screen.getByRole('region', { name: 'Only in one source' });
+        expect(within(own).getByRole('region', { name: 'Alpha' })).toBeInTheDocument();
+        await user.click(screen.getByRole('button', { name: 'Create note' }));
+        expect(useBoardStore.getState().notes[0].content).toContain('### Alpha ([1](https://alpha.test/a))');
+    });
+
+    it('moves a bullet to another shared topic, announced by its heading', async () => {
+        const user = userEvent.setup();
+        openReview();
+        await user.selectOptions(
+            within(dnsCard()).getAllByRole('combobox', { name: 'Move bullet to' })[0],
+            'Inheritance'
+        );
+        expect(screen.getByRole('status')).toHaveTextContent('Moved to Inheritance');
+        const inheritance = screen.getByRole('region', { name: 'Inheritance' });
+        expect(within(inheritance).getByText('Resolvers keep each answer until its TTL runs out.')).toBeInTheDocument();
+    });
+
+    it("reaches the move select from the keyboard, after the bullet's Edit button", async () => {
+        const user = userEvent.setup();
+        openReview();
+        const edit = within(dnsCard()).getAllByRole('button', { name: 'Edit bullet 1 of DNS caching' })[0];
+        edit.focus();
+        await user.tab();
+        expect(within(dnsCard()).getAllByRole('combobox', { name: 'Move bullet to' })[0]).toHaveFocus();
+    });
+
+    it('separates a shared topic by source and announces it', async () => {
+        const user = userEvent.setup();
+        openReview();
+        await user.click(within(dnsCard()).getByRole('button', { name: 'Separate by source' }));
+        expect(screen.getByRole('status')).toHaveTextContent('Separated DNS caching by source');
+        expect(screen.queryByRole('region', { name: 'DNS caching' })).toBeNull();
+    });
+
+    it('removes a topic from the Combined view, announced, and keeps its points in the draft', async () => {
+        const user = userEvent.setup();
+        openReview();
+        await user.click(within(dnsCard()).getByRole('button', { name: 'Remove topic DNS caching' }));
+        expect(screen.getByRole('status')).toHaveTextContent('Removed topic DNS caching');
+        expect(screen.queryByRole('region', { name: 'DNS caching' })).toBeNull();
+        expect(state().points).toHaveLength(POINTS_EDIT.length);
+    });
+
+    it("removing a source in the Combined view keeps the other sources' bullets, and the focus goes to the next source", async () => {
+        const user = userEvent.setup();
+        openReview();
+        await user.click(screen.getByRole('button', { name: 'Remove Gamma from the note' }));
+
+        expect(screen.queryByText('fetch() returns a promise that resolves to the response.')).toBeNull();
+        expect(screen.queryByRole('region', { name: 'Inheritance' })).toBeNull();
+        expect(within(dnsCard()).getByText('Resolvers keep each answer until its TTL runs out.')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Remove Beta from the note' })).toHaveFocus();
+    });
+
+    it('Regroup topics is off when there are no topics and no points', () => {
+        openReview([], []);
+        expect(screen.getByRole('button', { name: 'Regroup topics' })).toBeDisabled();
+    });
+
+    it('Regroup topics asks first when the topics were edited, and "Keep my edits" keeps them', async () => {
+        const user = userEvent.setup();
+        openReview();
+        act(() => state().actions.renameTopic('t1', 'My own name'));
+        await user.click(screen.getByRole('button', { name: 'Regroup topics' }));
+
+        const confirm = screen.getByRole('group', { name: 'Confirm' });
+        expect(within(confirm).getByText(REGROUP_CONFIRM)).toBeInTheDocument();
+        await user.click(within(confirm).getByRole('button', { name: 'Keep my edits' }));
+        expect(state().combined[0].heading).toBe('My own name');
+        expect(screen.queryByRole('group', { name: 'Confirm' })).toBeNull();
+
+        await user.click(screen.getByRole('button', { name: 'Regroup topics' }));
+        await user.click(
+            within(screen.getByRole('group', { name: 'Confirm' })).getByRole('button', { name: 'Regroup topics' })
+        );
+        expect(state().combinedEdited).toBe(false);
+        expect(state().combined.some(topic => topic.heading === 'My own name')).toBe(false);
+        expect(screen.getByRole('status')).toHaveTextContent('Topics regrouped by shared words');
+    });
+
+    it('Regroup topics does not ask when nothing was edited', async () => {
+        const user = userEvent.setup();
+        openReview();
+        await user.click(screen.getByRole('button', { name: 'Regroup topics' }));
+        expect(screen.queryByRole('group', { name: 'Confirm' })).toBeNull();
+        expect(screen.getByRole('status')).toHaveTextContent('Topics regrouped by shared words');
+    });
+
+    it('a retry asks first when the topics were edited, and only retries after the confirmation', async () => {
+        const user = userEvent.setup();
+        openReview();
+        const retry = vi.spyOn(state().actions, 'retryTab').mockImplementation(() => undefined);
+        const delta: ReadableTab = {
+            id: 4,
+            windowId: 1,
+            title: 'Delta',
+            url: 'https://delta.test/d',
+            originPattern: 'https://delta.test/*',
+            readable: true,
+        };
+        const failed: RunTab = { ref: 4, tab: delta, state: 'failed', message: 'This page could not be read.' };
+        act(() => {
+            useTabNotesStore.setState({ tabs: [failed] });
+            state().actions.renameTopic('t1', 'My own name');
+        });
+
+        await user.click(screen.getByRole('button', { name: 'Retry Delta' }));
+        const confirm = screen.getByRole('group', { name: 'Confirm' });
+        expect(within(confirm).getByText(RETRY_CONFIRM)).toBeInTheDocument();
+        expect(retry).not.toHaveBeenCalled();
+
+        await user.click(within(confirm).getByRole('button', { name: 'Retry and regroup' }));
+        expect(retry).toHaveBeenCalledWith(4);
     });
 });

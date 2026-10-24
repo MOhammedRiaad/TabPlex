@@ -5,8 +5,8 @@ import { POINTS_SYSTEM, extractPointsAi } from '../../utils/aiPoints';
 import { COMBINE_SYSTEM, TOPICS_SYSTEM } from '../../utils/aiTopics';
 import { sourcesOf } from '../../utils/groupTopics';
 import { PageReadFailure, snapshotTab } from '../../utils/readPage';
-import { PageSnapshot, ReadableTab, Topic } from '../../types';
-import { createNoteFromDraft, draftOf, failuresOf, useTabNotesStore } from '../tabNotesStore';
+import { KeyPoint, NoteSource, PageSnapshot, ReadableTab, Topic } from '../../types';
+import { TabNotesState, createNoteFromDraft, draftOf, failuresOf, useTabNotesStore } from '../tabNotesStore';
 
 vi.mock('../../utils/readPage', async importOriginal => {
     const actual = await importOriginal<typeof import('../../utils/readPage')>();
@@ -597,13 +597,14 @@ describe('the grouping into topics', () => {
         expect(draftOf(state()).view).toBe('combined');
     });
 
-    it('removing a source takes its points out of every view and regroups', async () => {
+    it('removing a source takes its points out of every view; the topics keep what is left (no regrouping)', async () => {
         await runTwoSame();
         actions().removeSource(2);
 
         expect(state().sources.map(s => s.ref)).toEqual([1]);
         expect(state().points.every(point => point.sourceRef === 1)).toBe(true);
-        expect(state().combined).toEqual([]);
+        // The shared topic has one source left: it is that source's section, and no topic is shared any more
+        expect(state().combined.every(topic => topic.kind === 'source' && topic.sourceRef === 1)).toBe(true);
         expect(draftOf(state())).toMatchObject({ view: 'byTab', sources: [expect.objectContaining({ ref: 1 })] });
     });
 
@@ -895,19 +896,26 @@ describe('the AI topic names and combining', () => {
         expect(combine.destroy).toHaveBeenCalledTimes(1);
     });
 
-    it('removing a source after the AI combine says the topics are grouped by words', async () => {
+    it('removing a source keeps the AI topics that still have a source, and the removed page leaves them', async () => {
         stubModel(pointsFor, { combinePrompt: mergeFirstTwo });
         readTopicPages();
         startThree();
         await runEnded();
         expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['ai', 'ai']);
+        const bulletsBefore = sharedTopics().flatMap(topic => topic.bullets.map(bullet => bullet.text));
 
-        // Page C leaves: the DNS caching topic is one source now, and the bread topic is grouped by words again
+        // Page C leaves: the AI statement of the DNS-like topic (pages A and C) falls back to page A's own points, and
+        // the AI statement of the bread topic (pages A and B) is kept as it is
         actions().removeSource(3);
 
-        expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['words']);
+        expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['ai']);
         expect(sharedTopics()[0].bullets.map(bullet => bullet.text)).toEqual([TOPIC_Y]);
-        expect(draftOf(state()).combined?.some(topic => topic.combinedBy === 'ai')).toBe(false);
+        expect(bulletsBefore).toEqual(expect.arrayContaining([TOPIC_Y]));
+        const pageA = state().combined.find(topic => topic.kind === 'source' && topic.sourceRef === 1);
+        expect(pageA?.bullets.map(bullet => bullet.text)).toContain(TOPIC_X);
+        const cited = state().combined.flatMap(topic => topic.bullets.flatMap(bullet => bullet.pointIds));
+        expect(cited.some(id => id.startsWith('p3-'))).toBe(false);
+        expect(draftOf(state()).combined?.filter(topic => topic.combinedBy === 'ai')).toHaveLength(1);
     });
 
     it('a retry regroups by words and calls neither the topic names nor the combine model', async () => {
@@ -930,5 +938,278 @@ describe('the AI topic names and combining', () => {
         expect(topicClones).toHaveLength(1);
         expect(combineClones).toHaveLength(1);
         expect(sharedTopics().map(topic => topic.combinedBy)).toEqual(['words', 'words']);
+    });
+});
+
+describe('the Combined edits (spec §9)', () => {
+    const sourceOf = (ref: number): NoteSource => ({
+        ref,
+        tabId: ref,
+        windowId: 1,
+        title: `Page ${ref}`,
+        url: `https://example.com/${ref}`,
+        mode: 'ai',
+        truncated: false,
+        notEnglish: false,
+    });
+    const POINTS: KeyPoint[] = [
+        { id: 'p1-1', sourceRef: 1, text: 'Resolvers keep answers until the TTL runs out.', topicHint: '' },
+        { id: 'p1-2', sourceRef: 1, text: 'Negative answers are cached too.', topicHint: '' },
+        { id: 'p2-1', sourceRef: 2, text: 'Resolvers keep answers for the TTL.', topicHint: '' },
+        { id: 'p2-2', sourceRef: 2, text: 'Subclasses inherit their parent methods.', topicHint: '' },
+        { id: 'p3-1', sourceRef: 3, text: 'Clients keep the answers they receive.', topicHint: '' },
+        { id: 'p3-2', sourceRef: 3, text: 'Subclasses inherit from their parents.', topicHint: '' },
+    ];
+
+    /** Two shared topics: DNS caching (an AI statement from 1, 2 and 3, and a conflict) and Inheritance (word grouped) */
+    const TOPICS = (): Topic[] => [
+        {
+            id: 't1',
+            heading: 'DNS caching',
+            kind: 'shared',
+            combinedBy: 'ai',
+            bullets: [
+                {
+                    id: 'b1',
+                    text: 'Resolvers keep each answer until its TTL runs out.',
+                    pointIds: ['p1-1', 'p2-1', 'p3-1'],
+                    origin: 'ai',
+                    edited: false,
+                },
+                {
+                    id: 'b2',
+                    text: 'Negative answers are cached too.',
+                    pointIds: ['p1-2'],
+                    origin: 'point',
+                    edited: false,
+                },
+            ],
+            conflicts: [{ pointIds: ['p1-1', 'p3-1'], text: '' }],
+        },
+        {
+            id: 't2',
+            heading: 'Inheritance',
+            kind: 'shared',
+            combinedBy: 'words',
+            bullets: [
+                {
+                    id: 'b3',
+                    text: 'Subclasses inherit their parent methods.',
+                    pointIds: ['p2-2'],
+                    origin: 'point',
+                    edited: false,
+                },
+                {
+                    id: 'b4',
+                    text: 'Subclasses inherit from their parents.',
+                    pointIds: ['p3-2'],
+                    origin: 'point',
+                    edited: false,
+                },
+            ],
+            conflicts: [],
+        },
+    ];
+
+    /** A finished run with the Combined view on screen, built from the topics above */
+    function seed(overrides: Partial<TabNotesState> = {}) {
+        useTabNotesStore.setState({
+            status: 'done',
+            view: 'combined',
+            sources: [sourceOf(1), sourceOf(2), sourceOf(3)],
+            points: POINTS,
+            combined: TOPICS(),
+            combinedEdited: false,
+            ...overrides,
+        });
+    }
+    const topicNamed = (heading: string) => state().combined.find(topic => topic.heading === heading);
+    const sectionOf = (ref: number) =>
+        state().combined.find(topic => topic.kind === 'source' && topic.sourceRef === ref);
+
+    it('renaming a topic sets the cleaned heading, keeps its bullets, and marks the view edited', () => {
+        seed();
+        actions().renameTopic('t1', '  DNS   caching **basics** ');
+        expect(topicNamed('DNS caching basics')?.bullets).toHaveLength(2);
+        expect(state().combinedEdited).toBe(true);
+    });
+
+    it('renaming a topic to nothing keeps the heading', () => {
+        seed();
+        actions().renameTopic('t1', '**');
+        expect(topicNamed('DNS caching')).toBeDefined();
+    });
+
+    it('editing a bullet changes its text and marks it edited, keeping its sources and origin', () => {
+        seed();
+        actions().editBullet('b2', 'Negative answers are cached for a shorter time.');
+        expect(state().combined[0].bullets[1]).toMatchObject({
+            text: 'Negative answers are cached for a shorter time.',
+            edited: true,
+            origin: 'point',
+            pointIds: ['p1-2'],
+        });
+        expect(state().combinedEdited).toBe(true);
+    });
+
+    it('an edited bullet keeps its text when its point changes in the By tab', () => {
+        seed();
+        actions().editBullet('b2', 'Negative answers are cached for a shorter time.');
+        actions().editPoint('p1-2', 'Changed in the By tab.');
+        expect(draftOf(state()).combined?.[0].bullets[1].text).toBe('Negative answers are cached for a shorter time.');
+    });
+
+    it('an unedited point bullet shows its point text as changed in the By tab', () => {
+        seed();
+        actions().editPoint('p1-2', 'Changed in the By tab.');
+        expect(draftOf(state()).combined?.[0].bullets[1].text).toBe('Changed in the By tab.');
+    });
+
+    it('removing a bullet leaves its points in the draft, and a topic with no bullets goes', () => {
+        seed();
+        actions().removeBullet('b2');
+        expect(state().combined[0].bullets.map(bullet => bullet.text)).toEqual([
+            'Resolvers keep each answer until its TTL runs out.',
+        ]);
+        expect(state().points).toHaveLength(POINTS.length);
+
+        actions().removeBullet('b3');
+        actions().removeBullet('b4');
+        expect(topicNamed('Inheritance')).toBeUndefined();
+    });
+
+    it('removing a conflict drops only that conflict', () => {
+        seed();
+        actions().removeConflict('t1', 0);
+        expect(state().combined[0].conflicts).toEqual([]);
+        expect(state().combined[0].bullets).toHaveLength(2);
+    });
+
+    it('moving a bullet to another shared topic keeps its sources and the labels of both topics', () => {
+        seed();
+        actions().moveBullet('b2', 't2');
+        expect(topicNamed('Inheritance')?.bullets.map(bullet => bullet.text)).toContain(
+            'Negative answers are cached too.'
+        );
+        expect(topicNamed('DNS caching')?.bullets.map(bullet => bullet.text)).not.toContain(
+            'Negative answers are cached too.'
+        );
+        expect(topicNamed('DNS caching')?.combinedBy).toBe('ai');
+        expect(topicNamed('Inheritance')?.combinedBy).toBe('words');
+    });
+
+    it("moving a bullet to Own section puts its points in their sources' sections", () => {
+        seed();
+        actions().moveBullet('b1', 'own');
+        expect(sectionOf(1)?.bullets.map(bullet => bullet.text)).toContain(
+            'Resolvers keep answers until the TTL runs out.'
+        );
+        expect(sectionOf(3)?.bullets.map(bullet => bullet.text)).toContain('Clients keep the answers they receive.');
+        expect(
+            state()
+                .combined.filter(topic => topic.kind === 'shared')
+                .map(topic => topic.heading)
+        ).toEqual(['Inheritance']);
+    });
+
+    it('separating a shared topic by source gives each bullet to its source section and drops its conflicts', () => {
+        seed();
+        actions().separateTopic('t1');
+        expect(topicNamed('DNS caching')).toBeUndefined();
+        expect(sectionOf(2)?.bullets.map(bullet => bullet.text)).toContain('Resolvers keep answers for the TTL.');
+        expect(state().combined.flatMap(topic => topic.conflicts)).toEqual([]);
+    });
+
+    it('removing a topic takes it out of the Combined view and keeps its points in the draft', () => {
+        seed();
+        actions().removeTopic('t1');
+        expect(topicNamed('DNS caching')).toBeUndefined();
+        expect(state().points).toHaveLength(POINTS.length);
+        expect(state().combinedEdited).toBe(true);
+    });
+
+    it('removing a source keeps an edited AI bullet with its text, label and the sources that remain', () => {
+        seed();
+        actions().editBullet('b1', 'Resolvers keep each answer until its TTL runs out.');
+        actions().removeSource(2);
+        const dns = topicNamed('DNS caching');
+        expect(dns?.combinedBy).toBe('ai');
+        expect(dns?.bullets[0]).toMatchObject({
+            text: 'Resolvers keep each answer until its TTL runs out.',
+            origin: 'ai',
+            edited: true,
+            pointIds: ['p1-1', 'p3-1'],
+        });
+    });
+
+    it('removing a source: an unedited AI bullet that lost a point falls back to its remaining points, and the label goes to words', () => {
+        seed();
+        actions().removeSource(1);
+        const dns = topicNamed('DNS caching');
+        // No AI bullet is left in the topic, so it is grouped by words now
+        expect(dns?.combinedBy).toBe('words');
+        expect(dns?.bullets.find(bullet => bullet.pointIds.join() === 'p2-1')).toMatchObject({
+            text: 'Resolvers keep answers for the TTL.',
+            origin: 'point',
+        });
+        expect(dns?.bullets.find(bullet => bullet.pointIds.join() === 'p3-1')).toMatchObject({
+            text: 'Clients keep the answers they receive.',
+            origin: 'point',
+        });
+    });
+
+    it('removing a source marks the Combined view edited when it is on screen, not when it is the By tab', () => {
+        seed({ view: 'byTab' });
+        actions().removeSource(3);
+        expect(state().combinedEdited).toBe(false);
+
+        seed({ view: 'combined' });
+        actions().removeSource(3);
+        expect(state().combinedEdited).toBe(true);
+    });
+
+    it('removing a point takes it out of the Combined topics without regrouping them', () => {
+        seed();
+        actions().removePoint('p1-2');
+        expect(state().points.map(point => point.id)).not.toContain('p1-2');
+        expect(topicNamed('DNS caching')?.bullets.map(bullet => bullet.id)).toEqual(['b1']);
+        expect(topicNamed('DNS caching')?.combinedBy).toBe('ai');
+    });
+
+    it("keeps each view's edits across a toggle between Combined and By tab", () => {
+        seed();
+        actions().renameTopic('t1', 'Caching');
+        actions().editPoint('p2-2', 'Edited in the By tab.');
+        actions().setView('byTab');
+        actions().setView('combined');
+
+        expect(topicNamed('Caching')).toBeDefined();
+        expect(draftOf(state()).combined?.find(topic => topic.heading === 'Inheritance')?.bullets[0].text).toBe(
+            'Edited in the By tab.'
+        );
+        expect(draftOf({ ...state(), view: 'byTab' }).view).toBe('byTab');
+        expect(state().points.find(point => point.id === 'p2-2')?.text).toBe('Edited in the By tab.');
+    });
+
+    it('regroups the topics by words, without a model, and clears the edited flag', () => {
+        seed({ combinedEdited: true });
+        actions().regroupTopics();
+        expect(state().combinedEdited).toBe(false);
+        expect(state().combined.some(topic => topic.combinedBy === 'ai')).toBe(false);
+    });
+
+    it('ignores every Combined edit while a run is going', () => {
+        seed({ status: 'running' });
+        const before = state().combined;
+        actions().renameTopic('t1', 'Changed');
+        actions().editBullet('b2', 'Changed');
+        actions().removeBullet('b2');
+        actions().removeConflict('t1', 0);
+        actions().moveBullet('b2', 't2');
+        actions().separateTopic('t1');
+        actions().removeTopic('t1');
+        actions().regroupTopics();
+        expect(state().combined).toBe(before);
+        expect(state().combinedEdited).toBe(false);
     });
 });

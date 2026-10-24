@@ -10,6 +10,7 @@ import { AiError } from '../../ai/types';
 import { POINTS_SYSTEM, extractPointsAi, quickResult } from '../utils/aiPoints';
 import { COMBINE_SYSTEM, CombineResult, TOPICS_SYSTEM, canonicalTopics, combineTopicChecked } from '../utils/aiTopics';
 import { groupTopics, withDistinctHeadings } from '../utils/groupTopics';
+import * as topicEdits from '../utils/topicEdits';
 import { cleanPage } from '../utils/pageText';
 import { PageReadFailure, snapshotTab } from '../utils/readPage';
 import { buildStudyNote, hostOf, resolveStudyNoteTitle } from '../utils/studyNote';
@@ -124,10 +125,23 @@ export interface TabNotesActions {
     setView(view: StudyNoteView): void;
     /** Changes the text of a point. The grouping is kept (the topics show the new text). */
     editPoint(pointId: string, text: string): void;
-    /** Removes a point from every view and regroups the topics */
+    /** Removes a point from both views. The Combined topics lose it by the rules of removeSource (no regrouping). */
     removePoint(pointId: string): void;
-    /** Removes a source and its points from every view and regroups the topics */
+    /** Removes a source and its points from both views. The Combined topics follow topicEdits.removeSource. */
     removeSource(ref: number): void;
+    /** Combined view edits (topicEdits, spec §9). Ignored while a run is going, so the AI steps cannot overwrite them. */
+    renameTopic(topicId: string, heading: string): void;
+    editBullet(bulletId: string, text: string): void;
+    removeBullet(bulletId: string): void;
+    removeConflict(topicId: string, index: number): void;
+    /** Moves a bullet to another shared topic, or to 'own' (its sources' sections) */
+    moveBullet(bulletId: string, target: string): void;
+    /** Dissolves a shared topic into its sources' sections */
+    separateTopic(topicId: string): void;
+    /** Removes a topic from the Combined view only (its points stay in the draft) */
+    removeTopic(topicId: string): void;
+    /** Replaces the Combined topics with the word grouping (no model call). Discards the edits to them. */
+    regroupTopics(): void;
 }
 
 /** The word grouping of the points, recomputed whenever the points or sources change (spec §7.3) */
@@ -157,7 +171,8 @@ function withCurrentText(topics: Topic[], points: KeyPoint[]): Topic[] {
     return topics.map(topic => ({
         ...topic,
         bullets: topic.bullets.map(bullet => {
-            if (bullet.origin !== 'point') return bullet;
+            // An edited bullet keeps the text the user wrote
+            if (bullet.origin !== 'point' || bullet.edited) return bullet;
             const first = bullet.pointIds.find(id => textOf.has(id));
             return first === undefined ? bullet : { ...bullet, text: textOf.get(first) ?? bullet.text };
         }),
@@ -187,6 +202,11 @@ export interface TabNotesState {
      * topic the AI combined replaces its word grouping (combinedBy 'ai'). [] means nothing to combine.
      */
     combined: Topic[];
+    /**
+     * True once the user has changed the Combined topics (an edit, a removal, or a source removed while the Combined view
+     * is on screen). The dialog asks before Regroup topics or a retry discards those changes. Cleared by a regroup.
+     */
+    combinedEdited: boolean;
     /** Set while a run is going; close() clears it, so a finished run stops writing */
     abort: AbortController | null;
     actions: TabNotesActions;
@@ -205,6 +225,7 @@ const RESET: Omit<TabNotesState, 'actions'> = {
     points: [],
     view: 'combined',
     combined: [],
+    combinedEdited: false,
     abort: null,
 };
 
@@ -215,6 +236,10 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
             if (state.abort !== abort) return {};
             return typeof change === 'function' ? change(state) : change;
         });
+
+    /** A change made by the user to the Combined topics: ignored while a run is going (the AI steps replace topics) */
+    const editCombined = (change: (state: TabNotesState) => Partial<TabNotesState>) =>
+        set(state => (state.status === 'running' ? {} : change(state)));
 
     /** Reads one tab and records the result, or its failure. A tab that was cancelled is not a failure. */
     const readTab = async (
@@ -360,7 +385,11 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
                 await readTab(entry, base, abort, total, runReason);
             }
             // The word grouping is the fallback: the review shows it as soon as the pages are read
-            updateRun(abort, state => ({ combined: groupedOf(state.sources, state.points) }));
+            // (A retry regroups here too: the dialog asked first when the user had edited the topics.)
+            updateRun(abort, state => ({
+                combined: groupedOf(state.sources, state.points),
+                combinedEdited: false,
+            }));
             if (base && sessions && grouping && !abort.signal.aborted) await combineWithAi(sessions, abort);
         };
 
@@ -414,16 +443,78 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
 
             removePoint: pointId =>
                 set(state => {
+                    // A removal while the run is going would race the AI steps, like the Combined edits below
+                    if (state.status === 'running') return {};
+                    const combined = topicEdits.removePoint(state.combined, pointId, state.points, state.sources);
                     const points = state.points.filter(point => point.id !== pointId);
-                    return { points, combined: groupedOf(state.sources, points) };
+                    return {
+                        points,
+                        combined,
+                        combinedEdited: state.combinedEdited || state.view === 'combined',
+                    };
                 }),
 
             removeSource: ref =>
                 set(state => {
+                    if (state.status === 'running') return {};
+                    const combined = topicEdits.removeSource(state.combined, ref, state.points, state.sources);
                     const sources = state.sources.filter(source => source.ref !== ref);
                     const points = state.points.filter(point => point.sourceRef !== ref);
-                    return { sources, points, combined: groupedOf(sources, points) };
+                    return {
+                        sources,
+                        points,
+                        combined,
+                        combinedEdited: state.combinedEdited || state.view === 'combined',
+                    };
                 }),
+
+            renameTopic: (topicId, heading) =>
+                editCombined(state => ({
+                    combined: topicEdits.renameTopic(state.combined, topicId, heading),
+                    combinedEdited: true,
+                })),
+
+            editBullet: (bulletId, text) =>
+                editCombined(state => ({
+                    combined: topicEdits.editBullet(state.combined, bulletId, text),
+                    combinedEdited: true,
+                })),
+
+            removeBullet: bulletId =>
+                editCombined(state => ({
+                    combined: topicEdits.removeBullet(state.combined, bulletId, state.points, state.sources),
+                    combinedEdited: true,
+                })),
+
+            removeConflict: (topicId, index) =>
+                editCombined(state => ({
+                    combined: topicEdits.removeConflict(state.combined, topicId, index),
+                    combinedEdited: true,
+                })),
+
+            moveBullet: (bulletId, target) =>
+                editCombined(state => ({
+                    combined: topicEdits.moveBullet(state.combined, bulletId, target, state.points, state.sources),
+                    combinedEdited: true,
+                })),
+
+            separateTopic: topicId =>
+                editCombined(state => ({
+                    combined: topicEdits.separateBySource(state.combined, topicId, state.points, state.sources),
+                    combinedEdited: true,
+                })),
+
+            removeTopic: topicId =>
+                editCombined(state => ({
+                    combined: topicEdits.removeTopic(state.combined, topicId, state.points, state.sources),
+                    combinedEdited: true,
+                })),
+
+            regroupTopics: () =>
+                editCombined(state => ({
+                    combined: finishTopics(groupedOf(state.sources, state.points)),
+                    combinedEdited: false,
+                })),
         },
     };
 });
@@ -431,11 +522,19 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
 export const useTabNotesActions = () => useTabNotesStore(state => state.actions);
 
 /**
+ * Whether the Combined view can be shown: two or more tabs and at least one shared topic. Source sections alone (for
+ * example after a removal left one shared topic's tab) are the By tab layout.
+ */
+export function hasCombined(state: Pick<TabNotesState, 'sources' | 'combined'>): boolean {
+    return state.sources.length > 1 && state.combined.some(topic => topic.kind === 'shared');
+}
+
+/**
  * The draft the review shows and the note is built from, for the view on screen: 'combined' when there are topics to
  * show, else 'byTab'. Topic bullets carry their points' current text.
  */
 export function draftOf(state: Pick<TabNotesState, 'sources' | 'points' | 'view' | 'combined'>): StudyNoteDraft {
-    const view = state.view === 'combined' && state.combined.length > 0 ? 'combined' : 'byTab';
+    const view = state.view === 'combined' && hasCombined(state) ? 'combined' : 'byTab';
     return {
         view,
         sources: state.sources,

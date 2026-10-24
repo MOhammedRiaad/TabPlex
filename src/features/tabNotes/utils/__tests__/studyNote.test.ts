@@ -576,3 +576,111 @@ describe('the Combined disclaimer, by what was used (spec §10.1)', () => {
         expect(note).not.toContain('combined by topic');
     });
 });
+
+describe('buildStudyNote (Combined) after the review edits', () => {
+    const sources = [
+        source(1, { title: 'Page 1', url: 'https://example.com/p1' }),
+        source(2, { title: 'Page 2', url: 'https://example.org/p2' }),
+        source(3, { title: 'Solo page', url: 'https://example.net/solo' }),
+    ];
+    const points: KeyPoint[] = [
+        point(1, 'The default TTL is 300 seconds.', 1),
+        point(2, 'The default TTL is 3600 seconds.', 1),
+        point(1, 'Resolvers keep each answer until its TTL runs out.', 2),
+        point(2, 'Resolvers keep each answer until its TTL runs out.', 2),
+        point(3, 'fetch() returns a promise that resolves to the response.', 1),
+        point(1, 'Negative answers are cached too.', 3),
+    ];
+
+    it('writes the renamed heading, the edited text, and a moved bullet with the references of its own points', () => {
+        // The review after the user renamed the topic, edited its bullet, and moved "Negative answers" in from Page 1
+        const edited: Topic[] = [
+            {
+                id: 't1',
+                heading: 'Caching of answers',
+                kind: 'shared',
+                combinedBy: 'words',
+                bullets: [
+                    {
+                        id: 'b1',
+                        text: 'Resolvers cache each answer until the TTL ends.',
+                        pointIds: ['p1-2', 'p2-2'],
+                        origin: 'point',
+                        edited: true,
+                    },
+                    {
+                        id: 'b2',
+                        text: 'Negative answers are cached too.',
+                        pointIds: ['p1-3'],
+                        origin: 'point',
+                        edited: false,
+                    },
+                ],
+                conflicts: [],
+            },
+            {
+                id: 't2',
+                heading: 'Solo page',
+                kind: 'source',
+                sourceRef: 3,
+                combinedBy: null,
+                bullets: [
+                    {
+                        id: 'b3',
+                        text: 'fetch() returns a promise that resolves to the response.',
+                        pointIds: ['p3-1'],
+                        origin: 'point',
+                        edited: false,
+                    },
+                ],
+                conflicts: [],
+            },
+        ];
+        const note = buildStudyNote({ view: 'combined', sources, points, combined: edited }, { date: DATE });
+
+        expect(note).toBe(
+            [
+                '# Study notes · 24 Oct 2026',
+                "_From 3 tabs, summarized by your browser's built-in AI on this device. Topics were grouped by shared words. It can be wrong: check the sources before relying on it._",
+                '## Caching of answers\n\n- Resolvers cache each answer until the TTL ends. ([1](https://example.com/p1), [2](https://example.org/p2))\n- Negative answers are cached too. ([1](https://example.com/p1))',
+                '## Only in one source\n\n### Solo page ([3](https://example.net/solo))\n\n- fetch() returns a promise that resolves to the response.',
+                '## Sources\n\n- [1] [Page 1](https://example.com/p1) · example.com\n- [2] [Page 2](https://example.org/p2) · example.org\n- [3] [Solo page](https://example.net/solo) · example.net',
+            ].join('\n\n')
+        );
+    });
+
+    it('writes a bullet moved to Own section as a Page section with its own reference', () => {
+        const own: Topic[] = [
+            {
+                id: 't1',
+                heading: 'Page 1',
+                kind: 'source',
+                sourceRef: 1,
+                combinedBy: null,
+                bullets: [
+                    {
+                        id: 'b1',
+                        text: 'Negative answers are cached too.',
+                        pointIds: ['p1-3'],
+                        origin: 'point',
+                        edited: false,
+                    },
+                ],
+                conflicts: [],
+            },
+        ];
+        const note = buildStudyNote({ view: 'combined', sources, points, combined: own }, { date: DATE });
+        expect(note).toContain(
+            '## Only in one source\n\n### Page 1 ([1](https://example.com/p1))\n\n- Negative answers are cached too.'
+        );
+        // No shared topic is left: the Combined layout has only the leftovers, and no topic heading is written for it
+        expect(note).not.toContain('## Caching of answers');
+    });
+
+    it('writes the By tab layout when the edits left no shared topic, even on the Combined view', () => {
+        const none: Topic[] = [];
+        const note = buildStudyNote({ view: 'combined', sources, points, combined: none }, { date: DATE });
+        expect(note).toContain('## Page 1 ([1](https://example.com/p1))');
+        expect(note).not.toContain('Only in one source');
+    });
+});

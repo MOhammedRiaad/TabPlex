@@ -4,6 +4,7 @@ import SourceCard from '../SourceCard';
 import SourceList from '../SourceList';
 import TopicCard from '../TopicCard';
 import { KeyPoint, NoteSource, Topic } from '../../types';
+import { noEdits } from './helpers';
 
 const source = (overrides: Partial<NoteSource> = {}): NoteSource => ({
     ref: 1,
@@ -17,7 +18,7 @@ const source = (overrides: Partial<NoteSource> = {}): NoteSource => ({
     ...overrides,
 });
 
-const handlers = () => ({ onOpen: vi.fn(), onRemoveSource: vi.fn() });
+const handlers = () => ({ onOpen: vi.fn(), onRemoveSource: vi.fn(), removable: true });
 
 describe('quick view reason', () => {
     it('shows the reason next to the quick view tag in the Sources list', () => {
@@ -53,7 +54,16 @@ describe('quick view reason', () => {
             conflicts: [],
         };
         render(
-            <TopicCard topic={topic} points={[]} sources={[source({ quickReason: 'bad-output' })]} onOpen={vi.fn()} />
+            <TopicCard
+                topic={topic}
+                topicIndex={0}
+                topics={[topic]}
+                points={[]}
+                sources={[source({ quickReason: 'bad-output' })]}
+                editable
+                onOpen={vi.fn()}
+                edits={noEdits()}
+            />
         );
         expect(screen.getByText('quick view')).toBeInTheDocument();
         expect(screen.getByText("the model's answer was unusable")).toBeInTheDocument();

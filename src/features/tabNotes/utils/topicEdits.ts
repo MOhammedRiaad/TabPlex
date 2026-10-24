@@ -303,16 +303,11 @@ export function separateBySource(topics: Topic[], topicId: string, points: KeyPo
 }
 
 /**
- * Removes a source from every topic (spec §9). Its points leave every bullet and conflict; a bullet with no points left
- * goes. An unedited 'ai' bullet that lost a point becomes one 'point' bullet per remaining point (its wording may come
- * from the removed page); an edited one keeps its text and loses the id. A 'point' bullet whose lead point left takes
- * the next remaining point's text and ids, unless it is edited (then its text stays). Conflicts that lose a point are
- * dropped. `points` are the draft's points before the removal. Shared topics left with one source become that source's
- * section.
+ * Takes the points in `gone` out of every topic (the rules of removeSource). `points` are the draft's points before the
+ * removal. Shared topics left with one source become that source's section.
  */
-export function removeSource(topics: Topic[], ref: number, points: KeyPoint[], sources: NoteSource[]): Topic[] {
+function withoutPoints(topics: Topic[], gone: Set<string>, points: KeyPoint[], sources: NoteSource[]): Topic[] {
     const byId = pointsById(points);
-    const gone = new Set(points.filter(point => point.sourceRef === ref).map(point => point.id));
     const textOf = (id: string, fallback: string) => byId.get(id)?.text ?? fallback;
     const out = topics.map(topic => {
         let aiLeft = false;
@@ -347,4 +342,35 @@ export function removeSource(topics: Topic[], ref: number, points: KeyPoint[], s
         return withBullets(topic, bullets, conflicts, aiLeft);
     });
     return settle(out, points, sources);
+}
+
+/**
+ * Removes a source from every topic (spec §9). Its points leave every bullet and conflict; a bullet with no points left
+ * goes. An unedited 'ai' bullet that lost a point becomes one 'point' bullet per remaining point (its wording may come
+ * from the removed page); an edited one keeps its text and loses the id. A 'point' bullet whose lead point left takes
+ * the next remaining point's text and ids, unless it is edited (then its text stays). Conflicts that lose a point are
+ * dropped. `points` are the draft's points before the removal. Shared topics left with one source become that source's
+ * section.
+ */
+export function removeSource(topics: Topic[], ref: number, points: KeyPoint[], sources: NoteSource[]): Topic[] {
+    const gone = new Set(points.filter(point => point.sourceRef === ref).map(point => point.id));
+    return withoutPoints(topics, gone, points, sources);
+}
+
+/**
+ * Removes one point from every topic, with the rules of removeSource (a bullet of one point goes; an unedited 'ai'
+ * bullet that lost a point becomes its remaining points' texts). Used when a point is removed in the By tab view, so the
+ * Combined view loses it without regrouping. `points` are the draft's points before the removal.
+ */
+export function removePoint(topics: Topic[], pointId: string, points: KeyPoint[], sources: NoteSource[]): Topic[] {
+    return withoutPoints(topics, new Set([pointId]), points, sources);
+}
+
+/**
+ * Removes a topic from this view only (the topic's ✕): its bullets and conflicts go, its points stay in the draft. Other
+ * topics are unchanged, apart from the shared cleanup of settle. Unknown ids change nothing but the renumbering.
+ */
+export function removeTopic(topics: Topic[], topicId: string, points: KeyPoint[], sources: NoteSource[]): Topic[] {
+    const rest = topics.filter(topic => topic.id !== topicId).map(copyTopic);
+    return settle(rest, points, sources);
 }

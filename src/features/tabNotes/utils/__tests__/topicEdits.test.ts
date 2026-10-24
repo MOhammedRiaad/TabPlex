@@ -10,7 +10,9 @@ import {
     normalizeTopics,
     removeBullet,
     removeConflict,
+    removePoint,
     removeSource,
+    removeTopic,
     renameTopic,
     separateBySource,
 } from '../topicEdits';
@@ -649,5 +651,57 @@ describe('the attribution invariant', () => {
                 expect(normalizeTopics(state, points)).toEqual(state);
             }
         }
+    });
+});
+
+describe('removePoint and removeTopic', () => {
+    it('removePoint takes the point out of its bullet and out of every other view of the topics, keeping the others', () => {
+        const topics = deepFreeze(dnsWords());
+        const bullet = allBullets(topics).find(item => item.pointIds.length > 1);
+        if (!bullet) throw new Error('the DNS corpus has no multi-point bullet');
+        const gone = bullet.pointIds[0];
+        const after = removePoint(topics, gone, CORPUS_POINTS, CORPUS_SOURCES);
+
+        expect(listedIds(after)).not.toContain(gone);
+        expect(listedIds(after)).toHaveLength(listedIds(topics).length - 1);
+        // The other point is still cited, by the bullet it was in (or by its own bullet, for an AI bullet)
+        expect(allBullets(after).some(item => item.pointIds.join() === bullet.pointIds[1])).toBe(true);
+    });
+
+    it('removePoint drops a bullet of one point, and a topic with no bullets left', () => {
+        const topics = dnsWords();
+        const bullet = allBullets(topics).find(item => item.pointIds.length === 1);
+        if (!bullet) throw new Error('the DNS corpus has no single-point bullet');
+        const after = removePoint(topics, bullet.pointIds[0], CORPUS_POINTS, CORPUS_SOURCES);
+
+        expect(listedIds(after)).not.toContain(bullet.pointIds[0]);
+        expect(listedIds(after)).toHaveLength(listedIds(topics).length - 1);
+    });
+
+    it('removePoint of an unknown point changes no bullet', () => {
+        const topics = dnsWords();
+        const after = removePoint(topics, 'no-such-point', CORPUS_POINTS, CORPUS_SOURCES);
+        expect(listedIds(after)).toEqual(listedIds(topics));
+    });
+
+    it('removeTopic removes that topic and its bullets, and leaves the other topics as they were', () => {
+        const topics = deepFreeze(dnsWords());
+        const shared = topics.filter(topic => topic.kind === 'shared');
+        const victim = shared[0];
+        const others = topics.filter(topic => topic.id !== victim.id);
+        const after = removeTopic(topics, victim.id, CORPUS_POINTS, CORPUS_SOURCES);
+
+        expect(after.map(topic => topic.heading)).not.toContain(victim.heading);
+        expect(after.filter(topic => topic.kind === 'shared')).toHaveLength(shared.length - 1);
+        expect(listedIds(after).length).toBeLessThan(listedIds(topics).length);
+        for (const other of others) {
+            expect(after.find(topic => topic.heading === other.heading)?.bullets.length).toBeGreaterThan(0);
+        }
+    });
+
+    it('removeTopic of an unknown topic keeps every bullet', () => {
+        const topics = dnsWords();
+        const after = removeTopic(topics, 'no-such-topic', CORPUS_POINTS, CORPUS_SOURCES);
+        expect(listedIds(after)).toEqual(listedIds(topics));
     });
 });

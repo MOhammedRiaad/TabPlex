@@ -496,3 +496,9 @@ export const NOT_ENGLISH_LABEL = 'Not in English: points may be weaker';
 export const NO_POINTS_LINE = 'No key points could be taken from this page.';
 /** Shown for a tab the user cancelled before it was reached (not a failure) */
 export const NOT_READ_MESSAGE = 'Not read (cancelled)';
+
+/** Confirmation before Regroup topics discards the user's edits to the Combined topics (spec §8) */
+export const REGROUP_CONFIRM = 'Regroup topics will discard your edits to the combined topics. Continue?';
+/** The same, for a retry: the retried tab's points are grouped by shared words */
+export const RETRY_CONFIRM =
+    'Retrying this tab regroups the topics by shared words and will discard your edits to the combined topics. Continue?';

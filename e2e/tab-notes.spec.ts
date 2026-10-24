@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { BrowserContext, Page, Worker } from '@playwright/test';
+import type { BrowserContext, Locator, Page, Worker } from '@playwright/test';
 import type { Note } from '../src/types';
 import { expect, siteOn, test } from './fixtures';
 
@@ -390,5 +390,112 @@ test.describe('Summarize open tabs: without the page access option', () => {
         expect(manifest.permissions).toContain('scripting');
         expect(manifest.optional_host_permissions).toEqual(expect.arrayContaining(['http://*/*', 'https://*/*']));
         expect(manifest).not.toHaveProperty('host_permissions');
+    });
+});
+
+test.describe('Summarize open tabs: editing the Combined review (page access on)', () => {
+    test.use({ pageAccess: true });
+
+    /** The numbers of the (n) chips of a row, as strings: the sources the bullet cites */
+    async function chipNumbers(row: Locator): Promise<string[]> {
+        const labels = await row.getByRole('button', { name: /^Open source \d+:/ }).allTextContents();
+        return labels.map(label => label.replace(/\D/g, '')).sort();
+    }
+
+    test('rename a topic, edit a bullet and move a bullet to Own section: the saved note has the edits and the right links', async ({
+        app,
+        context,
+        serviceWorker,
+    }) => {
+        // The model combines the DNS topic into one statement that cites two pages, so the topic stays shared after a
+        // bullet moves out (a topic left with one source becomes that source's section and Combined is off)
+        await stubModel(app);
+        await openPages(context, PAGES);
+        const dialog = await openSummarize(app);
+        await dialog.getByRole('button', { name: 'Summarize 4 tabs' }).click();
+        await expect(dialog.getByRole('button', { name: 'Create note' })).toBeEnabled();
+        await expect(dialog.getByRole('radio', { name: 'Combined' })).toBeChecked();
+        await expect(dialog.getByText('combined by AI').first()).toBeVisible();
+
+        // Rename the first shared topic: the heading is committed when the field loses focus
+        const heading = dialog.getByRole('textbox', { name: 'Topic heading' }).first();
+        await heading.fill('Caching in resolvers');
+        await heading.press('Tab');
+        await expect(dialog.getByRole('status')).toHaveText('Renamed to Caching in resolvers');
+
+        // Edit its first bullet; the bullet keeps the sources of its points
+        const first = dialog
+            .getByRole('listitem')
+            .filter({ has: app.getByRole('button', { name: 'Edit bullet 1 of Caching in resolvers' }) });
+        const refsOfFirst = await chipNumbers(first);
+        expect(refsOfFirst.length).toBeGreaterThan(0);
+        await first.getByRole('button', { name: 'Edit bullet 1 of Caching in resolvers' }).click();
+        // While editing, the row shows the editor instead of the Edit button
+        await dialog
+            .getByRole('textbox', { name: 'Text of bullet 1 of Caching in resolvers' })
+            .fill('Resolvers keep an answer for its TTL.');
+        await dialog.getByRole('button', { name: 'Save' }).click();
+        await expect(first.getByText('edited')).toBeVisible();
+
+        // Move its second bullet to Own section: its sources get their own sections
+        const second = dialog
+            .getByRole('listitem')
+            .filter({ has: app.getByRole('button', { name: 'Edit bullet 2 of Caching in resolvers' }) });
+        const refsOfSecond = await chipNumbers(second);
+        await second.getByRole('combobox', { name: 'Move bullet to' }).selectOption('Own section');
+        await expect(dialog.getByRole('status')).toHaveText('Moved to Own section');
+
+        await dialog.getByRole('button', { name: 'Create note' }).click();
+        await expect(dialog).toHaveCount(0);
+        await expect.poll(async () => (await notesInBackground(serviceWorker)).length).toBe(1);
+        await expect.poll(async () => (await notesInDb(app)).length).toBe(1);
+        const [note] = await notesInBackground(serviceWorker);
+        const [inDb] = await notesInDb(app);
+        expect(inDb.content).toBe(note.content);
+
+        // The renamed heading and the edited bullet are in the note, the bullet cites the sources of its points
+        expect(note.content).toContain('## Caching in resolvers\n\n');
+        const edited = note.content
+            .split('\n')
+            .find(line => line.startsWith('- Resolvers keep an answer for its TTL.'));
+        expect(edited).toBeDefined();
+        const citedInNote = [...(edited ?? '').matchAll(/\[(\d+)\]\(https:/g)].map(match => match[1]).sort();
+        expect(citedInNote).toEqual(refsOfFirst);
+
+        // The moved bullet's points are in their sources' own sections, each with its reference
+        expect(note.content).toContain('## Only in one source');
+        for (const ref of refsOfSecond) {
+            expect(note.content).toMatch(new RegExp(`^### .* \\(\\[${ref}\\]\\(https://`, 'm'));
+        }
+    });
+
+    test("removing a source in the Combined view keeps the other sources' bullets", async ({
+        app,
+        context,
+        serviceWorker,
+    }) => {
+        await openPages(context, PAGES);
+        const dialog = await openSummarize(app);
+        await dialog.getByRole('button', { name: 'Make quick view' }).click();
+        await expect(dialog.getByRole('button', { name: 'Create note' })).toBeEnabled();
+        await expect(dialog.getByRole('radio', { name: 'Combined' })).toBeChecked();
+
+        // The first tab in the strip is source 1 (the DNS caching page): remove it from the note
+        await dialog
+            .getByRole('button', { name: /^Remove .+ from the note$/ })
+            .first()
+            .click();
+        await expect(dialog.getByRole('status')).toContainText('from the note');
+        await dialog.getByRole('button', { name: 'Create note' }).click();
+
+        await expect(dialog).toHaveCount(0);
+        await expect.poll(async () => (await notesInBackground(serviceWorker)).length).toBe(1);
+        const [note] = await notesInBackground(serviceWorker);
+        // Source 1 is gone everywhere; the other pages are still cited, in the shared topics too
+        expect(note.content).not.toMatch(/\[1\]\(https:/);
+        expect(note.content).not.toMatch(/^- \[1\] /m);
+        expect(note.content).toMatch(/^- \[2\] /m);
+        const [topics] = note.content.split('## Only in one source');
+        expect(topics).toMatch(/\[[23]\]\(https:/);
     });
 });

@@ -9,17 +9,19 @@ interface SourceListProps {
     sources: NoteSource[];
     onOpen: (source: NoteSource) => void;
     onRemoveSource: (ref: number) => void;
+    /** False while a run is going: the sources can be opened but not removed */
+    removable: boolean;
 }
 
-const SourceList: React.FC<SourceListProps> = ({ sources, onOpen, onRemoveSource }) => (
+const SourceList: React.FC<SourceListProps> = ({ sources, onOpen, onRemoveSource, removable }) => (
     <section className="tabnotes-section" aria-label="Sources">
         <h3>Sources</h3>
         <ul className="tabnotes-list">
-            {sources.map(source => {
+            {sources.map((source, index) => {
                 const host = hostOf(source.url);
                 const title = source.title || host || 'Untitled page';
                 return (
-                    <li key={source.ref} className="tabnotes-list-item">
+                    <li key={source.ref} className="tabnotes-list-item" data-source-index={index}>
                         <span className="tabnotes-ref">[{source.ref}]</span>
                         <span className="tabnotes-pick-title">{title}</span>
                         {host && <span className="tabnotes-host">{host}</span>}
@@ -41,6 +43,8 @@ const SourceList: React.FC<SourceListProps> = ({ sources, onOpen, onRemoveSource
                             <button
                                 type="button"
                                 className="tabnotes-btn"
+                                data-source-remove=""
+                                disabled={!removable}
                                 onClick={() => onRemoveSource(source.ref)}
                                 aria-label={`Remove ${title} from the note`}
                             >
