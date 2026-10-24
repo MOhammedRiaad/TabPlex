@@ -1,15 +1,48 @@
 import { test as base, chromium, type BrowserContext, type Page, type Worker } from '@playwright/test';
 import type { Task } from '../src/types';
+import fs from 'node:fs';
+import fsp from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const EXTENSION_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
+const E2E_DIR = path.dirname(fileURLToPath(import.meta.url));
+const EXTENSION_PATH = path.resolve(E2E_DIR, '..', 'dist');
+const PAGES_DIR = path.join(E2E_DIR, 'pages');
 
 /** Pages served for tests (no network needed): https://e2e.test/<name> */
 export const site = (name: string) => `https://e2e.test/${name}`;
 
 /** A page on another fake site: any *.test host is served, e.g. siteOn('news.test', 'a') */
 export const siteOn = (host: string, path: string) => `https://${host}/${path}`;
+
+/** e2e/pages/<name>.html when it exists (real article text), otherwise a one-line default page */
+function fakePage(name: string): string {
+    const file = path.join(PAGES_DIR, `${name}.html`);
+    if (/^[a-z0-9-]+$/.test(name) && fs.existsSync(file)) return fs.readFileSync(file, 'utf8');
+    return `<!doctype html><title>Page ${name}</title><h1>${name}</h1>`;
+}
+
+/**
+ * A copy of dist/ whose manifest also has host access to the fake *.test sites. Playwright cannot click the browser's
+ * permission prompt, so the copy is granted at install instead. dist/ itself is never modified.
+ * Returns the copy's root; the extension is the `dist` folder inside it.
+ */
+async function copyWithPageAccess(): Promise<string> {
+    const root = await fsp.mkdtemp(path.join(os.tmpdir(), 'tabplex-e2e-'));
+    const dir = path.join(root, 'dist');
+    await fsp.cp(EXTENSION_PATH, dir, { recursive: true });
+    const manifestPath = path.join(dir, 'manifest.json');
+    const manifest = JSON.parse(await fsp.readFile(manifestPath, 'utf8')) as Record<string, unknown>;
+    manifest.host_permissions = ['https://*.test/*'];
+    await fsp.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+    return root;
+}
+
+type Options = {
+    /** Load a copy of the extension with host access to the fake *.test sites (see copyWithPageAccess) */
+    pageAccess: boolean;
+};
 
 type Fixtures = {
     context: BrowserContext;
@@ -18,24 +51,30 @@ type Fixtures = {
     app: Page;
 };
 
-export const test = base.extend<Fixtures>({
-    // eslint-disable-next-line no-empty-pattern -- Playwright requires the destructuring form
-    context: async ({}, use) => {
-        const context = await chromium.launchPersistentContext('', {
-            channel: 'chromium', // new headless mode supports extensions
-            // Use a preinstalled Chromium when the matching Playwright build isn't installed
-            executablePath: process.env.PW_CHROMIUM_PATH || undefined,
-            args: [`--disable-extensions-except=${EXTENSION_PATH}`, `--load-extension=${EXTENSION_PATH}`],
-        });
-        await context.route(/^https:\/\/[a-z0-9.-]+\.test\//, route => {
-            const name = new URL(route.request().url()).pathname.slice(1);
-            return route.fulfill({
-                contentType: 'text/html',
-                body: `<!doctype html><title>Page ${name}</title><h1>${name}</h1>`,
+export const test = base.extend<Fixtures & Options>({
+    pageAccess: [false, { option: true }],
+
+    context: async ({ pageAccess }, use) => {
+        const copyRoot = pageAccess ? await copyWithPageAccess() : null;
+        try {
+            const context = await chromium.launchPersistentContext('', {
+                channel: 'chromium', // new headless mode supports extensions
+                // Use a preinstalled Chromium when the matching Playwright build isn't installed
+                executablePath: process.env.PW_CHROMIUM_PATH || undefined,
+                args: [
+                    `--disable-extensions-except=${copyRoot ? path.join(copyRoot, 'dist') : EXTENSION_PATH}`,
+                    `--load-extension=${copyRoot ? path.join(copyRoot, 'dist') : EXTENSION_PATH}`,
+                ],
             });
-        });
-        await use(context);
-        await context.close();
+            await context.route(/^https:\/\/[a-z0-9.-]+\.test\//, route => {
+                const name = new URL(route.request().url()).pathname.slice(1);
+                return route.fulfill({ contentType: 'text/html', body: fakePage(name) });
+            });
+            await use(context);
+            await context.close();
+        } finally {
+            if (copyRoot) await fsp.rm(copyRoot, { recursive: true, force: true });
+        }
     },
 
     serviceWorker: async ({ context }, use) => {

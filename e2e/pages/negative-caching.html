@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Caching missing names</title>
+    </head>
+    <body>
+        <main>
+            <article>
+                <h1>Caching missing names</h1>
+                <p>
+                    Negative caching means a resolver remembers that a name does not exist. Without it, every typing
+                    mistake or misconfigured domain would send a new question to the authoritative server each time
+                    someone asked for that name.
+                </p>
+                <h2>How long a miss is kept</h2>
+                <p>
+                    The authoritative server tells the resolver how long to keep a negative answer. That period is taken
+                    from the zone's SOA record, and resolvers usually cap it at a few hours so that a newly created name
+                    becomes visible soon.
+                </p>
+                <h2>Why it helps</h2>
+                <p>
+                    Negative answers are common for mail servers and for software that checks many optional names.
+                    Keeping them for a short time saves a large number of questions, while still letting a new name
+                    appear quickly after it is created.
+                </p>
+            </article>
+        </main>
+    </body>
+</html>
