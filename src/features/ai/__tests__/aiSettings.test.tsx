@@ -82,6 +82,44 @@ describe('AI settings', () => {
         expect(screen.getByRole('checkbox', { name: 'Note helpers' })).toBeChecked();
     });
 
+    it('shows the tab summaries switch with its explanation and saves it', async () => {
+        renderSettings();
+        const summaries = screen.getByRole('checkbox', { name: 'Summarize open tabs with AI' });
+        expect(summaries).toBeChecked();
+        expect(screen.getByText(/Without AI, TabPlex makes a quick view from the page text\./)).toBeInTheDocument();
+
+        fireEvent.click(summaries);
+        await waitFor(async () =>
+            expect((await chrome.storage.local.get(AI_SETTINGS_KEY))[AI_SETTINGS_KEY]).toMatchObject({
+                tabSummaries: false,
+            })
+        );
+    });
+
+    it('says how many sites TabPlex may read, and removes all of them with Remove access', async () => {
+        renderSettings();
+        expect(await screen.findByText('No sites allowed yet.')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Remove access' })).toBeDisabled();
+
+        await chrome.permissions.request({ origins: ['https://a.test/*', 'https://b.test/*'] });
+        expect(await screen.findByText('TabPlex can read 2 sites you allowed.')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Remove access' }));
+        // Removal waits for the granted list to load, so it is checked after the click, not during it
+        await waitFor(() =>
+            expect(fakeChrome().permissions.remove).toHaveBeenCalledWith({
+                origins: ['https://a.test/*', 'https://b.test/*'],
+            })
+        );
+        expect(await screen.findByText('No sites allowed yet.')).toBeInTheDocument();
+    });
+
+    it('uses the singular for one site', async () => {
+        await chrome.permissions.request({ origins: ['https://a.test/*'] });
+        renderSettings();
+        expect(await screen.findByText('TabPlex can read 1 site you allowed.')).toBeInTheDocument();
+    });
+
     it('follows changes made in another TabPlex tab', async () => {
         const { result, unmount } = renderHook(() => useAiSettings());
         await waitFor(() => expect(fakeChrome().storage.onChanged.listeners.size).toBe(1));

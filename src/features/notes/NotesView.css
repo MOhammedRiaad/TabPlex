@@ -83,6 +83,23 @@
     gap: var(--spacing-md);
 }
 
+.notes-summarize-btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-sm);
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.notes-summarize-btn:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-bg-hover);
+}
+
 .notes-tag-filter {
     display: flex;
     align-items: center;

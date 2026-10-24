@@ -17,6 +17,7 @@ import BoardToast from './features/boards/components/BoardToast';
 import ParkDialog from './features/tasks/components/ParkDialog';
 import OrganizeTabsDialog from './features/organize/components/OrganizeTabsDialog';
 import TaskFromTabsDialog from './features/taskDraft/components/TaskFromTabsDialog';
+import TabNotesDialog from './features/tabNotes/components/TabNotesDialog';
 import NewTaskDialog from './features/tasks/components/NewTaskDialog';
 import { useParkShortcut } from './features/tasks/hooks/useParkShortcut';
 import './App.css';
@@ -232,6 +233,8 @@ function AppContent() {
             <ParkDialog />
 
             <OrganizeTabsDialog />
+
+            <TabNotesDialog />
 
             <TaskFromTabsDialog />
 
