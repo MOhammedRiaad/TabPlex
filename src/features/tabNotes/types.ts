@@ -84,3 +84,31 @@ export interface KeyPoint {
     /** AI topic tag, or the section heading in a quick view; '' if none */
     topicHint: string;
 }
+
+/**
+ * The layouts a study note can have. Only 'byTab' exists in PR A; PR B adds 'combined' with its topics, and the
+ * builder switches on this value.
+ */
+export type StudyNoteView = 'byTab';
+
+/** What a study note is built from. Everything the note writes comes from here and from source URLs. */
+export interface StudyNoteDraft {
+    view: StudyNoteView;
+    /** Sorted by ref; only tabs that were read */
+    sources: NoteSource[];
+    /** Points of every source, grouped by sourceRef */
+    points: KeyPoint[];
+}
+
+/** Where one picked tab is in a run */
+export type TabRunState = 'waiting' | 'reading' | 'read' | 'failed' | 'not-read';
+
+export interface RunTab {
+    /** 1-based position in the picked list (tab-strip order): the [n] this tab gets when it is read */
+    ref: number;
+    /** Captured when picked; snapshotTab checks its URL against the page */
+    tab: ReadableTab;
+    state: TabRunState;
+    /** The user-facing reason, for 'failed' only */
+    message: string;
+}

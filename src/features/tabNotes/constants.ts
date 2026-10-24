@@ -276,3 +276,14 @@ export const STOPWORDS: ReadonlySet<string> = new Set([
     'comment',
     'comments',
 ]);
+
+/** Title of a study note when the user gives none (the date is added) */
+export const STUDY_NOTE_TITLE = 'Study notes';
+/** Plain-text labels in the note's Sources list (spec §10.1, §13) */
+export const QUICK_VIEW_LABEL = 'quick view';
+export const LONG_PAGE_LABEL = 'first part of a long page';
+export const NOT_ENGLISH_LABEL = 'Not in English: points may be weaker';
+/** A section for a read page that produced no points */
+export const NO_POINTS_LINE = 'No key points could be taken from this page.';
+/** Shown for a tab the user cancelled before it was reached (not a failure) */
+export const NOT_READ_MESSAGE = 'Not read (cancelled)';

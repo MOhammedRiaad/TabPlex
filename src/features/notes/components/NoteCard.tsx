@@ -17,7 +17,7 @@ interface NoteCardProps {
 }
 
 // Simple markdown parser for display
-const parseMarkdownToHtml = (text: string): string => {
+export const parseMarkdownToHtml = (text: string): string => {
     const html = escapeHtml(text)
         // Code blocks
         .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
