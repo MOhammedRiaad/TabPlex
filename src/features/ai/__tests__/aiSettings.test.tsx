@@ -30,9 +30,28 @@ describe('AI settings', () => {
             taskDrafts: false,
             sessionNames: true,
             noteHelpers: true,
+            tabSummaries: true,
         });
         fakeChrome().storage.local.get.mockRejectedValueOnce(new Error('storage down'));
         expect(await readAiSettings()).toEqual(DEFAULT_AI_SETTINGS);
+    });
+
+    it('merges tabSummaries over settings saved before it existed, and keeps a stored false', async () => {
+        // Saved by an earlier version: four keys, no tabSummaries
+        await chrome.storage.local.set({
+            [AI_SETTINGS_KEY]: { tabGrouping: false, taskDrafts: true, sessionNames: true, noteHelpers: false },
+        });
+        expect(await readAiSettings()).toEqual({
+            tabGrouping: false,
+            taskDrafts: true,
+            sessionNames: true,
+            noteHelpers: false,
+            tabSummaries: true,
+        });
+
+        await chrome.storage.local.set({ [AI_SETTINGS_KEY]: { tabSummaries: false } });
+        expect((await readAiSettings()).tabSummaries).toBe(false);
+        expect(DEFAULT_AI_SETTINGS.tabSummaries).toBe(true);
     });
 
     it('shows the On-device AI section; switches stay usable without the model and save', async () => {
@@ -55,6 +74,7 @@ describe('AI settings', () => {
                 taskDrafts: true,
                 sessionNames: true,
                 noteHelpers: true,
+                tabSummaries: true,
             })
         );
         expect(drafts).toBeChecked();
@@ -84,6 +104,7 @@ describe('AI settings', () => {
             taskDrafts: false,
             sessionNames: true,
             noteHelpers: true,
+            tabSummaries: true,
         });
         act(() => {
             for (const listener of [...fakeChrome().storage.onChanged.listeners]) {

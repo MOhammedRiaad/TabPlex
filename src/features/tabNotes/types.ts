@@ -57,3 +57,30 @@ export interface CleanPage {
     /** lang is set and does not start with "en" */
     notEnglish: boolean;
 }
+
+/** One tab that was read. The only things a note can cite. */
+export interface NoteSource {
+    /** 1-based, in tab-strip order; the [n] in the note */
+    ref: number;
+    tabId: number;
+    windowId: number;
+    /** Captured when picked */
+    title: string;
+    /** Full URL, checked against the page that was read (§5.3) */
+    url: string;
+    /** 'quick' when the model was not used for this page (or failed) */
+    mode: 'ai' | 'quick';
+    truncated: boolean;
+    notEnglish: boolean;
+}
+
+/** One idea from one page. Attribution starts here: sourceRef is set by code, never by a model. */
+export interface KeyPoint {
+    /** "p3-2": source 3, point 2 */
+    id: string;
+    sourceRef: number;
+    /** Plain text, at most POINT_MAX_CHARS */
+    text: string;
+    /** AI topic tag, or the section heading in a quick view; '' if none */
+    topicHint: string;
+}
