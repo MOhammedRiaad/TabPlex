@@ -64,20 +64,28 @@ export function numbersIn(text: string): Set<string> {
     return new Set((normalize(text).match(NUMBER) ?? []).map(numberKey));
 }
 
+/** One document for buildVectors: its text, and optionally a short tag (topic hint or heading) counted at weight 2 */
+export interface VectorDocument {
+    text: string;
+    boost?: string;
+}
+
 /**
  * TF-IDF vectors, one per document of this run. Weight = (1 + ln tf) × idf with idf = ln((N + 1) / (df + 1)) + 1.
- * Adjacent term pairs are added as features at half weight. A word every document uses gets a low idf.
+ * Adjacent term pairs are added as features at half weight, and the boost text's terms at weight 2. A word every
+ * document uses gets a low idf.
  */
-export function buildVectors(documents: string[]): Map<string, number>[] {
-    const featureLists = documents.map(document => {
-        const words = terms(document);
+export function buildVectors(documents: VectorDocument[]): Map<string, number>[] {
+    const featureLists = documents.map(({ text, boost }) => {
+        const words = terms(text);
+        const boostWords = boost ? terms(boost) : [];
         const pairs = words.slice(1).map((word, i) => `${words[i]} ${word}`);
-        return { words, pairs };
+        return { words, boostWords, pairs };
     });
 
     const documentFrequency = new Map<string, number>();
-    for (const { words, pairs } of featureLists) {
-        for (const feature of new Set([...words, ...pairs])) {
+    for (const { words, boostWords, pairs } of featureLists) {
+        for (const feature of new Set([...words, ...boostWords, ...pairs])) {
             documentFrequency.set(feature, (documentFrequency.get(feature) ?? 0) + 1);
         }
     }
@@ -85,16 +93,17 @@ export function buildVectors(documents: string[]): Map<string, number>[] {
     const n = documents.length;
     const idf = (feature: string) => Math.log((n + 1) / ((documentFrequency.get(feature) ?? 0) + 1)) + 1;
 
-    return featureLists.map(({ words, pairs }) => {
+    return featureLists.map(({ words, boostWords, pairs }) => {
         const vector = new Map<string, number>();
         const add = (features: string[], weight: number) => {
             const counts = new Map<string, number>();
             for (const feature of features) counts.set(feature, (counts.get(feature) ?? 0) + 1);
             for (const [feature, count] of counts) {
-                vector.set(feature, (1 + Math.log(count)) * idf(feature) * weight);
+                vector.set(feature, (vector.get(feature) ?? 0) + (1 + Math.log(count)) * idf(feature) * weight);
             }
         };
         add(words, 1);
+        add(boostWords, 2);
         add(pairs, 0.5);
         return vector;
     });
@@ -120,4 +129,29 @@ export function support(text: string, reference: string): number {
     let found = 0;
     for (const term of own) if (available.has(term)) found++;
     return found / own.size;
+}
+
+/** Adjacent words of a text (lower case, numbers kept), `size` at a time: the units shingleJaccard compares */
+function shinglesOf(text: string, size: number): Set<string> {
+    const words = normalize(text).match(TOKEN) ?? [];
+    const out = new Set<string>();
+    if (words.length <= size) {
+        if (words.length > 0) out.add(words.join(' '));
+        return out;
+    }
+    for (let i = 0; i + size <= words.length; i++) out.add(words.slice(i, i + size).join(' '));
+    return out;
+}
+
+/**
+ * Jaccard similarity of the word shingles (adjacent words, `size` at a time) of two texts, from 0 to 1. Catches a page
+ * that repeats another page's sentence almost word for word. Two empty texts give 0; identical texts give 1.
+ */
+export function shingleJaccard(a: string, b: string, size = 3): number {
+    const left = shinglesOf(a, size);
+    const right = shinglesOf(b, size);
+    if (left.size === 0 && right.size === 0) return 0;
+    let shared = 0;
+    for (const shingle of left) if (right.has(shingle)) shared++;
+    return shared / (left.size + right.size - shared);
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildVectors, cosine, numbersIn, support, terms } from '../textSimilarity';
+import { buildVectors, cosine, numbersIn, shingleJaccard, support, terms } from '../textSimilarity';
 
 describe('terms', () => {
     it('lower-cases, drops stopwords, short words and web words', () => {
@@ -40,29 +40,51 @@ describe('numbersIn', () => {
     });
 });
 
+const docs = (...texts: string[]) => texts.map(text => ({ text }));
+
 describe('buildVectors', () => {
     it('gives a word that every document uses a lower weight than a rare one (IDF)', () => {
-        const [first] = buildVectors(['dns cache ttl', 'dns browser', 'dns resolver']);
+        const [first] = buildVectors(docs('dns cache ttl', 'dns browser', 'dns resolver'));
         expect(first.get('dns')).toBeDefined();
         expect(first.get('ttl')).toBeGreaterThan(first.get('dns') ?? 0);
     });
 
     it('adds adjacent term pairs as features', () => {
-        const [vector] = buildVectors(['dns cache', 'other words']);
+        const [vector] = buildVectors(docs('dns cache', 'other words'));
         expect(vector.has('dns cach')).toBe(true);
     });
 
     it('returns one vector per document, empty for a text with no terms', () => {
-        const vectors = buildVectors(['', 'the and of']);
+        const vectors = buildVectors(docs('', 'the and of'));
         expect(vectors).toHaveLength(2);
         expect(vectors[0].size).toBe(0);
         expect(vectors[1].size).toBe(0);
+    });
+
+    it('counts the boost text at weight 2: a boosted word weighs twice an unboosted one', () => {
+        const plain = buildVectors([{ text: 'ttl resolver' }, { text: 'quantum photons' }])[0];
+        const boosted = buildVectors([{ text: 'ttl resolver', boost: 'ttl' }, { text: 'quantum photons' }])[0];
+        // "ttl" gets its body weight plus the boost weight (2): three times the plain weight
+        expect(boosted.get('ttl')).toBeCloseTo((plain.get('ttl') ?? 0) * 3);
+        expect(boosted.get('resolver')).toBeCloseTo(plain.get('resolver') ?? 0);
+    });
+
+    it('lets a boost word that is not in the text add its own feature', () => {
+        const [vector] = buildVectors([{ text: 'dns cache', boost: 'resolver' }, { text: 'other words' }]);
+        expect(vector.has('resolver')).toBe(true);
+        expect(vector.get('resolver')).toBeCloseTo(2 * vector.get('cach')!);
+    });
+
+    it('treats a missing or empty boost the same as no boost', () => {
+        const [plain] = buildVectors([{ text: 'dns cache' }, { text: 'other' }]);
+        const [empty] = buildVectors([{ text: 'dns cache', boost: '' }, { text: 'other' }]);
+        expect(empty).toEqual(plain);
     });
 });
 
 describe('cosine', () => {
     it('is 1 for the same direction, 0 for no shared features, and 0 for an empty vector', () => {
-        const [a, b, c] = buildVectors(['dns cache ttl', 'dns cache ttl', 'quantum photons']);
+        const [a, b, c] = buildVectors(docs('dns cache ttl', 'dns cache ttl', 'quantum photons'));
         expect(cosine(a, b)).toBeCloseTo(1);
         expect(cosine(a, c)).toBe(0);
         expect(cosine(a, new Map())).toBe(0);
@@ -70,10 +92,41 @@ describe('cosine', () => {
     });
 
     it('stays between 0 and 1 for partly shared vectors', () => {
-        const [a, b] = buildVectors(['dns cache ttl records', 'dns cache browsers']);
+        const [a, b] = buildVectors(docs('dns cache ttl records', 'dns cache browsers'));
         const value = cosine(a, b);
         expect(value).toBeGreaterThan(0);
         expect(value).toBeLessThan(1);
+    });
+});
+
+describe('shingleJaccard', () => {
+    it('is 1 for identical texts, also when they are shorter than the shingle size', () => {
+        expect(shingleJaccard('The resolver caches every answer.', 'The resolver caches every answer.')).toBe(1);
+        expect(shingleJaccard('two words', 'two words')).toBe(1);
+    });
+
+    it('is 0 when one text is empty or they share no word pairs', () => {
+        expect(shingleJaccard('', '')).toBe(0);
+        expect(shingleJaccard('', 'some words here')).toBe(0);
+        expect(shingleJaccard('alpha beta gamma delta', 'one two three four')).toBe(0);
+    });
+
+    it('is symmetric and stays between 0 and 1', () => {
+        const a = 'The resolver caches every answer it receives, so repeat lookups skip the network.';
+        const b = 'The resolver caches every answer it receives, so repeated lookups skip the network.';
+        const value = shingleJaccard(a, b);
+        expect(value).toBe(shingleJaccard(b, a));
+        expect(value).toBeGreaterThan(0.5);
+        expect(value).toBeLessThan(1);
+    });
+
+    it('ignores case and punctuation, and reads "3,600" as "3600"', () => {
+        expect(shingleJaccard('TTL is 3,600 seconds.', 'ttl is 3600 seconds')).toBe(1);
+    });
+
+    it('accepts another shingle size', () => {
+        // "a b", "b c", "c d" against "a b", "b x", "x d": one shared pair out of five distinct pairs
+        expect(shingleJaccard('a b c d', 'a b x d', 2)).toBeCloseTo(1 / 5);
     });
 });
 

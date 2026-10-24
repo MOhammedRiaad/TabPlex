@@ -152,6 +152,86 @@ export const QUICK_DESCRIPTION_MIN_CHARS = 40;
 /** Quick view: added to the score of the first sentence of a section */
 export const QUICK_SECTION_START_BONUS = 0.1;
 
+/** Word grouping (§7.3): average similarity a merge needs (cosine, plus SAME_TOPIC_BONUS for the same topic name) */
+export const TOPIC_SIMILARITY = 0.3;
+/** Word grouping: added to the similarity of two points whose topic names are the same (capped at 1) */
+export const SAME_TOPIC_BONUS = 0.3;
+/** Word grouping: most points in one topic */
+export const MAX_POINTS_PER_TOPIC = 12;
+/** Word grouping: most shared topics in one note; the rest are dissolved into their sources' sections */
+export const MAX_SHARED_TOPICS = 8;
+/** Near-duplicate bullets (§7.3): cosine of the two points, with identical numbers */
+export const DUPLICATE_COSINE = 0.8;
+/** Near-duplicate bullets (§7.3): word-shingle Jaccard of the two points, with identical numbers */
+export const DUPLICATE_SHINGLE = 0.5;
+/** Disagreements (§7.7): cosine from which two points with different numbers are a conflict */
+export const CONFLICT_SIMILARITY = 0.6;
+/** Word shingles compared by shingleJaccard */
+export const SHINGLE_SIZE = 3;
+/** Longest topic heading (§7.8), cut on a word boundary */
+export const TOPIC_HEADING_MAX_CHARS = 60;
+/**
+ * Same subject (second round, tuned on the DNS and OOP corpora): two points from different sources whose leading
+ * content term is the same word get this bonus to their similarity. A bonus only: it never merges by itself. Started
+ * at 0.15; 0.25 because the OOP "Encapsulation" pair has a cosine of 0.09 (0.09 + 0.15 is still below TOPIC_SIMILARITY).
+ */
+export const SAME_SUBJECT_BONUS = 0.25;
+/** The leading term must have at least this many letters ("cache", "class", "CPU" are too generic to count) */
+export const SAME_SUBJECT_MIN_LETTERS = 6;
+/** The leading term counts only when it appears in fewer than this share of the points of the run */
+export const SAME_SUBJECT_MAX_SHARE = 0.5;
+/** Headings (no hints): most terms used, and how many sources a heading term must appear in */
+export const HEADING_TERM_COUNT = 2;
+export const HEADING_TERM_MIN_SOURCES = 2;
+/** Verbs and filler words that never name a topic in a heading (compared after stemming) */
+export const HEADING_FILLERS: readonly string[] = [
+    'allow',
+    'allows',
+    'provide',
+    'provides',
+    'define',
+    'defines',
+    'defined',
+    'mean',
+    'means',
+    'use',
+    'uses',
+    'using',
+    'let',
+    'lets',
+    'include',
+    'includes',
+    'contain',
+    'contains',
+    'make',
+    'makes',
+    'represent',
+    'represents',
+    'help',
+    'helps',
+    'become',
+    'becomes',
+    'behave',
+    'behaves',
+    'create',
+    'creates',
+    'give',
+    'gives',
+    'take',
+    'takes',
+    'show',
+    'shows',
+    'based',
+    'way',
+    'ways',
+    'example',
+    'examples',
+    'thing',
+    'things',
+    'part',
+    'parts',
+];
+
 /** Headings that say nothing about the content; they are not used as a topic hint */
 export const GENERIC_HEADINGS: readonly string[] = [
     'introduction',

@@ -113,6 +113,8 @@ function sourceLine(source: NoteSource): string {
 
 function bodyOf(draft: StudyNoteDraft): string[] {
     switch (draft.view) {
+        // 'combined' has no layout until the note builder is wired to the combined topics: it uses the By tab layout
+        case 'combined':
         case 'byTab': {
             const sources = [...draft.sources].sort((a, b) => a.ref - b.ref);
             const blocks = [disclaimerFor(sources)];

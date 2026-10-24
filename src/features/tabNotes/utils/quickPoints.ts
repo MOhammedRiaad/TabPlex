@@ -99,7 +99,10 @@ export function extractPointsQuick(source: NoteSource, page: CleanPage): KeyPoin
     const descriptionKey = description.toLowerCase();
 
     // The page's own term vector is the last one; IDF is over the page's candidate sentences
-    const vectors = buildVectors([...candidates.map(candidate => candidate.text), pageTextOf(page)]);
+    const vectors = buildVectors([
+        ...candidates.map(candidate => ({ text: candidate.text })),
+        { text: pageTextOf(page) },
+    ]);
     const pageVector = vectors[vectors.length - 1];
     for (const [i, candidate] of candidates.entries()) {
         candidate.score = cosine(vectors[i], pageVector) + (candidate.sectionStart ? QUICK_SECTION_START_BONUS : 0);

@@ -85,11 +85,45 @@ export interface KeyPoint {
     topicHint: string;
 }
 
+/** One line of a topic: text plus the points it is made of. Its sources are always sourcesOf(pointIds, points). */
+export interface TopicBullet {
+    /** Run-local counter, "b1" */
+    id: string;
+    text: string;
+    /** At least one. The bullet's sources are derived from these */
+    pointIds: string[];
+    /** 'point': text is pointIds[0]'s own text. 'ai': reworded from all its points */
+    origin: 'point' | 'ai';
+    edited: boolean;
+}
+
+/** Points from two or more sources that give different numbers. Shown, never merged (spec §7.7). */
+export interface TopicConflict {
+    /** At least two points from at least two sources */
+    pointIds: string[];
+    /** The model's one-line description; '' when found by code */
+    text: string;
+}
+
+export interface Topic {
+    /** Run-local counter, "t1" */
+    id: string;
+    heading: string;
+    /** shared: points from two or more sources. source: one tab's own section */
+    kind: 'shared' | 'source';
+    /** kind === 'source' */
+    sourceRef?: number;
+    /** null for kind === 'source' */
+    combinedBy: 'ai' | 'words' | null;
+    bullets: TopicBullet[];
+    conflicts: TopicConflict[];
+}
+
 /**
- * The layouts a study note can have. Only 'byTab' exists in PR A; PR B adds 'combined' with its topics, and the
- * builder switches on this value.
+ * The layouts a study note can have: 'byTab' (one section per tab) or 'combined' (shared topics, then the leftovers of
+ * each tab). The builder switches on this value.
  */
-export type StudyNoteView = 'byTab';
+export type StudyNoteView = 'combined' | 'byTab';
 
 /** What a study note is built from. Everything the note writes comes from here and from source URLs. */
 export interface StudyNoteDraft {
@@ -98,6 +132,10 @@ export interface StudyNoteDraft {
     sources: NoteSource[];
     /** Points of every source, grouped by sourceRef */
     points: KeyPoint[];
+    /** The "combined" view (groupTopics). Empty when combining was skipped (§7.8). Filled by the store, not here. */
+    combined?: Topic[];
+    /** The "By tab" view: one 'source' topic per tab with all its points. Filled by the store, not here. */
+    byTab?: Topic[];
 }
 
 /** Where one picked tab is in a run */
