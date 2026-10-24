@@ -215,6 +215,8 @@
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: var(--spacing-md);
     align-content: start;
+    /* The implicit row would otherwise be clamped to the scroll area's height, and a long note spilled out of its card */
+    grid-auto-rows: max-content;
 }
 
 /* List View */
@@ -226,6 +228,8 @@
 
 .notes-view-content.list-view .note-card {
     max-width: 100%;
+    /* A column flex item shrinks to fit the scroll area; a long note must scroll the list, not overflow its card */
+    flex-shrink: 0;
 }
 
 /* Empty State */
