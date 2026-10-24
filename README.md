@@ -48,6 +48,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 ### 📝 Note-Taking
 
 - **Markdown Support**: Rich text formatting with markdown editor
+- **✨ Summarize open tabs**: In Notes (or the command palette), pick the tabs you're studying from and TabPlex reads each page on your device and saves one note with a few key points per page and a link to every source. Your browser asks for access to only the sites you pick. With your browser's built-in AI the points are written by the model; without it you get a quick view made of sentences taken from the page. Pages that cover the same topic are combined under one heading, with a link to every page that said it, and anything only one page says stays in its own section. You can rename topics, edit points, move them between topics and remove a source before saving. Your browser's AI only groups and rewords: TabPlex works out which page each point came from, and keeps the original points when the AI's answer doesn't match them
 - **✨ AI note helpers**: In the note editor, summarize a note, turn its to-dos into tasks, proofread it, or rewrite it shorter, clearer or more formal, with your browser's built-in AI on your device. Every result is previewed first, and Undo restores the note. Hidden when on-device AI isn't available
 - **Context-Aware Notes**: Link notes to specific boards, folders, or tabs
 - **Quick Capture**: Fast note creation from any view
@@ -180,7 +181,7 @@ The application uses Zustand with a modular slice architecture:
 - **Chrome:** coming to the Chrome Web Store. Until then, download `tabplex-vX.Y.Z.zip` from the [latest GitHub release](https://github.com/MOhammedRiaad/TabPlex/releases), unzip it, open `chrome://extensions`, turn on **Developer mode** and click **Load unpacked** on the unzipped folder.
 - **Brave:** works (checked with Brave 1.96 on 2026-10-05: the full end-to-end suite passes). Install it the same way as Chrome; once TabPlex is on the Chrome Web Store, Brave installs it from there.
 
-On Edge and Brave, the on-device AI features may not be available (Brave reports built-in AI as unavailable); TabPlex then groups tabs by site, suggests task titles without AI, and hides the note helpers.
+On Edge and Brave, the on-device AI features may not be available (Brave reports built-in AI as unavailable); TabPlex then groups tabs by site, suggests task titles without AI, and hides the note helpers. "Summarize open tabs" makes a quick view without AI.
 
 ### For Developers
 
@@ -319,6 +320,7 @@ TabPlex requests the following Chrome permissions:
 - **`sessions`**: To restore recently closed tabs and windows
 - **`bookmarks`**: To manage and organize your browser bookmarks (read/write access)
 - **`favicon`**: To show website icons from Chrome's own local icon cache (no third-party icon service)
+- **`scripting`** and **optional site access**: To read the text of the pages you pick in "Summarize open tabs". Nothing is granted at install: your browser asks, naming only the sites of the tabs you picked, and you can remove access in Settings → On-device AI → Page access
 
 **Important**: These permissions are used solely for the extension's functionality. We never transmit your data anywhere.
 

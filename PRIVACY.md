@@ -32,6 +32,7 @@ TabPlex stores the following data **exclusively on your local device**:
     - Note content (text/markdown)
     - Creation and modification timestamps
     - Associated board/folder/tab references
+    - Study notes you create with "Summarize open tabs": the key points you keep and a link to each page (never the page's full text)
 
 4. **Browsing Sessions**
     - Session start and end times
@@ -107,7 +108,17 @@ TabPlex requests the following permissions to function:
     - **Usage**: Icons come from Chrome's own local favicon cache (`chrome-extension://…/_favicon/`)
     - **Data Access**: None leaves your device; no third-party icon service is contacted
 
-**No website access**: TabPlex requests no host permissions. It cannot read or change the content of the web pages you visit; it only sees tab titles and addresses through the `tabs` permission.
+9. **`scripting`**
+    - **Purpose**: Read the text of pages you pick in "Summarize open tabs"
+    - **Usage**: Only when you pick tabs in that dialog and click Summarize or Make quick view
+    - **Data Access**: The visible text of the picked pages in your open tabs. It never changes a page. It does not read form fields, passwords or text you are typing
+
+10. **Optional site access** (`optional_host_permissions` for `http://` and `https://` sites)
+    - **Purpose**: Let you allow TabPlex to read the sites of the tabs you pick for "Summarize open tabs"
+    - **Usage**: Not granted at install. Your browser asks when you pick tabs for a summary, and names only those sites. Remove it any time in Settings → On-device AI → Page access, or in your browser's extension settings
+    - **Data Access**: Only the sites you allowed, and only when you click Summarize or Make quick view
+
+**Website access**: TabPlex has no site access when you install it, and it never reads, injects into or changes a page in the background. It reads a page only after you pick that tab in "Summarize open tabs" and your browser has granted access to that site. Otherwise it only sees tab titles and addresses through the `tabs` permission.
 
 ### How Permissions Are Used
 
@@ -143,7 +154,7 @@ TabPlex requests the following permissions to function:
 
 ### On-device AI summaries (optional, off by default)
 
-If you turn on **On-device AI summaries** in Settings, TabPlex uses Chrome's built-in Summarizer API to write a one-line summary when you park a task. The model (Gemini Nano) runs inside Chrome on your computer:
+If you turn on **On-device AI summaries** in Settings, TabPlex uses your browser's built-in Summarizer API to write a one-line summary when you park a task. The model (Gemini Nano) runs inside your browser on your computer:
 
 - The input is the task title and description, your note, and the titles and addresses (host and path only, without query strings) of the parked tabs
 - Nothing is sent to TabPlex, Google or any other server by this feature
@@ -152,13 +163,15 @@ If you turn on **On-device AI summaries** in Settings, TabPlex uses Chrome's bui
 
 ### On-device AI features (optional)
 
-"Organize tabs", "New task from tabs", session names and the note helpers can use the browser's built-in AI model (Gemini Nano in Chrome), which runs on your computer:
+"Organize tabs", "New task from tabs", session names, the note helpers and "Summarize open tabs" can use the browser's built-in AI model (Gemini Nano in Chrome), which runs on your computer:
 
 - TabPlex sends it the titles and addresses (host and path only, without query strings) of the tabs you choose, and any hint you type
 - The note helpers (✨ AI in the note editor) send it the text of the note you're editing, only when you pick a helper
+- "Summarize open tabs" sends it the text of the pages you pick, one page at a time, only when you click Summarize. Page text is held in memory while it is summarized and is not stored. Only the key points you keep are saved, in a note, with a link to each page
+- To combine pages that cover the same topic, "Summarize open tabs" then sends the model the short key points it already made (not the page text) so it can name matching topics and rewrite the points of one topic into a single statement. TabPlex checks every statement against the points it came from, works out which pages each statement comes from itself, and keeps the original points when the answer doesn't match
 - The model's answer stays in your browser, and nothing changes until you confirm it
 - No tab or note data is sent to TabPlex, Google or any other server by these features
-- Without the model (another browser, or a device that can't run it) the features use simple local rules instead
+- Without the model (another browser, or a device that can't run it) the features use simple local rules instead. "Summarize open tabs" then makes a quick view (sentences taken from the page) and groups them by shared words, still on your device
 - Turn them off in Settings → On-device AI
 
 ## Your Data Rights

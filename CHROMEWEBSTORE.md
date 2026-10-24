@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — TabPlex
 
-> Last Updated: 2026-10-04
+> Last Updated: 2026-10-24
 
 The single source of truth for the store listings (Chrome Web Store and Microsoft Edge Add-ons). It follows the `CHROMEWEBSTORE.md` format of Chrome's `chrome-extensions` agent skill. Copy fields from here into the [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole) and Partner Center. Every claim must be true of the shipped build.
 
@@ -58,6 +58,14 @@ NEW TASK FROM TABS
 • Or create and park it: the tabs are saved to the task and closed, ready to reopen later
 • Works from the Tasks view, the command palette, or a group you just organized
 
+SUMMARIZE OPEN TABS
+• Pick the tabs you're studying from and save one note with key points from each page and a link to every source
+• Pages that cover the same topic are combined under one heading, with a link to each page that said it; what only one page says stays in its own section
+• With your browser's built-in AI the points are written and combined on your device; without it you get a quick view made of sentences from the page, grouped by shared words
+• Rename topics, edit or move points, and remove a source before the note is created
+• Your browser asks for access to only the sites you pick, and only when you use it; remove it any time in Settings
+• Check, edit or remove any point before the note is created
+
 ALSO INCLUDED
 • Boards: save tabs into coloured folders, search them, drag and drop; keep several boards and switch between them with tabs, a side dock, a bookshelf, a carousel or a zoomed-out overview
 • Tasks: To Do / Doing / Done with priorities, due dates and checklists; pin tasks and notes to the top
@@ -78,7 +86,7 @@ HOW TO USE
 PRIVATE BY DESIGN
 • Everything is stored in your browser on this device. No account, no TabPlex server, no analytics.
 • AI features use Chrome's built-in model on your computer. Tab titles and addresses never leave it.
-• TabPlex has no access to the content of the websites you visit; it only sees tab titles and addresses.
+• TabPlex has no site access when installed and never reads pages in the background. It reads a page only after you pick that tab in "Summarize open tabs" and allow its site; otherwise it only sees tab titles and addresses.
 • Website icons come from Chrome's own local cache, not a third-party service.
 
 On-device AI needs a recent desktop Chrome on a device that meets Chrome's requirements for built-in AI. Every feature works without it.
@@ -122,18 +130,19 @@ Regenerate the screenshots and promo tiles (from `store-assets/promo/promo.html`
 
 ## Permissions Justification
 
-| Permission      | Type        | Justification                                                                                                                                                                                                                         |
-| --------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tabs`          | permissions | Read the titles and addresses of open tabs so the user can save them to a task or board, and open, close and focus a task's tabs when it starts, parks or resumes.                                                                    |
-| `tabGroups`     | permissions | Create and name the Chrome tab group for an active task, and the groups the user confirms in "Organize tabs"; notice when the user closes a task's group.                                                                             |
-| `history`       | permissions | Show recent browser history in the History view and the Boards side panel so the user can add pages to folders, and suggest work sessions from recent history in the Sessions view. Read only by those views; it stays on the device. |
-| `sessions`      | permissions | List recently closed tabs and windows in the Sessions view so the user can restore them.                                                                                                                                              |
-| `storage`       | permissions | Save the user's tasks, tabs, notes, boards and settings locally in the browser.                                                                                                                                                       |
-| `notifications` | permissions | Show task due reminders and focus-timer alerts, and (only if the user turns it on) offer to add a newly opened page to a parked task on the same site.                                                                                |
-| `bookmarks`     | permissions | Show, search, create, edit and organize the user's bookmarks in the Bookmarks view.                                                                                                                                                   |
-| `favicon`       | permissions | Show website icons from Chrome's local favicon cache next to saved tabs, bookmarks and links, without contacting a third-party icon service.                                                                                          |
+| Permission      | Type        | Justification                                                                                                                                                                                                                                      |
+| --------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tabs`          | permissions | Read the titles and addresses of open tabs so the user can save them to a task or board, and open, close and focus a task's tabs when it starts, parks or resumes.                                                                                 |
+| `tabGroups`     | permissions | Create and name the Chrome tab group for an active task, and the groups the user confirms in "Organize tabs"; notice when the user closes a task's group.                                                                                          |
+| `history`       | permissions | Show recent browser history in the History view and the Boards side panel so the user can add pages to folders, and suggest work sessions from recent history in the Sessions view. Read only by those views; it stays on the device.              |
+| `sessions`      | permissions | List recently closed tabs and windows in the Sessions view so the user can restore them.                                                                                                                                                           |
+| `storage`       | permissions | Save the user's tasks, tabs, notes, boards and settings locally in the browser.                                                                                                                                                                    |
+| `notifications` | permissions | Show task due reminders and focus-timer alerts, and (only if the user turns it on) offer to add a newly opened page to a parked task on the same site.                                                                                             |
+| `bookmarks`     | permissions | Show, search, create, edit and organize the user's bookmarks in the Bookmarks view.                                                                                                                                                                |
+| `favicon`       | permissions | Show website icons from Chrome's local favicon cache next to saved tabs, bookmarks and links, without contacting a third-party icon service.                                                                                                       |
+| `scripting`     | permissions | Read the visible text of the pages the user picks in "Summarize open tabs", to write the key points of each into a note. Runs only after the user clicks Summarize, on tabs they picked; it never changes a page and never runs in the background. |
 
-No host permissions. No remote code: all JavaScript is in the package.
+**Optional host permissions** (`optional_host_permissions`: `http://*/*`, `https://*/*`): not granted at install and no install warning. The browser asks the user, naming only the sites of the tabs they picked, when they use "Summarize open tabs". The user can remove the access in Settings → On-device AI → Page access or in the browser's extension settings. There are no required `host_permissions`. No remote code: all JavaScript is in the package.
 
 ## Privacy & Data Use
 
@@ -141,7 +150,7 @@ No host permissions. No remote code: all JavaScript is in the package.
 
 **Does the extension collect user data?** No.
 
-TabPlex stores data **only on the user's device** and sends nothing to the developer or third parties. Data handled only on the device is not "collection" in the Web Store's sense, so check none of the data-type boxes. It reads web history and tab titles/addresses for its own features, and that data never leaves the device. It doesn't use `chrome.storage.sync`.
+TabPlex stores data **only on the user's device** and sends nothing to the developer or third parties. Data handled only on the device is not "collection" in the Web Store's sense, so check none of the data-type boxes. It reads web history and tab titles/addresses for its own features, and, only for tabs the user picks in "Summarize open tabs" on sites they allowed, the text of those pages. That data never leaves the device, and page text is not stored: only the key points the user keeps are saved in a note. It doesn't use `chrome.storage.sync`.
 
 ### Data Use Certification
 
@@ -171,7 +180,7 @@ TabPlex stores data **only on the user's device** and sends nothing to the devel
 
 The Release workflow publishes updates after the first version (`npm run publish:edge`; see `docs/MAINTENANCE_GUIDE.md` → Release Process). The first version was submitted by hand in Partner Center. The workflow needs the `EDGE_CLIENT_ID`, `EDGE_API_KEY` and `EDGE_PRODUCT_ID` repository secrets.
 
-Edge may not offer built-in AI, so the Edge listing doesn't promise AI features (TabPlex falls back to grouping by site). Reuse the Chrome text as-is — it already says "your browser's built-in AI" — and drop the on-device AI lines.
+Edge may not offer built-in AI, so the Edge listing doesn't promise AI features (TabPlex falls back to grouping by site). Reuse the Chrome text as-is — it already says "your browser's built-in AI" — and drop the on-device AI lines. "Summarize open tabs" works on Edge without AI (a quick view), so its section stays; keep the permission justifications for `scripting` and optional site access.
 
 ### Single purpose description (as submitted)
 
@@ -196,11 +205,11 @@ TabPlex organizes your browser work around tasks. Each task can own a set of tab
 
 Most recent first. Versions come from semantic-release (`CHANGELOG.md`); a store row changes when the version is uploaded or reviewed.
 
-| Version | Date       | Changes                                                                                                        | Status                                                    |
-| ------- | ---------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| next    | —          | New task from tabs (draft a task from open tabs, create & start or park it); one task form for create and edit | Not released yet (on `develop`)                           |
-| 1.0.1   | 2026-10-04 | Landing page fix only; no change to the extension                                                              | Edge: submitted by hand, in review. Chrome: not submitted |
-| 1.0.0   | 2026-10-04 | First public release: Park & Resume, Organize tabs, boards, tasks, notes, timer                                | GitHub release only                                       |
+| Version | Date       | Changes                                                                                                                                                                | Status                                                    |
+| ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| next    | —          | New task from tabs (draft a task from open tabs, create & start or park it); one task form for create and edit; Summarize open tabs into a note (optional site access) | Not released yet (on `develop`)                           |
+| 1.0.1   | 2026-10-04 | Landing page fix only; no change to the extension                                                                                                                      | Edge: submitted by hand, in review. Chrome: not submitted |
+| 1.0.0   | 2026-10-04 | First public release: Park & Resume, Organize tabs, boards, tasks, notes, timer                                                                                        | GitHub release only                                       |
 
 ## Review Notes
 
@@ -208,6 +217,7 @@ Most recent first. Versions come from semantic-release (`CHANGELOG.md`); a store
 
 - On-device AI (Organize tabs by topic, task drafts, park summaries, note helpers) needs desktop Chrome with built-in AI on capable hardware. Without it, Organize tabs groups by site, New task from tabs suggests only a title, summaries are off and the note editor has no ✨ AI menu.
 - Edge: the AI features are hidden or fall back, because Edge may not offer the same built-in model.
+- Summarize open tabs: with built-in AI a run uses three model sessions (points, topic names, combining), takes a few minutes for several long pages, and the model's wording can be clumsy or wrong, which the note says. Pages in other languages get English points. Without AI it makes a quick view that groups sentences by shared words.
 
 ### Rejection History
 

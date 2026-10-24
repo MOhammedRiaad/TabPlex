@@ -4,7 +4,8 @@
     border-radius: var(--radius-md);
     padding: var(--spacing-md);
     position: relative;
-    min-height: 120px;
+    /* min-content, not a fixed height: the content's flex-basis is 0, so the card's own height under-counts a long note */
+    min-height: min-content;
     display: flex;
     flex-direction: column;
     transition: all var(--transition-fast);
@@ -24,6 +25,8 @@
     flex-direction: column;
     gap: var(--spacing-sm);
     flex: 1;
+    /* Keeps a short note's card about as tall as before (120px minus padding and border) */
+    min-height: calc(120px - 2 * var(--spacing-md) - 2px);
 }
 
 .note-title {

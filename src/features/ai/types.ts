@@ -30,6 +30,8 @@ export interface AiSettings {
     sessionNames: boolean;
     /** ✨ AI in the note editor: summarize, action items → tasks, proofread, rewrite */
     noteHelpers: boolean;
+    /** "Summarize open tabs into a note" uses the model when available (otherwise the quick view) */
+    tabSummaries: boolean;
 }
 
 /** A browser tab that an AI feature may look at and act on */

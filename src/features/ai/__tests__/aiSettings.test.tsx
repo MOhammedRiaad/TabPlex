@@ -30,9 +30,28 @@ describe('AI settings', () => {
             taskDrafts: false,
             sessionNames: true,
             noteHelpers: true,
+            tabSummaries: true,
         });
         fakeChrome().storage.local.get.mockRejectedValueOnce(new Error('storage down'));
         expect(await readAiSettings()).toEqual(DEFAULT_AI_SETTINGS);
+    });
+
+    it('merges tabSummaries over settings saved before it existed, and keeps a stored false', async () => {
+        // Saved by an earlier version: four keys, no tabSummaries
+        await chrome.storage.local.set({
+            [AI_SETTINGS_KEY]: { tabGrouping: false, taskDrafts: true, sessionNames: true, noteHelpers: false },
+        });
+        expect(await readAiSettings()).toEqual({
+            tabGrouping: false,
+            taskDrafts: true,
+            sessionNames: true,
+            noteHelpers: false,
+            tabSummaries: true,
+        });
+
+        await chrome.storage.local.set({ [AI_SETTINGS_KEY]: { tabSummaries: false } });
+        expect((await readAiSettings()).tabSummaries).toBe(false);
+        expect(DEFAULT_AI_SETTINGS.tabSummaries).toBe(true);
     });
 
     it('shows the On-device AI section; switches stay usable without the model and save', async () => {
@@ -55,11 +74,50 @@ describe('AI settings', () => {
                 taskDrafts: true,
                 sessionNames: true,
                 noteHelpers: true,
+                tabSummaries: true,
             })
         );
         expect(drafts).toBeChecked();
         expect(screen.getByRole('checkbox', { name: 'Name saved sessions' })).toBeChecked();
         expect(screen.getByRole('checkbox', { name: 'Note helpers' })).toBeChecked();
+    });
+
+    it('shows the tab summaries switch with its explanation and saves it', async () => {
+        renderSettings();
+        const summaries = screen.getByRole('checkbox', { name: 'Summarize open tabs with AI' });
+        expect(summaries).toBeChecked();
+        expect(screen.getByText(/Without AI, TabPlex makes a quick view from the page text\./)).toBeInTheDocument();
+
+        fireEvent.click(summaries);
+        await waitFor(async () =>
+            expect((await chrome.storage.local.get(AI_SETTINGS_KEY))[AI_SETTINGS_KEY]).toMatchObject({
+                tabSummaries: false,
+            })
+        );
+    });
+
+    it('says how many sites TabPlex may read, and removes all of them with Remove access', async () => {
+        renderSettings();
+        expect(await screen.findByText('No sites allowed yet.')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Remove access' })).toBeDisabled();
+
+        await chrome.permissions.request({ origins: ['https://a.test/*', 'https://b.test/*'] });
+        expect(await screen.findByText('TabPlex can read 2 sites you allowed.')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Remove access' }));
+        // Removal waits for the granted list to load, so it is checked after the click, not during it
+        await waitFor(() =>
+            expect(fakeChrome().permissions.remove).toHaveBeenCalledWith({
+                origins: ['https://a.test/*', 'https://b.test/*'],
+            })
+        );
+        expect(await screen.findByText('No sites allowed yet.')).toBeInTheDocument();
+    });
+
+    it('uses the singular for one site', async () => {
+        await chrome.permissions.request({ origins: ['https://a.test/*'] });
+        renderSettings();
+        expect(await screen.findByText('TabPlex can read 1 site you allowed.')).toBeInTheDocument();
     });
 
     it('follows changes made in another TabPlex tab', async () => {
@@ -84,6 +142,7 @@ describe('AI settings', () => {
             taskDrafts: false,
             sessionNames: true,
             noteHelpers: true,
+            tabSummaries: true,
         });
         act(() => {
             for (const listener of [...fakeChrome().storage.onChanged.listeners]) {

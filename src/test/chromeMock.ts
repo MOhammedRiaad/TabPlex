@@ -79,6 +79,16 @@ export function createChromeMock() {
         bookmarkMoved: new FakeEvent(),
         notificationButtonClicked: new FakeEvent(),
         notificationClosed: new FakeEvent(),
+        permissionsAdded: new FakeEvent(),
+        permissionsRemoved: new FakeEvent(),
+    };
+
+    // ----- optional host access (chrome.permissions) and page scripting (chrome.scripting) -----
+    const grantedOrigins = new Set<string>();
+    let permissionRequestsAllowed = true;
+    /** What executeScript does: run func in the test document (default), return a fixed result, or reject */
+    let scriptOutcome: { kind: 'run' } | { kind: 'result'; value: unknown } | { kind: 'error'; message: string } = {
+        kind: 'run',
     };
 
     // ----- storage -----------------------------------------------------------------------------
@@ -305,6 +315,39 @@ export function createChromeMock() {
         }),
     };
 
+    const permissionsApi = {
+        contains: vi.fn(async ({ origins = [] }: { origins?: string[] } = {}) =>
+            origins.every(origin => grantedOrigins.has(origin))
+        ),
+        /** Like Chrome, this only prompts from a user gesture; the test decides the answer */
+        request: vi.fn(async ({ origins = [] }: { origins?: string[] } = {}) => {
+            if (!permissionRequestsAllowed) return false;
+            const added = origins.filter(origin => !grantedOrigins.has(origin));
+            added.forEach(origin => grantedOrigins.add(origin));
+            if (added.length > 0) events.permissionsAdded.emit({ origins: added });
+            return true;
+        }),
+        remove: vi.fn(async ({ origins = [] }: { origins?: string[] } = {}) => {
+            const removed = origins.filter(origin => grantedOrigins.delete(origin));
+            if (removed.length > 0) events.permissionsRemoved.emit({ origins: removed });
+            return true;
+        }),
+        getAll: vi.fn(async () => ({ origins: [...grantedOrigins], permissions: [] as string[] })),
+        onAdded: events.permissionsAdded,
+        onRemoved: events.permissionsRemoved,
+    };
+
+    const scripting = {
+        /** Runs `func` here (the test document) unless a result or error was set with the helpers below */
+        executeScript: vi.fn(async (injection: ScriptInjection) => {
+            const { tabId } = injection.target;
+            if (!tabs.has(tabId)) throw new Error(`No tab with id: ${tabId}.`);
+            if (scriptOutcome.kind === 'error') throw new Error(scriptOutcome.message);
+            if (scriptOutcome.kind === 'result') return [{ frameId: 0, result: clone(scriptOutcome.value) }];
+            return [{ frameId: 0, result: injection.func?.(...(injection.args ?? [])) }];
+        }),
+    };
+
     const chrome = {
         runtime: {
             id: EXTENSION_ID,
@@ -334,6 +377,8 @@ export function createChromeMock() {
         tabs: tabsApi,
         tabGroups: tabGroupsApi,
         windows: windowsApi,
+        permissions: permissionsApi,
+        scripting,
         action: { onClicked: events.actionClicked },
         history: {
             search: vi.fn(async () => [] as unknown[]),
@@ -367,6 +412,13 @@ export function createChromeMock() {
             onMoved: events.bookmarkMoved,
         },
     };
+
+    /** Input of chrome.scripting.executeScript that the mock reads */
+    interface ScriptInjection {
+        target: { tabId: number; allFrames?: boolean };
+        func?: (...args: any[]) => unknown;
+        args?: unknown[];
+    }
 
     /** Test helpers to arrange browser state directly */
     const browser = {
@@ -419,6 +471,30 @@ export function createChromeMock() {
         },
         groupTabs(groupId: number): FakeTab[] {
             return [...tabs.values()].filter(t => t.groupId === groupId);
+        },
+        /** Origins TabPlex holds (optional host access), as chrome.permissions.getAll reports them */
+        grantedOrigins,
+        /** Grant origins as if the user had allowed them earlier (fires onAdded) */
+        grantOrigins(...origins: string[]) {
+            const added = origins.filter(origin => !grantedOrigins.has(origin));
+            added.forEach(origin => grantedOrigins.add(origin));
+            if (added.length > 0) events.permissionsAdded.emit({ origins: added });
+        },
+        /** Answer for chrome.permissions.request: true (allowed, the default) or false (the user said no) */
+        setPermissionRequestAnswer(allowed: boolean) {
+            permissionRequestsAllowed = allowed;
+        },
+        /** executeScript resolves with one frame result holding `value` (instead of running the function) */
+        setScriptResult(value: unknown) {
+            scriptOutcome = { kind: 'result', value };
+        },
+        /** executeScript rejects with `message`, as Chrome does for pages it cannot script */
+        setScriptError(message: string) {
+            scriptOutcome = { kind: 'error', message };
+        },
+        /** Back to running the function in the test document */
+        runScripts() {
+            scriptOutcome = { kind: 'run' };
         },
     };
 

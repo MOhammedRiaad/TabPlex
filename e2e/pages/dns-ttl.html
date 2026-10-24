@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>How TTL values control DNS caching</title>
+    </head>
+    <body>
+        <main>
+            <article>
+                <h1>How TTL values control DNS caching</h1>
+                <p>
+                    Every DNS record carries a time to live, usually shortened to TTL, measured in seconds. A resolver
+                    may keep the record for that long, and it must ask the authoritative server again once the time has
+                    passed.
+                </p>
+                <h2>Choosing a TTL</h2>
+                <p>
+                    A record with a TTL of 3600 seconds can be reused for one hour before the resolver contacts the
+                    authoritative server again. Short values such as 300 seconds let an owner change a website address
+                    quickly, but they cause more lookups overall.
+                </p>
+                <h2>Trade-offs</h2>
+                <p>
+                    Long TTL values reduce traffic and make pages load faster for visitors. Short TTL values make
+                    changes visible sooner, which matters during a server move or an outage. Most site owners pick a
+                    middle value and lower it a day before a planned change.
+                </p>
+            </article>
+        </main>
+    </body>
+</html>
