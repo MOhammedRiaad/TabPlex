@@ -2,6 +2,10 @@
 import {
     BOILERPLATE_MAX_CHARS,
     BOILERPLATE_PHRASES,
+    ENGLISH_MARKER_MIN_SHARE,
+    ENGLISH_MARKERS,
+    LANGUAGE_MIN_WORDS,
+    LANGUAGE_SAMPLE_WORDS,
     MIN_BLOCK_CHARS,
     MIN_PAGE_CHARS,
     PAGE_TEXT_CHAR_LIMIT,
@@ -109,11 +113,24 @@ export function cleanPage(snapshot: PageSnapshot, pickedTitle: string): CleanPag
     }
 
     const lang = snapshot.lang.trim().toLowerCase();
+    const declaredOther = lang !== '' && !lang.startsWith('en');
     return {
         sections: kept,
         description: collapse(snapshot.description),
         chars,
         truncated,
-        notEnglish: lang !== '' && !lang.startsWith('en'),
+        // The lang attribute is often wrong (a Portuguese Medium article says "en"), so the text decides too
+        notEnglish: declaredOther || !readsAsEnglish(kept.flatMap(section => section.paragraphs).join(' ')),
     };
+}
+
+/**
+ * Whether prose looks English: the share of common English function words in the first words of the text. Short
+ * samples and text with no letters (code, numbers) count as English, so only clear cases are labelled.
+ */
+export function readsAsEnglish(text: string): boolean {
+    const words = (text.toLowerCase().match(/\p{L}+/gu) ?? []).slice(0, LANGUAGE_SAMPLE_WORDS);
+    if (words.length < LANGUAGE_MIN_WORDS) return true;
+    const markers = words.filter(word => ENGLISH_MARKERS.has(word)).length;
+    return markers / words.length >= ENGLISH_MARKER_MIN_SHARE;
 }

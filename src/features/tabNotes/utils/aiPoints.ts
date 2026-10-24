@@ -5,6 +5,7 @@ import { describeTabForAi } from '../../ai/utils/tabText';
 import { AiSession, fitInput, isAiError, promptJson } from '../../ai/utils/promptApi';
 import { AiError } from '../../ai/types';
 import {
+    DANGLING_WORDS,
     GROUNDING_MIN,
     POINT_MAX_CHARS,
     POINT_MIN_CHARS,
@@ -81,6 +82,19 @@ export function cleanPointText(raw: string, max = POINT_MAX_CHARS): string {
     return clipText(text, max);
 }
 
+/**
+ * True when the text stops mid-sentence: it ends on a comma, colon, dash or opening bracket, or on a word no sentence
+ * ends with ("…forming an"). Small models sometimes stop early; the words that are there are all on the page, so
+ * grounding alone can't catch it.
+ */
+export function looksCutOff(text: string): boolean {
+    const trimmed = text.trim();
+    if (/[.!?…]["')\]]*$/.test(trimmed)) return false;
+    if (/[,;:\-–—(]$/.test(trimmed)) return true;
+    const lastWord = trimmed.match(/\p{L}+$/u)?.[0].toLowerCase();
+    return lastWord !== undefined && DANGLING_WORDS.has(lastWord);
+}
+
 /** Every number in the point must appear in the page; words must mostly appear too (GROUNDING_MIN) */
 function isGrounded(point: string, reference: string, pageNumbers: Set<string>): boolean {
     if (support(point, reference) < GROUNDING_MIN) return false;
@@ -108,7 +122,7 @@ export function validatePoints(raw: unknown, page: CleanPage): ValidPoint[] | nu
         const { text, topic } = item as { text?: unknown; topic?: unknown };
         if (typeof text !== 'string') continue;
         const point = cleanPointText(text);
-        if (point.length < POINT_MIN_CHARS) continue;
+        if (point.length < POINT_MIN_CHARS || looksCutOff(point)) continue;
         const key = point.toLowerCase();
         if (seen.has(key)) continue;
         seen.add(key);

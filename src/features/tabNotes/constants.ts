@@ -62,6 +62,82 @@ export const GROUNDING_MIN = 0.6;
 /** Per-page model step: covers both attempts of promptJson */
 export const TAB_POINTS_TIMEOUT_MS = 90_000;
 
+/**
+ * A point that ends on one of these words was cut off by the model ("…from superclasses, forming an"). English and
+ * Portuguese articles, prepositions and conjunctions: no sentence ends on them.
+ */
+export const DANGLING_WORDS: ReadonlySet<string> = new Set([
+    'a',
+    'an',
+    'the',
+    'of',
+    'and',
+    'or',
+    'to',
+    'in',
+    'on',
+    'for',
+    'with',
+    'by',
+    'as',
+    'at',
+    'from',
+    'into',
+    'that',
+    'which',
+    'than',
+    'but',
+    'its',
+    'their',
+    'is',
+    'are',
+    'o',
+    'os',
+    'um',
+    'uma',
+    'de',
+    'da',
+    'do',
+    'das',
+    'dos',
+    'e',
+    'em',
+    'no',
+    'na',
+    'para',
+    'por',
+    'com',
+    'que',
+    'ou',
+]);
+
+/** Common English function words: a page in English has plenty of them, a page in another language almost none */
+export const ENGLISH_MARKERS: ReadonlySet<string> = new Set([
+    'the',
+    'of',
+    'and',
+    'to',
+    'in',
+    'is',
+    'that',
+    'for',
+    'with',
+    'are',
+    'this',
+    'be',
+    'by',
+    'or',
+    'on',
+    'it',
+    'was',
+    'can',
+    'which',
+]);
+/** Words looked at, and the share of them that must be English markers before a page is called English */
+export const LANGUAGE_SAMPLE_WORDS = 400;
+export const LANGUAGE_MIN_WORDS = 60;
+export const ENGLISH_MARKER_MIN_SHARE = 0.05;
+
 /** Quick view: points per page */
 export const QUICK_POINTS_PER_SOURCE = 5;
 /** Quick view: at most this many points from one section */

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PAGE_TEXT_CHAR_LIMIT, PARAGRAPH_MAX_CHARS } from '../../constants';
 import { PageBlock, PageSnapshot } from '../../types';
 import { PageReadFailure } from '../readPage';
-import { cleanPage } from '../pageText';
+import { cleanPage, readsAsEnglish } from '../pageText';
 
 const snapshot = (blocks: PageBlock[], overrides: Partial<PageSnapshot> = {}): PageSnapshot => ({
     href: 'https://a.dev/page',
@@ -181,5 +181,34 @@ describe('cleanPage: description, language and totals', () => {
         ['', false],
     ])('sets notEnglish for lang "%s" to %s', (lang, notEnglish) => {
         expect(cleanPage(snapshot([enough()], { lang }), 'Page').notEnglish).toBe(notEnglish);
+    });
+});
+
+const PORTUGUESE =
+    'Objetos JavaScript são coleções de propriedades que podem ser acessadas usando pares de valor e chave. ' +
+    'A palavra chave new é usada para criar objetos através de funções construtor, e cada objeto possui um ' +
+    'protótipo que serve para herdar propriedades e métodos de outros objetos. As classes em JavaScript, ' +
+    'introduzidas no ES6, são açúcar sintático sobre a herança baseada em protótipos, oferecendo uma maneira ' +
+    'mais estruturada de definir objetos e de reutilizar o código em um projeto grande.';
+const ENGLISH =
+    'Objects in JavaScript are collections of properties that can be read with key and value pairs. The new ' +
+    'keyword is used to create an object with a constructor function, and each object has a prototype that is ' +
+    'used to inherit properties and methods from other objects. Classes in JavaScript, which were introduced in ' +
+    'ES6, are syntactic sugar over prototype based inheritance and give a more structured way to define objects.';
+
+describe('cleanPage: language from the text', () => {
+    it('calls a Portuguese page not English even when its lang attribute says "en"', () => {
+        expect(cleanPage(snapshot([para(PORTUGUESE)], { lang: 'en' }), 'Page').notEnglish).toBe(true);
+        expect(cleanPage(snapshot([para(PORTUGUESE)], { lang: '' }), 'Page').notEnglish).toBe(true);
+    });
+
+    it('keeps an English page English', () => {
+        expect(cleanPage(snapshot([para(ENGLISH)], { lang: 'en' }), 'Page').notEnglish).toBe(false);
+    });
+
+    it('only judges samples long enough to tell, and text without sentences counts as English', () => {
+        expect(readsAsEnglish('Objetos são coleções de propriedades')).toBe(true);
+        expect(readsAsEnglish('')).toBe(true);
+        expect(readsAsEnglish('const x = 1; let y = x * 2; return y; '.repeat(30))).toBe(false);
     });
 });

@@ -23,6 +23,10 @@ export const parseMarkdownToHtml = (text: string): string => {
         .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
         // Inline code
         .replace(/`([^`]+)`/g, '<code>$1</code>')
+        // Checkboxes and bullets first, so a leading "*" or "-" is not read as emphasis or left as raw text
+        .replace(/^[ \t]*(?:[-*+] )?\[x\] (.+)$/gm, '☑ $1')
+        .replace(/^[ \t]*(?:[-*+] )?\[ \] (.+)$/gm, '☐ $1')
+        .replace(/^[ \t]*[-*+] (.+)$/gm, '• $1')
         // Headers
         .replace(/^### (.+)$/gm, '<strong>$1</strong>')
         .replace(/^## (.+)$/gm, '<strong>$1</strong>')
@@ -34,9 +38,6 @@ export const parseMarkdownToHtml = (text: string): string => {
         .replace(/_(.+?)_/g, '<em>$1</em>')
         // Strikethrough
         .replace(/~~(.+?)~~/g, '<del>$1</del>')
-        // Checkboxes
-        .replace(/^\s*\[x\] (.+)$/gm, '☑ $1')
-        .replace(/^\s*\[ \] (.+)$/gm, '☐ $1')
         // Line breaks (simple)
         .replace(/\n/g, '<br />');
 

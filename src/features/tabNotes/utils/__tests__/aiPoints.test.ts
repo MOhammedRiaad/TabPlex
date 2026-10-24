@@ -3,7 +3,7 @@ import { AiSession } from '../../../ai/utils/promptApi';
 import { AI_FALLBACK_CHAR_BUDGET } from '../../../ai/constants';
 import { POINT_MAX_CHARS, POINTS_PER_SOURCE_MAX } from '../../constants';
 import { CleanPage, NoteSource } from '../../types';
-import { POINTS_SCHEMA, cleanPointText, extractPointsAi, validatePoints } from '../aiPoints';
+import { POINTS_SCHEMA, cleanPointText, extractPointsAi, looksCutOff, validatePoints } from '../aiPoints';
 import { extractPointsQuick } from '../quickPoints';
 
 const source: NoteSource = {
@@ -122,7 +122,36 @@ describe('cleanPointText', () => {
     });
 });
 
+describe('looksCutOff', () => {
+    it.each([
+        ['Inheritance lets subclasses inherit methods from superclasses, forming an', true],
+        ['Classes are blueprints for objects and', true],
+        ['Objects are linked through the', true],
+        ['Um objeto é criado a partir de uma', true],
+        ['A resolver keeps the answer until the TTL runs out,', true],
+        ['Three kinds of cache:', true],
+        ['Caching is done in two places (', true],
+        ['A resolver keeps the answer until the TTL runs out.', false],
+        ['Is the cache warm?', false],
+        ['Prototypes form a chain (see below).', false],
+        ['Methods are looked up on the prototype', false],
+        ['The result is the list of values in the array', false],
+    ])('%s -> %s', (text, expected) => {
+        expect(looksCutOff(text)).toBe(expected);
+    });
+
+    it('does not call a sentence cut off because it ends on a function word followed by a full stop', () => {
+        expect(looksCutOff('This is what the object is for.')).toBe(false);
+    });
+});
+
 describe('validatePoints', () => {
+    it('drops a point the model stopped in the middle of, even though every word is on the page', () => {
+        const cut = { text: 'DNS caching stores answers from resolvers for the time given by the', topic: 'DNS' };
+        expect(validatePoints({ points: [cut, GOOD] }, page)).toEqual([{ text: GOOD.text, topicHint: 'DNS caching' }]);
+        expect(validatePoints({ points: [cut] }, page)).toBeNull();
+    });
+
     it('returns null unless the output has a points array', () => {
         expect(validatePoints('nope', page)).toBeNull();
         expect(validatePoints(null, page)).toBeNull();
