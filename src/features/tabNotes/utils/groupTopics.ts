@@ -20,7 +20,7 @@ import {
 } from '../constants';
 import { KeyPoint, NoteSource, Topic, TopicBullet, TopicConflict } from '../types';
 import { clipText } from './quickPoints';
-import { buildVectors, cosine, numbersIn, shingleJaccard, terms } from './textSimilarity';
+import { buildVectors, cosine, numbersIn, pointLanguage, shingleJaccard, terms } from './textSimilarity';
 
 /** The filler words of HEADING_FILLERS after the same stemming as the text, so "allows" matches "allow" */
 const HEADING_FILLER_STEMS: ReadonlySet<string> = new Set(HEADING_FILLERS.flatMap(word => terms(word)));
@@ -308,7 +308,8 @@ export function groupTopics(points: KeyPoint[], sources: NoteSource[], canonical
     const numbers = items.map(point => numbersIn(point.text));
     const names = items.map(point => nameOf(point.topicHint, canonical));
     const notEnglish = new Map(sources.map(source => [source.ref, source.notEnglish]));
-    const languages = items.map(point => notEnglish.get(point.sourceRef) === true);
+    const flags = items.map(point => notEnglish.get(point.sourceRef) === true);
+    const languages = items.map(point => pointLanguage(point.text));
     const leads = items.map(point => leadingTermOf(point.text));
     const pointsWithTerm = new Map<string, number>();
     for (const point of items) {
@@ -316,10 +317,13 @@ export function groupTopics(points: KeyPoint[], sources: NoteSource[], canonical
     }
     const similarity = items.map((_row, i) =>
         items.map((_column, j) => {
-            // Across a source in another language the topic tag and the first word say nothing (the same tag, such as
+            // An English point and a Portuguese point never join, whatever their words or tags (pointLanguage)
+            const pair = new Set([languages[i], languages[j]]);
+            if (pair.has('en') && pair.has('other')) return 0;
+            // Across sources with different flags the topic tag and the first word say nothing (the same tag, such as
             // "Classes", sits on a Portuguese and an English point), so only the words count. The model writes English
-            // even for such a page, so those points can still join by wording; real Portuguese text shares almost none.
-            if (languages[i] !== languages[j]) return Math.min(1, cosine(vectors[i], vectors[j]));
+            // even for a Portuguese page, so those points can still join by wording.
+            if (flags[i] !== flags[j]) return Math.min(1, cosine(vectors[i], vectors[j]));
             const sameTopic = names[i] !== '' && names[i] === names[j] ? SAME_TOPIC_BONUS : 0;
             const lead = leads[i];
             const sameSubject =

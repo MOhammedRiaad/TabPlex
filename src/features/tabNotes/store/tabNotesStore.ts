@@ -7,11 +7,12 @@ import { generateNoteId } from '../../../utils/idGenerator';
 import { AiSession, aiErrorMessage, createSession, isAiError } from '../../ai/utils/promptApi';
 import { AiError } from '../../ai/types';
 import { POINTS_SYSTEM, extractPointsAi } from '../utils/aiPoints';
+import { groupTopics } from '../utils/groupTopics';
 import { cleanPage } from '../utils/pageText';
 import { extractPointsQuick } from '../utils/quickPoints';
 import { PageReadFailure, snapshotTab } from '../utils/readPage';
 import { buildStudyNote, hostOf, resolveStudyNoteTitle } from '../utils/studyNote';
-import { KeyPoint, NoteSource, ReadableTab, RunTab, StudyNoteDraft, TabRunState } from '../types';
+import { KeyPoint, NoteSource, ReadableTab, RunTab, StudyNoteDraft, StudyNoteView, TabRunState, Topic } from '../types';
 
 export type TabNotesStatus = 'idle' | 'running' | 'done' | 'cancelled';
 
@@ -76,6 +77,33 @@ export interface TabNotesActions {
     cancel(): void;
     /** Cancels any run and clears the state (the dialog closed) */
     close(): void;
+    /** The layout the review shows. 'combined' shows the topics only when there are some (see draftOf). */
+    setView(view: StudyNoteView): void;
+    /** Changes the text of a point. The grouping is kept (the topics show the new text). */
+    editPoint(pointId: string, text: string): void;
+    /** Removes a point from every view and regroups the topics */
+    removePoint(pointId: string): void;
+    /** Removes a source and its points from every view and regroups the topics */
+    removeSource(ref: number): void;
+}
+
+/** The word grouping of the points, recomputed whenever the points or sources change (spec §7.3) */
+const groupedOf = (sources: NoteSource[], points: KeyPoint[]): Topic[] => groupTopics(points, sources);
+
+/**
+ * Topic bullets show their points' current text, so an edit in the By tab also shows in the Combined view. Bullets
+ * keep their ids and their points, so the grouping does not move.
+ */
+function withCurrentText(topics: Topic[], points: KeyPoint[]): Topic[] {
+    const textOf = new Map(points.map(point => [point.id, point.text]));
+    return topics.map(topic => ({
+        ...topic,
+        bullets: topic.bullets.map(bullet => {
+            if (bullet.origin !== 'point') return bullet;
+            const first = bullet.pointIds.find(id => textOf.has(id));
+            return first === undefined ? bullet : { ...bullet, text: textOf.get(first) ?? bullet.text };
+        }),
+    }));
 }
 
 export interface TabNotesState {
@@ -94,6 +122,10 @@ export interface TabNotesState {
     sources: NoteSource[];
     /** Key points of every source, grouped by sourceRef */
     points: KeyPoint[];
+    /** The layout the user picked. The review shows 'combined' only when `combined` has topics (draftOf) */
+    view: StudyNoteView;
+    /** groupTopics(points, sources): shared topics, then each tab's leftovers. [] means nothing to combine. */
+    combined: Topic[];
     /** Set while a run is going; close() clears it, so a finished run stops writing */
     abort: AbortController | null;
     actions: TabNotesActions;
@@ -110,6 +142,8 @@ const RESET: Omit<TabNotesState, 'actions'> = {
     tabs: [],
     sources: [],
     points: [],
+    view: 'combined',
+    combined: [],
     abort: null,
 };
 
@@ -219,6 +253,7 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
                 downloadProgress: null,
                 abort: null,
                 tabs: state.tabs.map(entry => (entry.state === 'waiting' ? { ...entry, state: 'not-read' } : entry)),
+                combined: groupedOf(state.sources, state.points),
             }));
         });
     };
@@ -249,15 +284,44 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
                 get().abort?.abort();
                 set({ ...RESET });
             },
+
+            setView: view => set({ view }),
+
+            editPoint: (pointId, text) =>
+                set(state => ({
+                    points: state.points.map(point => (point.id === pointId ? { ...point, text } : point)),
+                })),
+
+            removePoint: pointId =>
+                set(state => {
+                    const points = state.points.filter(point => point.id !== pointId);
+                    return { points, combined: groupedOf(state.sources, points) };
+                }),
+
+            removeSource: ref =>
+                set(state => {
+                    const sources = state.sources.filter(source => source.ref !== ref);
+                    const points = state.points.filter(point => point.sourceRef !== ref);
+                    return { sources, points, combined: groupedOf(sources, points) };
+                }),
         },
     };
 });
 
 export const useTabNotesActions = () => useTabNotesStore(state => state.actions);
 
-/** The draft the dialog shows and the note is built from: the sources as read, with their points */
-export function draftOf(state: Pick<TabNotesState, 'sources' | 'points'>): StudyNoteDraft {
-    return { view: 'byTab', sources: state.sources, points: state.points };
+/**
+ * The draft the review shows and the note is built from, for the view on screen: 'combined' when there are topics to
+ * show, else 'byTab'. Topic bullets carry their points' current text.
+ */
+export function draftOf(state: Pick<TabNotesState, 'sources' | 'points' | 'view' | 'combined'>): StudyNoteDraft {
+    const view = state.view === 'combined' && state.combined.length > 0 ? 'combined' : 'byTab';
+    return {
+        view,
+        sources: state.sources,
+        points: state.points,
+        combined: withCurrentText(state.combined, state.points),
+    };
 }
 
 /** Tabs that could not be read; each has a retry */

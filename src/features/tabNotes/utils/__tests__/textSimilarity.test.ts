@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildVectors, cosine, numbersIn, shingleJaccard, support, terms } from '../textSimilarity';
+import { buildVectors, cosine, numbersIn, pointLanguage, shingleJaccard, support, terms } from '../textSimilarity';
+import { CORPUS_POINTS } from './fixtures/pages';
+import { OOP_POINTS } from './fixtures/oop';
+import { E2E_POINTS } from './fixtures/e2ePages';
 
 describe('terms', () => {
     it('lower-cases, drops stopwords, short words and web words', () => {
@@ -142,5 +145,49 @@ describe('support', () => {
     it('is 0 when the text has no terms', () => {
         expect(support('the of and', reference)).toBe(0);
         expect(support('', reference)).toBe(0);
+    });
+});
+
+describe('pointLanguage', () => {
+    it('labels a point of English function words as en', () => {
+        expect(pointLanguage('Classes define abstract definitions for types of objects.')).toBe('en');
+        expect(pointLanguage('The resolver keeps a copy of the answer for the time that the TTL is set to.')).toBe(
+            'en'
+        );
+    });
+
+    it('labels a point of Portuguese with almost no English function words as other', () => {
+        expect(pointLanguage('Protótipos servem para herdar propriedades de outros objetos.')).toBe('other');
+        expect(pointLanguage('Objetos em JavaScript são associações de pares valor e função.')).toBe('other');
+    });
+
+    it('is unknown under six words, whatever the language', () => {
+        expect(pointLanguage('Classes define abstract types.')).toBe('unknown');
+        expect(pointLanguage('Protótipos servem para herdar propriedades.')).toBe('unknown');
+        expect(pointLanguage('')).toBe('unknown');
+    });
+
+    it('is unknown for a point between the cut-offs, and for an other-language point of 6 or 7 words', () => {
+        // 25 words with one English marker: 4 %, not below the 4 % cut-off, so unknown
+        expect(
+            pointLanguage(
+                'uno dos tres cuatro cinco seis siete ocho nueve diez once doce trece catorce quince dieciseis diecisiete dieciocho diecinueve veinte veintiuno veintidos veintitres veinticuatro the'
+            )
+        ).toBe('unknown');
+        // 7 words with no English marker: too short to tell
+        expect(pointLanguage('Protótipos servem para herdar propriedades de outros')).toBe('unknown');
+    });
+
+    it('counts letters only: punctuation and numbers do not make a point long enough', () => {
+        expect(pointLanguage('3600 3600 3600 3600 3600 3600 3600 3600 3600')).toBe('unknown');
+    });
+
+    it('labels every English and Portuguese point of the fixture corpora correctly (no English point is other)', () => {
+        // OOP source 3 is the Portuguese article; every other point is English
+        const english = [...OOP_POINTS.filter(item => item.sourceRef !== 3), ...E2E_POINTS, ...CORPUS_POINTS];
+        for (const point of english) expect(pointLanguage(point.text)).not.toBe('other');
+        for (const point of OOP_POINTS.filter(item => item.sourceRef === 3)) {
+            expect(pointLanguage(point.text)).not.toBe('en');
+        }
     });
 });

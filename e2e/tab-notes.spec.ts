@@ -5,7 +5,7 @@ import type { BrowserContext, Page, Worker } from '@playwright/test';
 import type { Note } from '../src/types';
 import { expect, siteOn, test } from './fixtures';
 
-// "Summarize open tabs" (spec §16, PR A: the By tab flow; combining comes in PR B).
+// "Summarize open tabs" (spec §16): the Combined review by default, and the By tab layout when it is chosen.
 
 const DNS_CACHING = siteOn('dns-guide.test', 'dns-caching');
 const DNS_TTL = siteOn('ttl-guide.test', 'dns-ttl');
@@ -122,6 +122,14 @@ test.describe('Summarize open tabs (page access on)', () => {
         await dialog.getByRole('button', { name: 'Make quick view' }).click();
         await expect(dialog.getByText('quick view', { exact: true }).first()).toBeVisible();
         await expect(dialog.getByRole('button', { name: 'Create note' })).toBeEnabled();
+
+        // Combined is the layout on screen: the DNS pages share a topic, the recipe is in its own section
+        await expect(dialog.getByRole('radio', { name: 'Combined' })).toBeChecked();
+        const leftover = dialog.getByRole('region', { name: 'Only in one source' });
+        await expect(leftover).toBeVisible();
+        await expect(
+            leftover.getByRole('button', { name: 'Open source 4: Sourdough bread at home' }).first()
+        ).toBeVisible();
         await dialog.getByRole('button', { name: 'Create note' }).click();
 
         await expect(dialog).toHaveCount(0);
@@ -133,10 +141,45 @@ test.describe('Summarize open tabs (page access on)', () => {
         expect(inBackground).toMatchObject({ id: inDb.id, title: inDb.title, content: inDb.content });
         expect(inDb).toMatchObject({ format: 'markdown', tags: ['study'] });
         expect(inDb.title).toMatch(/^Study notes · /);
-        expect(inDb.content).toContain('## Sources');
-        for (const url of PAGES) expect(inDb.content).toContain(url);
-        expect(inDb.content).toContain('quick view');
+        expect(inDb.content).toContain('grouped by shared words');
         expect(inDb.content).not.toContain('built-in AI');
+
+        // The DNS pages share a topic: the bullets of the shared topics, together, cite at least two of the three DNS pages.
+        // The recipe is never cited there.
+        const [topics, leftovers] = inDb.content.split('## Only in one source');
+        const dnsPages = [DNS_CACHING, DNS_TTL, NEGATIVE];
+        expect(dnsPages.filter(url => topics.includes(`](${url})`)).length).toBeGreaterThanOrEqual(2);
+        expect(topics).not.toContain(`](${BREAD})`);
+        expect(leftovers).toContain(`](${BREAD})`);
+
+        // The Sources list still has all four pages
+        const [, sourcesList] = inDb.content.split('## Sources');
+        for (const url of PAGES) expect(sourcesList).toContain(`](${url})`);
+        expect(inDb.content).toContain('quick view');
+    });
+
+    test('switching to By tab and creating the note gives one section per tab', async ({
+        app,
+        context,
+        serviceWorker,
+    }) => {
+        await openPages(context, PAGES);
+        const dialog = await openSummarize(app);
+        await dialog.getByRole('button', { name: 'Make quick view' }).click();
+        await expect(dialog.getByRole('button', { name: 'Create note' })).toBeEnabled();
+
+        await dialog.getByRole('radio', { name: 'By tab' }).click();
+        await expect(dialog.getByRole('region', { name: /^Source \d: / })).toHaveCount(PAGES.length);
+        await dialog.getByRole('button', { name: 'Create note' }).click();
+
+        await expect(dialog).toHaveCount(0);
+        await expect.poll(async () => (await notesInBackground(serviceWorker)).length).toBe(1);
+        const [note] = await notesInBackground(serviceWorker);
+        // One section per tab, its heading links to that tab, and no combined topics
+        expect(note.content.match(/^## .+ \(\[\d\]\(https:\/\/[^)]+\)\)$/gm)).toHaveLength(PAGES.length);
+        expect(note.content).not.toContain('## Only in one source');
+        expect(note.content).not.toContain('grouped by shared words');
+        for (const url of PAGES) expect(note.content).toContain(`](${url})`);
     });
 
     test('with a model, the points quote their page and the note says AI wrote them', async ({
@@ -149,10 +192,12 @@ test.describe('Summarize open tabs (page access on)', () => {
         const dialog = await openSummarize(app);
 
         await dialog.getByRole('button', { name: 'Summarize 4 tabs' }).click();
+        await expect(dialog.getByRole('button', { name: 'Create note' })).toBeEnabled();
+        // The review opens in Combined; this test checks the points as they are written in By tab
+        await dialog.getByRole('radio', { name: 'By tab' }).click();
         await expect(dialog.getByRole('textbox', { name: 'Point 1 of DNS caching explained' })).toHaveValue(
             FIRST_SENTENCE
         );
-        await expect(dialog.getByRole('button', { name: 'Create note' })).toBeEnabled();
         await dialog.getByRole('button', { name: 'Create note' }).click();
 
         await expect(dialog).toHaveCount(0);

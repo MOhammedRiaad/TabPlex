@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import TabNotesDialog from '../TabNotesDialog';
 import { useTabNotesStore } from '../../store/tabNotesStore';
@@ -6,7 +6,8 @@ import { useBoardStore } from '../../../../store/boardStore';
 import { useUIActions, useUIStore } from '../../../ui/store/uiStore';
 import { AI_SETTINGS_KEY, DEFAULT_AI_SETTINGS } from '../../../ai/constants';
 import { ChromeMock, fakeChrome, installChromeMock } from '../../../../test/chromeMock';
-import { PageSnapshot } from '../../types';
+import { KeyPoint, NoteSource, PageSnapshot } from '../../types';
+import { groupTopics } from '../../utils/groupTopics';
 
 /** Sentences of each test page, registered when the page is "read" so the model stub can find them */
 const known = new Set<string>();
@@ -140,6 +141,13 @@ async function clickReady(name: string) {
     const button = await screen.findByRole('button', { name });
     await waitFor(() => expect(button).toBeEnabled());
     fireEvent.click(button);
+}
+
+/** Picks a layout in the review: the "Combine similar tabs" radio group */
+async function chooseView(name: 'Combined' | 'By tab') {
+    const radio = await screen.findByRole('radio', { name });
+    await waitFor(() => expect(radio).toBeEnabled());
+    fireEvent.click(radio);
 }
 
 beforeEach(() => {
@@ -441,6 +449,7 @@ describe('TabNotesDialog: review and the note', () => {
         openDialog();
         await clickReady('Summarize 2 tabs');
         await runEnded();
+        await chooseView('By tab');
         await screen.findByRole('region', { name: 'Source 2: Beta' });
         return { alpha, beta };
     }
@@ -555,5 +564,203 @@ describe('TabNotesDialog: the page must not be trusted as markup', () => {
         openDialog();
         expect(await screen.findByText('<img src=x onerror="alert(1)">Alpha')).toBeInTheDocument();
         expect(document.querySelector('img[onerror]')).toBeNull();
+    });
+});
+
+describe('TabNotesDialog: the Combined review', () => {
+    const GAMMA = 'https://gamma.test/g';
+
+    /** Three tabs: Alpha and Beta say the same thing about DNS caching (one conflict), Gamma says something else */
+    const DNS_POINTS: KeyPoint[] = [
+        {
+            id: 'p1-1',
+            sourceRef: 1,
+            text: 'The default TTL for a cached DNS answer is 300 seconds in most resolvers.',
+            topicHint: '',
+        },
+        { id: 'p1-2', sourceRef: 1, text: 'Resolvers keep each answer until its TTL runs out.', topicHint: '' },
+        {
+            id: 'p2-1',
+            sourceRef: 2,
+            text: 'The default TTL for a cached DNS answer is 3600 seconds in most resolvers.',
+            topicHint: '',
+        },
+        { id: 'p2-2', sourceRef: 2, text: 'Resolvers keep each answer until its TTL runs out.', topicHint: '' },
+        { id: 'p3-1', sourceRef: 3, text: 'fetch() returns a promise that resolves to the response.', topicHint: '' },
+    ];
+
+    const sourceOf = (ref: number, title: string, url: string, tabId: number): NoteSource => ({
+        ref,
+        tabId,
+        windowId: 1,
+        title,
+        url,
+        mode: 'ai',
+        truncated: false,
+        notEnglish: false,
+    });
+
+    /** Puts a finished run (sources and points, grouped as the store does it) in the store and opens the review */
+    function openReviewOf(sources: NoteSource[], points: KeyPoint[]) {
+        useTabNotesStore.setState({ status: 'done', sources, points, combined: groupTopics(points, sources) });
+        return openDialog();
+    }
+
+    /** The three tabs of the review, created in the browser so that "Open" can find them */
+    function threeSources() {
+        const alpha = browser.addTab({ url: ALPHA, title: 'Alpha' });
+        const beta = browser.addTab({ url: BETA, title: 'Beta' });
+        const gamma = browser.addTab({ url: GAMMA, title: 'Gamma' });
+        return [
+            sourceOf(1, 'Alpha', ALPHA, alpha.id),
+            sourceOf(2, 'Beta', BETA, beta.id),
+            sourceOf(3, 'Gamma', GAMMA, gamma.id),
+        ];
+    }
+
+    it('shows Combined by default: one card per shared topic, marked as grouped by words, with chips for its sources', () => {
+        openReviewOf(threeSources(), DNS_POINTS);
+        expect(screen.getByRole('radio', { name: 'Combined' })).toBeChecked();
+        expect(screen.getByRole('radio', { name: 'Combined' })).toBeEnabled();
+        expect(screen.getByRole('radio', { name: 'By tab' })).not.toBeChecked();
+
+        expect(screen.getAllByText('grouped by shared words (no AI)').length).toBeGreaterThan(0);
+        expect(screen.getAllByRole('button', { name: 'Open source 1: Alpha' })[0]).toHaveTextContent('(1)');
+        expect(screen.getAllByRole('button', { name: 'Open source 2: Beta' })[0]).toHaveTextContent('(2)');
+        // The pages' points are not repeated per tab: the shared bullet cites both pages
+        expect(screen.queryByRole('region', { name: 'Source 1: Alpha' })).toBeNull();
+    });
+
+    it('shows a conflict as a ⚠ row that names both pages', () => {
+        openReviewOf(threeSources(), DNS_POINTS);
+        const row = screen.getByText(/Sources differ:/).closest('p');
+        expect(row).not.toBeNull();
+        expect(row).toHaveTextContent('300 seconds');
+        expect(row).toHaveTextContent('3600 seconds');
+        expect(within(row as HTMLElement).getByRole('button', { name: 'Open source 2: Beta' })).toBeInTheDocument();
+    });
+
+    it('puts what only one tab says under "Only in one source"', () => {
+        openReviewOf(threeSources(), DNS_POINTS);
+        const group = screen.getByRole('region', { name: 'Only in one source' });
+        expect(within(group).getByText('fetch() returns a promise that resolves to the response.')).toBeInTheDocument();
+        expect(within(group).getByRole('button', { name: 'Open source 3: Gamma' })).toBeInTheDocument();
+    });
+
+    it('lists every source that the note cites, with Open and Remove source', () => {
+        openReviewOf(threeSources(), DNS_POINTS);
+        const list = screen.getByRole('region', { name: 'Sources' });
+        expect(within(list).getByText('[1]')).toBeInTheDocument();
+        expect(within(list).getByRole('button', { name: 'Open Gamma' })).toBeInTheDocument();
+        expect(within(list).getByRole('button', { name: 'Remove Gamma from the note' })).toBeInTheDocument();
+    });
+
+    it('a chip opens its source like the Open button: the tab is focused', async () => {
+        const sources = threeSources();
+        openReviewOf(sources, DNS_POINTS);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Open source 1: Alpha' })[0]);
+        await waitFor(() => expect(chrome.tabs.update).toHaveBeenCalledWith(sources[0].tabId, { active: true }));
+        expect(chrome.windows.update).toHaveBeenCalledWith(sources[0].windowId, { focused: true });
+        expect(chrome.tabs.create).not.toHaveBeenCalled();
+    });
+
+    it('a chip opens the page again when its tab was closed', async () => {
+        const sources = threeSources();
+        browser.tabs.delete(sources[1].tabId);
+        openReviewOf(sources, DNS_POINTS);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Open source 2: Beta' })[0]);
+        await waitFor(() => expect(chrome.tabs.create).toHaveBeenCalledWith({ url: BETA }));
+    });
+
+    it('switches to By tab and back, and keeps a point edit made in By tab', () => {
+        openReviewOf(threeSources(), DNS_POINTS);
+        fireEvent.click(screen.getByRole('radio', { name: 'By tab' }));
+        expect(screen.getByRole('radio', { name: 'By tab' })).toBeChecked();
+        expect(screen.getByRole('region', { name: 'Source 1: Alpha' })).toBeInTheDocument();
+        expect(screen.queryByText('grouped by shared words (no AI)')).toBeNull();
+
+        fireEvent.change(screen.getByRole('textbox', { name: 'Point 1 of Alpha' }), {
+            target: { value: 'Edited in By tab.' },
+        });
+        fireEvent.click(screen.getByRole('radio', { name: 'Combined' }));
+        expect(screen.getByRole('radio', { name: 'Combined' })).toBeChecked();
+        expect(screen.getAllByText('grouped by shared words (no AI)').length).toBeGreaterThan(0);
+
+        fireEvent.click(screen.getByRole('radio', { name: 'By tab' }));
+        expect(screen.getByDisplayValue('Edited in By tab.')).toBeInTheDocument();
+    });
+
+    it('Create note saves the Combined layout when it is on screen', () => {
+        openReviewOf(threeSources(), DNS_POINTS);
+        fireEvent.click(screen.getByRole('button', { name: 'Create note' }));
+
+        const [note] = useBoardStore.getState().notes;
+        expect(note.content).toContain('## ');
+        expect(note.content).toContain('> Sources differ: [1](https://alpha.test/a) says');
+        expect(note.content).toContain('## Only in one source');
+        expect(note.content).not.toMatch(/## Alpha \(\[1\]/);
+    });
+
+    it('Create note saves the By tab layout when it is on screen', () => {
+        openReviewOf(threeSources(), DNS_POINTS);
+        fireEvent.click(screen.getByRole('radio', { name: 'By tab' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Create note' }));
+
+        const [note] = useBoardStore.getState().notes;
+        expect(note.content).toContain('## Alpha ([1](https://alpha.test/a))');
+        expect(note.content).toContain('## Gamma ([3](https://gamma.test/g))');
+        expect(note.content).not.toContain('Sources differ');
+        expect(note.content).not.toContain('## Only in one source');
+    });
+
+    it('removing a source takes its points out of both views', () => {
+        openReviewOf(threeSources(), DNS_POINTS);
+        fireEvent.click(screen.getByRole('button', { name: 'Remove Gamma from the note' }));
+        expect(screen.queryByRole('region', { name: 'Only in one source' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Open source 3: Gamma' })).toBeNull();
+
+        fireEvent.click(screen.getByRole('radio', { name: 'By tab' }));
+        expect(screen.queryByRole('region', { name: 'Source 3: Gamma' })).toBeNull();
+        expect(screen.queryByDisplayValue(/fetch\(\) returns a promise/)).toBeNull();
+    });
+
+    it('removing a source that leaves one tab turns Combined off, with the reason', () => {
+        openReviewOf(threeSources(), DNS_POINTS);
+        fireEvent.click(screen.getByRole('button', { name: 'Remove Beta from the note' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Remove Gamma from the note' }));
+
+        expect(screen.getByRole('radio', { name: 'Combined' })).toBeDisabled();
+        expect(screen.getByRole('radio', { name: 'By tab' })).toBeChecked();
+        expect(screen.getByText('Nothing to combine with one page')).toBeInTheDocument();
+    });
+
+    it('with one tab, By tab is the only layout and Combined is disabled', () => {
+        const [alpha] = threeSources();
+        openReviewOf(
+            [alpha],
+            DNS_POINTS.filter(point => point.sourceRef === 1)
+        );
+        expect(screen.getByRole('radio', { name: 'Combined' })).toBeDisabled();
+        expect(screen.getByRole('radio', { name: 'By tab' })).toBeChecked();
+        expect(screen.getByText('Nothing to combine with one page')).toBeInTheDocument();
+        expect(screen.getByRole('region', { name: 'Source 1: Alpha' })).toBeInTheDocument();
+    });
+
+    it('when no tabs share a topic, By tab is shown with the reason, and Combined is disabled', () => {
+        const [alpha, , gamma] = threeSources();
+        const unrelated: KeyPoint[] = [
+            { id: 'p1-1', sourceRef: 1, text: 'Cats sleep for most of the day in warm houses.', topicHint: '' },
+            {
+                id: 'p3-1',
+                sourceRef: 3,
+                text: 'fetch() returns a promise that resolves to the response.',
+                topicHint: '',
+            },
+        ];
+        openReviewOf([alpha, gamma], unrelated);
+        expect(screen.getByRole('radio', { name: 'Combined' })).toBeDisabled();
+        expect(screen.getByRole('radio', { name: 'By tab' })).toBeChecked();
+        expect(screen.getByText("These tabs don't share a topic, so each has its own section.")).toBeInTheDocument();
+        expect(screen.getByRole('region', { name: 'Source 3: Gamma' })).toBeInTheDocument();
     });
 });

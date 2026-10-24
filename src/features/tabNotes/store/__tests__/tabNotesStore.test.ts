@@ -416,11 +416,12 @@ describe('failures and retries', () => {
 });
 
 describe('the note', () => {
-    it('gives the draft of the sources and points as read, in the By tab layout', async () => {
+    it('gives the draft of the sources and points as read, in the By tab layout when that is chosen', async () => {
         stubModel();
         actions().start([readable(1, URL_A, 'First page'), readable(2, URL_C, 'Second page')], true);
         await runEnded();
 
+        actions().setView('byTab');
         const draft = draftOf(state());
         expect(draft.view).toBe('byTab');
         expect(draft.sources.map(s => s.title)).toEqual(['First page', 'Second page']);
@@ -446,5 +447,85 @@ describe('the note', () => {
         });
         expect(note?.content).toContain('## First page ([1](https://example.com/a))');
         expect(note?.content).toContain('- [1] [First page](https://example.com/a) · example.com');
+    });
+});
+
+describe('the grouping into topics', () => {
+    /** Two tabs whose only point is the same sentence: one shared topic, one bullet that cites both */
+    async function runTwoSame() {
+        stubModel();
+        actions().start([readable(1, URL_A, 'First page'), readable(2, URL_C, 'Second page')], true);
+        await runEnded();
+    }
+
+    it('groups the points after the run, and the Combined view is the default', async () => {
+        await runTwoSame();
+        expect(state().view).toBe('combined');
+        expect(state().combined.length).toBeGreaterThan(0);
+        expect(state().combined[0].kind).toBe('shared');
+        expect(draftOf(state()).view).toBe('combined');
+    });
+
+    it('shows the By tab when there is nothing to combine, even if Combined is chosen (one tab)', async () => {
+        stubModel();
+        actions().start([readable(1, URL_A, 'First page')], true);
+        await runEnded();
+        actions().setView('combined');
+        expect(state().combined).toEqual([]);
+        expect(draftOf(state()).view).toBe('byTab');
+    });
+
+    it('keeps the By tab choice of the user, and switches back when the topics come back', async () => {
+        await runTwoSame();
+        actions().setView('byTab');
+        expect(draftOf(state()).view).toBe('byTab');
+        actions().setView('combined');
+        expect(draftOf(state()).view).toBe('combined');
+    });
+
+    it('a failed tab is left out of the grouping until its retry succeeds', async () => {
+        stubModel();
+        readPages({ 2: () => new Error('boom') });
+        actions().start([readable(1, URL_A, 'First page'), readable(2, URL_C, 'Second page')], true);
+        await runEnded();
+        expect(state().combined).toEqual([]);
+
+        readPages();
+        actions().retryTab(2);
+        await runEnded();
+        expect(state().sources.map(s => s.ref)).toEqual([1, 2]);
+        expect(state().combined.length).toBeGreaterThan(0);
+        expect(draftOf(state()).view).toBe('combined');
+    });
+
+    it('removing a source takes its points out of every view and regroups', async () => {
+        await runTwoSame();
+        actions().removeSource(2);
+
+        expect(state().sources.map(s => s.ref)).toEqual([1]);
+        expect(state().points.every(point => point.sourceRef === 1)).toBe(true);
+        expect(state().combined).toEqual([]);
+        expect(draftOf(state())).toMatchObject({ view: 'byTab', sources: [expect.objectContaining({ ref: 1 })] });
+    });
+
+    it('removing a point takes it out of the topics too', async () => {
+        await runTwoSame();
+        const pointId = state().combined[0].bullets[0].pointIds[0];
+        actions().removePoint(pointId);
+
+        expect(state().points.map(point => point.id)).not.toContain(pointId);
+        const cited = state().combined.flatMap(topic => topic.bullets.flatMap(bullet => bullet.pointIds));
+        expect(cited).not.toContain(pointId);
+    });
+
+    it('an edited point shows its new text in the Combined draft, and the grouping does not move', async () => {
+        await runTwoSame();
+        const before = state().combined.map(topic => topic.bullets.map(bullet => bullet.pointIds));
+        const pointId = state().combined[0].bullets[0].pointIds[0];
+
+        actions().editPoint(pointId, 'Edited: resolvers cache answers for the TTL.');
+
+        expect(draftOf(state()).combined?.[0].bullets[0].text).toBe('Edited: resolvers cache answers for the TTL.');
+        expect(state().combined.map(topic => topic.bullets.map(bullet => bullet.pointIds))).toEqual(before);
     });
 });

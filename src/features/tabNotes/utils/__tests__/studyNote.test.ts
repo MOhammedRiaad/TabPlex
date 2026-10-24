@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseMarkdownToHtml } from '../../../notes/components/NoteCard';
 import { parseMarkdown } from '../../../ui/components/MarkdownEditor';
-import { KeyPoint, NoteSource, StudyNoteDraft } from '../../types';
+import { KeyPoint, NoteSource, StudyNoteDraft, Topic } from '../../types';
 import { buildStudyNote, defaultStudyNoteTitle, hostOf, linkUrl, safeInline } from '../studyNote';
 
 const DATE = new Date(2026, 9, 24);
@@ -271,5 +271,217 @@ describe('buildStudyNote through both Markdown renderers', () => {
         expect(root.querySelector('blockquote')).toBeNull();
         expect(root.textContent).toContain('quoted link here');
         expect(root.textContent).toContain('x # Heading under');
+    });
+});
+
+describe('buildStudyNote (Combined)', () => {
+    const sources = [
+        source(1, { title: 'Page 1', url: 'https://example.com/p1' }),
+        source(2, { title: 'Page 2', url: 'https://example.org/p2' }),
+        source(3, { title: 'Solo page', url: 'https://example.net/solo' }),
+    ];
+    const points: KeyPoint[] = [
+        point(1, 'The default TTL is 300 seconds.', 1),
+        point(2, 'The default TTL is 3600 seconds.', 1),
+        point(1, 'Resolvers keep each answer until its TTL runs out.', 2),
+        point(2, 'Resolvers keep each answer until its TTL runs out.', 2),
+        point(3, 'fetch() returns a promise that resolves to the response.', 1),
+        point(1, 'Negative answers are cached too.', 3),
+    ];
+    /** One shared topic (one bullet from two tabs, and a conflict) and the leftovers of two tabs */
+    const topics: Topic[] = [
+        {
+            id: 't1',
+            heading: 'DNS caching',
+            kind: 'shared',
+            combinedBy: 'words',
+            bullets: [
+                {
+                    id: 'b1',
+                    text: 'Resolvers keep each answer until its TTL runs out.',
+                    pointIds: ['p1-2', 'p2-2'],
+                    origin: 'point',
+                    edited: false,
+                },
+            ],
+            conflicts: [{ pointIds: ['p1-1', 'p2-1'], text: '' }],
+        },
+        {
+            id: 't2',
+            heading: 'Solo page',
+            kind: 'source',
+            sourceRef: 3,
+            combinedBy: null,
+            bullets: [
+                {
+                    id: 'b2',
+                    text: 'fetch() returns a promise that resolves to the response.',
+                    pointIds: ['p3-1'],
+                    origin: 'point',
+                    edited: false,
+                },
+            ],
+            conflicts: [],
+        },
+        {
+            id: 't3',
+            heading: 'Page 1',
+            kind: 'source',
+            sourceRef: 1,
+            combinedBy: null,
+            bullets: [
+                {
+                    id: 'b3',
+                    text: 'Negative answers are cached too.',
+                    pointIds: ['p1-3'],
+                    origin: 'point',
+                    edited: false,
+                },
+            ],
+            conflicts: [],
+        },
+    ];
+    const combinedDraft = (overrides: Partial<StudyNoteDraft> = {}): StudyNoteDraft => ({
+        view: 'combined',
+        sources,
+        points,
+        combined: topics,
+        ...overrides,
+    });
+    const DISCLAIMER_AI =
+        "_From 3 tabs, summarized by your browser's built-in AI on this device. Topics were grouped by shared words. It can be wrong: check the sources before relying on it._";
+
+    it('writes the title, the shared topics with a reference per bullet, the conflicts, the leftovers and the Sources', () => {
+        const expected = [
+            DISCLAIMER_AI,
+            '## DNS caching\n\n- Resolvers keep each answer until its TTL runs out. ([1](https://example.com/p1), [2](https://example.org/p2))',
+            '> Sources differ: [1](https://example.com/p1) says "The default TTL is 300 seconds."; [2](https://example.org/p2) says "The default TTL is 3600 seconds."',
+            '## Only in one source',
+            '### Solo page ([3](https://example.net/solo))\n\n- fetch() returns a promise that resolves to the response.',
+            '### Page 1 ([1](https://example.com/p1))\n\n- Negative answers are cached too.',
+            '## Sources\n\n- [1] [Page 1](https://example.com/p1) · example.com\n- [2] [Page 2](https://example.org/p2) · example.org\n- [3] [Solo page](https://example.net/solo) · example.net',
+        ].join('\n\n');
+        expect(buildStudyNote(combinedDraft(), { date: DATE })).toBe(`# Study notes · 24 Oct 2026\n\n${expected}`);
+    });
+
+    it('uses the quick-view disclaimer, which also says the topics were grouped by shared words', () => {
+        const quick = sources.map(item => ({ ...item, mode: 'quick' as const }));
+        const note = buildStudyNote(combinedDraft({ sources: quick }), { date: DATE });
+        expect(note.split('\n\n')[1]).toBe(
+            '_Quick view of 3 tabs: sentences taken from the pages and grouped by shared words, without AI. Check the sources for the full picture._'
+        );
+        expect(note).not.toContain('built-in AI');
+        expect(note).not.toContain('combined by');
+    });
+
+    it('takes every reference from the points of the bullet, whatever the bullet text says', () => {
+        const draft = combinedDraft({
+            combined: [
+                {
+                    ...topics[0],
+                    bullets: [
+                        {
+                            id: 'b1',
+                            text: '[7](https://evil.example) see source 9 [1]',
+                            pointIds: ['p2-2'],
+                            origin: 'point',
+                            edited: false,
+                        },
+                    ],
+                    conflicts: [],
+                },
+            ],
+        });
+        const note = buildStudyNote(draft, { date: DATE });
+        expect(note).toContain('- 7 see source 9 (1) ([2](https://example.org/p2))');
+        expect(note).not.toContain('evil.example');
+    });
+
+    it('drops a bullet whose points are unknown from the references, and a conflict with fewer than two known points', () => {
+        const draft = combinedDraft({
+            combined: [
+                {
+                    ...topics[0],
+                    bullets: [
+                        {
+                            id: 'b1',
+                            text: 'A bullet with no known point.',
+                            pointIds: ['missing'],
+                            origin: 'point',
+                            edited: false,
+                        },
+                    ],
+                    conflicts: [{ pointIds: ['p1-1', 'missing'], text: '' }],
+                },
+            ],
+        });
+        const note = buildStudyNote(draft, { date: DATE });
+        expect(note).toContain('## DNS caching\n\n- A bullet with no known point.');
+        expect(note).not.toContain('Sources differ');
+    });
+
+    it('writes the By tab layout when the Combined view has no topics', () => {
+        const fallback = buildStudyNote(combinedDraft({ combined: [] }), { date: DATE });
+        expect(fallback).toBe(buildStudyNote(draftOf(sources, points), { date: DATE }));
+        expect(fallback).not.toContain('Only in one source');
+    });
+
+    it('keeps link syntax and markup from page text out of headings, bullets and conflicts', () => {
+        const hostile = combinedDraft({
+            combined: [
+                {
+                    ...topics[0],
+                    heading: '[Evil](https://evil.example) # heading',
+                    bullets: [
+                        {
+                            id: 'b1',
+                            text: '# Injected <img src=x onerror=alert(1)> [docs](https://evil.example)',
+                            pointIds: ['p1-2', 'p2-2'],
+                            origin: 'point',
+                            edited: false,
+                        },
+                    ],
+                    conflicts: [{ pointIds: ['p1-1', 'p2-1'], text: '' }],
+                },
+            ],
+            points: points.map(point =>
+                point.id === 'p1-1' ? { ...point, text: '> <b>300</b> seconds [x](https://evil.example)' } : point
+            ),
+        });
+        const note = buildStudyNote(hostile, { date: DATE });
+        expect(note).not.toContain('evil.example');
+        expect(note).toContain('## Evil # heading');
+        expect(note).toContain('- Injected <img src=x onerror=alert(1)> docs ([1](https://example.com/p1), [2]');
+        expect(note).toContain(
+            '> Sources differ: [1](https://example.com/p1) says "<b>300</b> seconds x"; [2](https://example.org/p2) says "The default TTL is 3600 seconds."'
+        );
+    });
+
+    it.each(RENDERERS)('gives exactly one <a> per written link, to the encoded source URL (%s)', (_name, parse) => {
+        const markdown = buildStudyNote(combinedDraft(), { date: DATE });
+        const written = markdown.match(/\]\(https?:\/\/[^)]*\)/g) ?? [];
+        // Bullet 2, conflict 2, two section headings, and the Sources list of three
+        expect(written).toHaveLength(9);
+
+        const anchors = Array.from(render(markdown, parse).querySelectorAll('a'));
+        const p1 = linkUrl('https://example.com/p1');
+        const p2 = linkUrl('https://example.org/p2');
+        const solo = linkUrl('https://example.net/solo');
+        expect(anchors.map(anchor => anchor.getAttribute('href')).sort()).toEqual(
+            [p1, p1, p1, p1, p2, p2, p2, solo, solo].sort()
+        );
+    });
+
+    it.each(RENDERERS)('renders page text as text, with no markup from it (%s)', (_name, parse) => {
+        const hostile = combinedDraft({
+            sources: [source(1, { title: 'Page <i>1</i>', url: 'https://example.com/a_(b)' }), sources[1], sources[2]],
+            combined: [
+                { ...topics[0], bullets: [{ ...topics[0].bullets[0], text: 'Bullet <script>alert(1)</script>' }] },
+            ],
+        });
+        const root = render(buildStudyNote(hostile, { date: DATE }), parse);
+        expect(root.querySelector('script, i, img')).toBeNull();
+        expect(root.textContent).toContain('Bullet <script>alert(1)</script>');
+        expect(root.querySelectorAll('a')[0].getAttribute('href')).toBe('https://example.com/a%5F%28b%29');
     });
 });

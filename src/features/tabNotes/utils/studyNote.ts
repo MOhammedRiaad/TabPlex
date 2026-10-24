@@ -3,6 +3,7 @@
 // through safeInline first, so it can't become a heading, a list, a quote or a link.
 import { LONG_PAGE_LABEL, NOT_ENGLISH_LABEL, NO_POINTS_LINE, QUICK_VIEW_LABEL, STUDY_NOTE_TITLE } from '../constants';
 import { NoteSource, StudyNoteDraft } from '../types';
+import { sourcesOf } from './groupTopics';
 
 export interface StudyNoteOptions {
     /** The note's title as the user left it; '' or missing gives the default */
@@ -77,12 +78,29 @@ function labelOf(source: NoteSource): string {
     return safeInline(source.title) || hostOf(source.url) || 'Untitled page';
 }
 
+/** "[n](url)": the reference to a source, from its own URL. Without a web URL the number stays plain text. */
+function refOf(source: NoteSource): string {
+    const href = linkUrl(source.url);
+    return href ? `[${source.ref}](${href})` : `[${source.ref}]`;
+}
+
+const countOf = (sources: NoteSource[]) => `${sources.length} ${sources.length === 1 ? 'tab' : 'tabs'}`;
+
 function disclaimerFor(sources: NoteSource[]): string {
-    const count = `${sources.length} ${sources.length === 1 ? 'tab' : 'tabs'}`;
+    const count = countOf(sources);
     if (sources.some(source => source.mode === 'ai')) {
         return `_From ${count}, summarized by your browser's built-in AI on this device. It can be wrong: check the sources before relying on it._`;
     }
     return `_Quick view of ${count}: sentences taken from the pages, without AI. Check the sources for the full picture._`;
+}
+
+/** The Combined layout's disclaimer. Topics are always grouped by shared words here, never by a model. */
+function combinedDisclaimerFor(sources: NoteSource[]): string {
+    const count = countOf(sources);
+    if (sources.some(source => source.mode === 'ai')) {
+        return `_From ${count}, summarized by your browser's built-in AI on this device. Topics were grouped by shared words. It can be wrong: check the sources before relying on it._`;
+    }
+    return `_Quick view of ${count}: sentences taken from the pages and grouped by shared words, without AI. Check the sources for the full picture._`;
 }
 
 /** "## Title ([n](url))" then one bullet per point. The heading carries the only reference of its section. */
@@ -111,23 +129,78 @@ function sourceLine(source: NoteSource): string {
     return `- ${parts.join(' · ')}`;
 }
 
-function bodyOf(draft: StudyNoteDraft): string[] {
-    switch (draft.view) {
-        // 'combined' has no layout until the note builder is wired to the combined topics: it uses the By tab layout
-        case 'combined':
-        case 'byTab': {
-            const sources = [...draft.sources].sort((a, b) => a.ref - b.ref);
-            const blocks = [disclaimerFor(sources)];
-            for (const source of sources) blocks.push(sectionFor(source, draft));
-            if (sources.length > 0) blocks.push(`## Sources\n\n${sources.map(sourceLine).join('\n')}`);
-            return blocks;
-        }
-    }
+function sourcesSection(sources: NoteSource[]): string {
+    return `## Sources\n\n${sources.map(sourceLine).join('\n')}`;
 }
 
 /**
- * The note's Markdown for a draft: the title as H1, a disclaimer, one section per source (By tab), then the Sources
- * list. Sources are only the ones in the draft: failed and removed tabs are left out by the caller.
+ * The Combined layout (spec §10.1): one "## heading" per shared topic, each bullet with the references of its points,
+ * "> Sources differ" lines for conflicts, then "## Only in one source" for the leftovers of each tab, then the Sources.
+ * Every reference comes from sourcesOf(pointIds, points); the bullet text is the text the draft carries.
+ */
+function combinedBody(draft: StudyNoteDraft, sources: NoteSource[]): string[] {
+    const sourceOf = new Map(sources.map(source => [source.ref, source]));
+    const pointOf = new Map(draft.points.map(point => [point.id, point]));
+    const topics = draft.combined ?? [];
+    const blocks = [combinedDisclaimerFor(sources)];
+
+    const shared = topics.filter(topic => topic.kind === 'shared');
+    shared.forEach((topic, index) => {
+        const bullets = topic.bullets.flatMap(bullet => {
+            const text = safeInline(bullet.text);
+            if (text === '') return [];
+            const refs = sourcesOf(bullet.pointIds, draft.points).flatMap(ref => {
+                const source = sourceOf.get(ref);
+                return source ? [refOf(source)] : [];
+            });
+            return [refs.length > 0 ? `- ${text} (${refs.join(', ')})` : `- ${text}`];
+        });
+        if (bullets.length === 0) return;
+        blocks.push([`## ${safeInline(topic.heading) || `Topic ${index + 1}`}`, bullets.join('\n')].join('\n\n'));
+        for (const conflict of topic.conflicts) {
+            const says = conflict.pointIds.flatMap(id => {
+                const point = pointOf.get(id);
+                const source = point ? sourceOf.get(point.sourceRef) : undefined;
+                const text = point ? safeInline(point.text) : '';
+                return source && text !== '' ? [`${refOf(source)} says "${text}"`] : [];
+            });
+            if (says.length >= 2) blocks.push(`> Sources differ: ${says.join('; ')}`);
+        }
+    });
+
+    const leftovers = topics.flatMap(topic => {
+        const source =
+            topic.kind === 'source' && topic.sourceRef !== undefined ? sourceOf.get(topic.sourceRef) : undefined;
+        const lines = topic.bullets
+            .map(bullet => safeInline(bullet.text))
+            .filter(text => text !== '')
+            .map(text => `- ${text}`);
+        return source && lines.length > 0 ? [`### ${labelOf(source)} (${refOf(source)})\n\n${lines.join('\n')}`] : [];
+    });
+    if (leftovers.length > 0) blocks.push(`## Only in one source\n\n${leftovers.join('\n\n')}`);
+
+    if (sources.length > 0) blocks.push(sourcesSection(sources));
+    return blocks;
+}
+
+/** The By tab layout: one section per source with all its points, then the Sources list */
+function byTabBody(draft: StudyNoteDraft, sources: NoteSource[]): string[] {
+    const blocks = [disclaimerFor(sources)];
+    for (const source of sources) blocks.push(sectionFor(source, draft));
+    if (sources.length > 0) blocks.push(sourcesSection(sources));
+    return blocks;
+}
+
+function bodyOf(draft: StudyNoteDraft): string[] {
+    const sources = [...draft.sources].sort((a, b) => a.ref - b.ref);
+    // Without topics the Combined view has nothing to show, so the By tab layout is written instead
+    if (draft.view === 'combined' && (draft.combined ?? []).length > 0) return combinedBody(draft, sources);
+    return byTabBody(draft, sources);
+}
+
+/**
+ * The note's Markdown for a draft: the title as H1, then the layout of the draft's view (Combined or By tab). Sources
+ * are only the ones in the draft: failed and removed tabs are left out by the caller.
  */
 export function buildStudyNote(draft: StudyNoteDraft, options: StudyNoteOptions): string {
     const title = resolveStudyNoteTitle(options.title, options.date);

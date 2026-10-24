@@ -4,6 +4,7 @@ import { KeyPoint, NoteSource, Topic } from '../../types';
 import { cleanTopicHeading, groupTopics, sourcesOf } from '../groupTopics';
 import { CORPUS_POINTS, CORPUS_SOURCES, CPU_REF, DNS_REFS, RECIPE_REF, REACT_REFS } from './fixtures/pages';
 import { OOP_POINTS, OOP_POINTS_TAGGED, OOP_SOURCES } from './fixtures/oop';
+import { E2E_POINTS, E2E_SOURCES } from './fixtures/e2ePages';
 
 const source = (ref: number, title = `Page ${ref}`): NoteSource => ({
     ref,
@@ -504,13 +505,28 @@ describe('groupTopics on the OOP corpus (second round)', () => {
         }
     });
 
-    it('ignores a shared topic tag across a source in another language, but both English sources still merge on it', () => {
+    it('never merges an English point with a Portuguese point, even with the same tag and whatever the source flags', () => {
         const english = 'Classes define abstract definitions for types of objects.';
         const portuguese = 'Protótipos servem para herdar propriedades de outros objetos.';
         const points = [point(1, 1, english, 'Classes'), point(2, 1, portuguese, 'Classes')];
         expect(groupTopics(points, [source(1), { ...source(2), notEnglish: true }])).toEqual([]);
-        // Control: the same two points merge on the shared tag when both sources are English
-        expect(groupTopics(points, [source(1), source(2)])[0].kind).toBe('shared');
+        expect(groupTopics(points, [source(1), source(2)])).toEqual([]);
+        expect(
+            groupTopics(points, [
+                { ...source(1), notEnglish: true },
+                { ...source(2), notEnglish: true },
+            ])
+        ).toEqual([]);
+    });
+
+    it('lets two Portuguese points from two Portuguese sources merge with each other', () => {
+        const portuguese = 'Protótipos servem para herdar propriedades de outros objetos.';
+        const points = [point(1, 1, portuguese), point(2, 1, portuguese)];
+        const topics = groupTopics(points, [
+            { ...source(1), notEnglish: true },
+            { ...source(2), notEnglish: true },
+        ]);
+        expect(topics[0].kind).toBe('shared');
     });
 
     it('still merges English points from a source flagged as not English when their words match', () => {
@@ -519,5 +535,46 @@ describe('groupTopics on the OOP corpus (second round)', () => {
         const points = [point(1, 1, sentence), point(2, 1, sentence)];
         const topics = groupTopics(points, [source(1), { ...source(2), notEnglish: true }]);
         expect(topics[0].kind).toBe('shared');
+    });
+
+    it('a point too short to tell its language never blocks a merge', () => {
+        const points = [
+            point(1, 1, 'Classes define abstract types.', 'Classes'),
+            point(2, 1, 'Classes define abstract definitions for types of objects.', 'Classes'),
+        ];
+        expect(groupTopics(points, [source(1), source(2)])[0].kind).toBe('shared');
+    });
+});
+
+describe('groupTopics on the E2E pages (the quick view of e2e/pages)', () => {
+    const topics = groupTopics(E2E_POINTS, E2E_SOURCES);
+    const DNS_PAGES = [1, 2, 3];
+    const SOURDOUGH = 4;
+
+    it('the DNS pages share a topic whose bullets cite at least two of them', () => {
+        // The two DNS pages sit in separate bullets of one shared topic (their sentences are not duplicates)
+        const cited = shared(topics).some(topic => {
+            const refs = sourcesOf(
+                topic.bullets.flatMap(bullet => bullet.pointIds),
+                E2E_POINTS
+            );
+            return refs.filter(ref => DNS_PAGES.includes(ref)).length >= 2;
+        });
+        expect(cited).toBe(true);
+    });
+
+    it('the sourdough page is in no shared topic and keeps its own section', () => {
+        for (const topic of shared(topics)) {
+            const refs = sourcesOf(
+                topic.bullets.flatMap(bullet => bullet.pointIds),
+                E2E_POINTS
+            );
+            expect(refs).not.toContain(SOURDOUGH);
+        }
+        expect(topics.some(topic => topic.kind === 'source' && topic.sourceRef === SOURDOUGH)).toBe(true);
+    });
+
+    it('gives the same output when it runs twice', () => {
+        expect(groupTopics(E2E_POINTS, E2E_SOURCES)).toEqual(topics);
     });
 });

@@ -1,6 +1,13 @@
 // Word-level text helpers for the tab notes (spec §7.2): tokens, stopwords, light stemming, numbers, TF-IDF
 // vectors and the grounding check. Pure: no chrome.* and no DOM.
-import { STOPWORDS } from '../constants';
+import {
+    ENGLISH_MARKERS,
+    POINT_ENGLISH_MIN_SHARE,
+    POINT_LANGUAGE_MIN_WORDS,
+    POINT_OTHER_MAX_SHARE,
+    POINT_OTHER_MIN_WORDS,
+    STOPWORDS,
+} from '../constants';
 
 /** Letters, or numbers with an optional decimal part */
 const TOKEN = /\p{L}+|\p{N}+(?:\.\p{N}+)?/gu;
@@ -154,4 +161,20 @@ export function shingleJaccard(a: string, b: string, size = 3): number {
     let shared = 0;
     for (const shingle of left) if (right.has(shingle)) shared++;
     return shared / (left.size + right.size - shared);
+}
+
+/** The language of one point, judged on its own words (the page's flag says nothing about a single sentence) */
+export type PointLanguage = 'en' | 'other' | 'unknown';
+
+/**
+ * 'en' when the point has plenty of English function words, 'other' when it has almost none and enough words to tell,
+ * else 'unknown'. A model often writes English points for a page in another language, so the page flag is not used.
+ */
+export function pointLanguage(text: string): PointLanguage {
+    const words = text.toLowerCase().match(/\p{L}+/gu) ?? [];
+    if (words.length < POINT_LANGUAGE_MIN_WORDS) return 'unknown';
+    const share = words.filter(word => ENGLISH_MARKERS.has(word)).length / words.length;
+    if (share >= POINT_ENGLISH_MIN_SHARE) return 'en';
+    if (share < POINT_OTHER_MAX_SHARE && words.length >= POINT_OTHER_MIN_WORDS) return 'other';
+    return 'unknown';
 }

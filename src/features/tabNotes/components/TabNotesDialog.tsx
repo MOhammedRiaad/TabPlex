@@ -7,9 +7,9 @@ import ModelStatus from '../../ai/components/ModelStatus';
 import { currentWindowId } from '../../ai/utils/collectTabs';
 import { ModelAvailability } from '../../ai/types';
 import { useUIActions, useUIStore } from '../../ui/store/uiStore';
-import { createNoteFromDraft, failuresOf, useTabNotesStore } from '../store/tabNotesStore';
+import { createNoteFromDraft, draftOf, failuresOf, useTabNotesStore } from '../store/tabNotesStore';
 import { NOT_READ_MESSAGE } from '../constants';
-import { NoteSource, ReadableTab, StudyNoteDraft } from '../types';
+import { NoteSource, ReadableTab } from '../types';
 import { collectReadableTabs } from '../utils/collectReadableTabs';
 import { openSource } from '../utils/openSource';
 import { missingOrigins, requestAccess } from '../utils/pageAccess';
@@ -23,7 +23,9 @@ import {
     pickedTabs,
 } from '../utils/tabSelection';
 import SourceCard from './SourceCard';
+import SourceList from './SourceList';
 import TabPicker from './TabPicker';
+import TopicCard from './TopicCard';
 import './TabNotesDialog.css';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -51,10 +53,7 @@ const TabNotesPanel: React.FC = () => {
     const [access, setAccess] = useState<{ key: string; version: number; missing: string[] } | null>(null);
     const [denied, setDenied] = useState<string[]>([]);
     const [permissionsVersion, setPermissionsVersion] = useState(0);
-    // Step 4: edits, removals, and the note's title and tag. Kept here so that retrying a tab keeps them.
-    const [edits, setEdits] = useState<Record<string, string>>({});
-    const [removedPoints, setRemovedPoints] = useState<ReadonlySet<string>>(new Set());
-    const [removedRefs, setRemovedRefs] = useState<ReadonlySet<number>>(new Set());
+    // Step 4: the note's title and tag. The edits and removals live in the store (one source of truth for the views).
     const [title, setTitle] = useState(() => defaultStudyNoteTitle(new Date()));
     const [tagStudy, setTagStudy] = useState(true);
 
@@ -169,20 +168,16 @@ const TabNotesPanel: React.FC = () => {
     };
 
     const running = run.status === 'running';
-    const sources = useMemo(
-        () => run.sources.filter(source => !removedRefs.has(source.ref)),
-        [run.sources, removedRefs]
+    const { sources, points, combined } = run;
+    // The note is built from this draft, so Create note saves the view on screen
+    const draft = useMemo(
+        () => draftOf({ sources, points, combined, view: run.view }),
+        [sources, points, combined, run.view]
     );
-    const draft = useMemo<StudyNoteDraft>(
-        () => ({
-            view: 'byTab',
-            sources,
-            points: run.points
-                .filter(point => !removedRefs.has(point.sourceRef) && !removedPoints.has(point.id))
-                .map(point => (point.id in edits ? { ...point, text: edits[point.id] } : point)),
-        }),
-        [sources, run.points, removedRefs, removedPoints, edits]
-    );
+    const view = draft.view;
+    const canCombine = combined.length > 0;
+    // While a run is going the cards show as they arrive (By tab); the topics are shown once the run has finished
+    const showCombined = !running && view === 'combined';
     const failures = failuresOf(run.tabs);
     const notRead = run.tabs.filter(entry => entry.state === 'not-read');
     const deniedNow = denied.filter(origin => missing.includes(origin));
@@ -196,6 +191,18 @@ const TabNotesPanel: React.FC = () => {
     const onOpen = (source: NoteSource) => {
         openSource(source).catch(() => showToast("Couldn't open this page", 'error'));
     };
+
+    // Why Combined is off: one page has nothing to combine, and tabs that share no topic keep their own sections
+    const combineNote =
+        sources.length === 1
+            ? 'Nothing to combine with one page'
+            : sources.length > 1 && !canCombine
+              ? "These tabs don't share a topic, so each has its own section."
+              : '';
+
+    const combinedTopics = draft.combined ?? [];
+    const sharedTopics = combinedTopics.filter(topic => topic.kind === 'shared');
+    const soleTopics = combinedTopics.filter(topic => topic.kind === 'source');
 
     let body: React.ReactNode;
     if (picking) {
@@ -244,17 +251,73 @@ const TabNotesPanel: React.FC = () => {
                 {!running && run.sources.length === 0 && failures.length === 0 && (
                     <p className="tabnotes-muted">Nothing was read.</p>
                 )}
-                {sources.map(source => (
-                    <SourceCard
-                        key={source.ref}
-                        source={source}
-                        points={draft.points.filter(point => point.sourceRef === source.ref)}
-                        onEdit={(id, text) => setEdits(previous => ({ ...previous, [id]: text }))}
-                        onRemovePoint={id => setRemovedPoints(previous => new Set([...previous, id]))}
-                        onRemoveSource={ref => setRemovedRefs(previous => new Set([...previous, ref]))}
-                        onOpen={onOpen}
-                    />
-                ))}
+                {!running && sources.length > 0 && (
+                    <fieldset className="tabnotes-views">
+                        <legend>Combine similar tabs</legend>
+                        <label className="tabnotes-toggle">
+                            <input
+                                type="radio"
+                                name="tabnotes-view"
+                                value="combined"
+                                checked={view === 'combined'}
+                                disabled={!canCombine}
+                                onChange={() => actions.setView('combined')}
+                            />
+                            Combined
+                        </label>
+                        <label className="tabnotes-toggle">
+                            <input
+                                type="radio"
+                                name="tabnotes-view"
+                                value="byTab"
+                                checked={view === 'byTab'}
+                                onChange={() => actions.setView('byTab')}
+                            />
+                            By tab
+                        </label>
+                        {combineNote && <p className="tabnotes-status">{combineNote}</p>}
+                    </fieldset>
+                )}
+                {showCombined && (
+                    <>
+                        {sharedTopics.map(topic => (
+                            <TopicCard
+                                key={topic.id}
+                                topic={topic}
+                                points={draft.points}
+                                sources={sources}
+                                onOpen={onOpen}
+                            />
+                        ))}
+                        {soleTopics.length > 0 && (
+                            <section className="tabnotes-section" aria-label="Only in one source">
+                                <h3>Only in one source</h3>
+                                {soleTopics.map(topic => (
+                                    <TopicCard
+                                        key={topic.id}
+                                        topic={topic}
+                                        points={draft.points}
+                                        sources={sources}
+                                        onOpen={onOpen}
+                                    />
+                                ))}
+                            </section>
+                        )}
+                        <SourceList sources={sources} onOpen={onOpen} onRemoveSource={actions.removeSource} />
+                    </>
+                )}
+                {!showCombined &&
+                    sources.map(source => (
+                        <SourceCard
+                            key={source.ref}
+                            source={source}
+                            points={points.filter(point => point.sourceRef === source.ref)}
+                            onEdit={actions.editPoint}
+                            onRemovePoint={actions.removePoint}
+                            onRemoveSource={actions.removeSource}
+                            onOpen={onOpen}
+                        />
+                    ))}
                 {failures.length > 0 && (
                     <section className="tabnotes-section">
                         <h3>Could not be read</h3>

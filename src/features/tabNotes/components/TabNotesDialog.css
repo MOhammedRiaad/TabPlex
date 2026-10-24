@@ -276,6 +276,33 @@
     cursor: pointer;
 }
 
+/* Step 4: the Combined | By tab choice */
+.tabnotes-views {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-xs) var(--spacing-md);
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.tabnotes-views legend {
+    padding: 0;
+    margin-right: var(--spacing-sm);
+    color: var(--color-text-secondary);
+    font-size: var(--font-sm);
+}
+
+.tabnotes-views .tabnotes-status {
+    flex-basis: 100%;
+}
+
+.tabnotes-views .tabnotes-toggle:has(input:disabled) {
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
 .tabnotes-btn,
 .tabnotes-btn-primary {
     padding: var(--spacing-xs) var(--spacing-md);

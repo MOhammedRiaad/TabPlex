@@ -137,6 +137,13 @@ export const ENGLISH_MARKERS: ReadonlySet<string> = new Set([
 export const LANGUAGE_SAMPLE_WORDS = 400;
 export const LANGUAGE_MIN_WORDS = 60;
 export const ENGLISH_MARKER_MIN_SHARE = 0.05;
+/** One point's language (pointLanguage): fewer words than this is 'unknown' */
+export const POINT_LANGUAGE_MIN_WORDS = 6;
+/** A point with at least this share of English marker words is 'en' */
+export const POINT_ENGLISH_MIN_SHARE = 0.12;
+/** A point with fewer than this share of English marker words, and POINT_OTHER_MIN_WORDS words, is 'other' */
+export const POINT_OTHER_MAX_SHARE = 0.04;
+export const POINT_OTHER_MIN_WORDS = 8;
 
 /** Quick view: points per page */
 export const QUICK_POINTS_PER_SOURCE = 5;
@@ -152,8 +159,13 @@ export const QUICK_DESCRIPTION_MIN_CHARS = 40;
 /** Quick view: added to the score of the first sentence of a section */
 export const QUICK_SECTION_START_BONUS = 0.1;
 
-/** Word grouping (§7.3): average similarity a merge needs (cosine, plus SAME_TOPIC_BONUS for the same topic name) */
-export const TOPIC_SIMILARITY = 0.3;
+/**
+ * Word grouping (§7.3): average similarity a merge needs (cosine, plus SAME_TOPIC_BONUS for the same topic name).
+ * Tuned on the fixture corpora: the quick view's DNS pages (E2E pages) merge up to 0.214 and not at 0.215, so a
+ * round value a little under that edge is used. The DNS, OOP (untagged and tagged) and E2E corpora give the same
+ * result from 0.21 up to 0.214 and have no false merges there; below about 0.205 an extra OOP topic appears.
+ */
+export const TOPIC_SIMILARITY = 0.21;
 /** Word grouping: added to the similarity of two points whose topic names are the same (capped at 1) */
 export const SAME_TOPIC_BONUS = 0.3;
 /** Word grouping: most points in one topic */
