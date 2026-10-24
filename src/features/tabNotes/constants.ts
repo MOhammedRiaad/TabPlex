@@ -50,7 +50,7 @@ export const PAGE_URL_MAX_CHARS = 8_192;
 export const PAGE_FIELD_MAX_CHARS = 200;
 
 /** Longest key point text (cut on a word boundary with an ellipsis) */
-export const POINT_MAX_CHARS = 240;
+export const POINT_MAX_CHARS = 480;
 /** Shorter points are dropped: menus and fragments */
 export const POINT_MIN_CHARS = 15;
 /** Longest topic tag or section heading kept as a point's topicHint */

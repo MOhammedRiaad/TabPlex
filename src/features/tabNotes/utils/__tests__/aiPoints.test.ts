@@ -117,7 +117,7 @@ describe('cleanPointText', () => {
         const cut = cleanPointText('word '.repeat(100));
         expect(cut.endsWith('…')).toBe(true);
         expect(cut.length).toBeLessThanOrEqual(POINT_MAX_CHARS);
-        expect(cleanPointText('a'.repeat(300))).toBe(`${'a'.repeat(POINT_MAX_CHARS - 1)}…`);
+        expect(cleanPointText('a'.repeat(POINT_MAX_CHARS + 60))).toBe(`${'a'.repeat(POINT_MAX_CHARS - 1)}…`);
         expect(cleanPointText('x', 5)).toBe('x');
     });
 });

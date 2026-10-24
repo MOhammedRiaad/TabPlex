@@ -115,13 +115,33 @@ describe('extractPointsQuick', () => {
         expect(extractPointsQuick(source, pageOf(junk))).toEqual([]);
     });
 
-    it('cuts a sentence longer than POINT_MAX_CHARS on a word boundary with an ellipsis', () => {
-        const long = `${'word '.repeat(56).trim()}.`;
-        expect(long.length).toBe(280);
-        const [point] = extractPointsQuick(source, pageOf([{ heading: '', paragraphs: [long] }]));
+    it('cuts a description longer than POINT_MAX_CHARS on a word boundary with an ellipsis', () => {
+        const long = `${'word '.repeat(POINT_MAX_CHARS / 4).trim()}.`;
+        expect(long.length).toBeGreaterThan(POINT_MAX_CHARS);
+        const [point] = extractPointsQuick(source, pageOf([], long));
         expect(point.text.endsWith('…')).toBe(true);
         expect(point.text.length).toBeLessThanOrEqual(POINT_MAX_CHARS);
         expect(long.startsWith(point.text.slice(0, -1))).toBe(true);
+    });
+
+    it('adds the next sentence of the paragraph to a point, and does not repeat it as a point of its own', () => {
+        const first = 'A resolver keeps every DNS answer in its cache until the record TTL runs out.';
+        const second = 'After that the resolver asks the authoritative server again for a fresh answer.';
+        const paragraph = `${first} ${second}`;
+        const points = extractPointsQuick(source, pageOf([{ heading: '', paragraphs: [paragraph] }]));
+        expect(points).toHaveLength(1);
+        expect(points[0].text).toBe(paragraph);
+    });
+
+    it('keeps just the sentence when adding the next one would pass POINT_MAX_CHARS', () => {
+        const first = `${'Resolvers cache DNS answers for the TTL '.repeat(6).trim()}.`;
+        const second = `${'The authoritative server holds the original records '.repeat(5).trim()}.`;
+        expect(first.length).toBeLessThanOrEqual(300);
+        expect(second.length).toBeLessThanOrEqual(300);
+        expect(first.length + second.length).toBeGreaterThan(POINT_MAX_CHARS);
+        const [point] = extractPointsQuick(source, pageOf([{ heading: '', paragraphs: [`${first} ${second}`] }]));
+        expect(point.text.startsWith(first.slice(0, 40))).toBe(true);
+        expect(point.text.length).toBeLessThanOrEqual(POINT_MAX_CHARS);
     });
 
     it('is deterministic', () => {

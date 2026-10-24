@@ -51,6 +51,8 @@ interface Candidate {
     sectionStart: boolean;
     hint: string;
     score: number;
+    /** The sentence after it in the same paragraph: added for context when the two fit in a point */
+    following: string;
 }
 
 /** Mostly letters, and within the sentence length range: skips code, number tables and navigation leftovers */
@@ -66,12 +68,21 @@ function candidatesOf(page: CleanPage): Candidate[] {
         const hint = topicHintFor(section.heading);
         let sectionStart = true;
         for (const paragraph of section.paragraphs) {
-            for (const match of paragraph.match(SENTENCE) ?? []) {
-                const text = match.trim();
+            const sentences = (paragraph.match(SENTENCE) ?? []).map(match => match.trim());
+            for (const [i, text] of sentences.entries()) {
                 const first = sectionStart;
                 sectionStart = false;
                 if (!isCandidate(text)) continue;
-                candidates.push({ text, sectionIndex, order: candidates.length, sectionStart: first, hint, score: 0 });
+                const following = sentences[i + 1] ?? '';
+                candidates.push({
+                    text,
+                    sectionIndex,
+                    order: candidates.length,
+                    sectionStart: first,
+                    hint,
+                    score: 0,
+                    following,
+                });
             }
         }
     });
@@ -109,10 +120,17 @@ export function extractPointsQuick(source: NoteSource, page: CleanPage): KeyPoin
     }
     picked.sort((a, b) => a.order - b.order);
 
-    const points = [
-        ...(description ? [{ text: clipText(description, POINT_MAX_CHARS), hint: '' }] : []),
-        ...picked.map(candidate => ({ text: clipText(candidate.text, POINT_MAX_CHARS), hint: candidate.hint })),
-    ];
+    // A point is its sentence plus the one after it (more to learn from), when both fit. A sentence that was already
+    // added to the previous point as its follow-up is not a point of its own.
+    const described: { text: string; hint: string }[] = [];
+    for (const candidate of picked) {
+        const joined = `${candidate.text} ${candidate.following}`.trim();
+        if (described.some(point => point.text.includes(candidate.text))) continue;
+        const text = joined.length <= POINT_MAX_CHARS ? joined : candidate.text;
+        described.push({ text: clipText(text, POINT_MAX_CHARS), hint: candidate.hint });
+    }
+
+    const points = [...(description ? [{ text: clipText(description, POINT_MAX_CHARS), hint: '' }] : []), ...described];
     return points.map((point, i) => ({
         id: `p${source.ref}-${i + 1}`,
         sourceRef: source.ref,
