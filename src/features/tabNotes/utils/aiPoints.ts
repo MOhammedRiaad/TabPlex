@@ -95,9 +95,13 @@ export function looksCutOff(text: string): boolean {
     return lastWord !== undefined && DANGLING_WORDS.has(lastWord);
 }
 
-/** Every number in the point must appear in the page; words must mostly appear too (GROUNDING_MIN) */
-function isGrounded(point: string, reference: string, pageNumbers: Set<string>): boolean {
-    if (support(point, reference) < GROUNDING_MIN) return false;
+/**
+ * Every number in the point must appear in the page; words must mostly appear too (GROUNDING_MIN). On a page that
+ * isn't in English the words can't be compared: the model answers in English (the Prompt API has no Portuguese
+ * output, for one), so only the numbers are checked, and the note labels the source "Not in English".
+ */
+function isGrounded(point: string, reference: string, pageNumbers: Set<string>, compareWords: boolean): boolean {
+    if (compareWords && support(point, reference) < GROUNDING_MIN) return false;
     for (const number of numbersIn(point)) {
         if (!pageNumbers.has(number)) return false;
     }
@@ -126,7 +130,7 @@ export function validatePoints(raw: unknown, page: CleanPage): ValidPoint[] | nu
         const key = point.toLowerCase();
         if (seen.has(key)) continue;
         seen.add(key);
-        if (!isGrounded(point, reference, pageNumbers)) continue;
+        if (!isGrounded(point, reference, pageNumbers, !page.notEnglish)) continue;
         const topicHint = typeof topic === 'string' ? cleanPointText(topic, TOPIC_HINT_MAX_CHARS) : '';
         kept.push({ text: point, topicHint });
         if (kept.length >= POINTS_PER_SOURCE_MAX) break;

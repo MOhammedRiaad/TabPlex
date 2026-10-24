@@ -145,6 +145,43 @@ describe('looksCutOff', () => {
     });
 });
 
+describe('validatePoints: pages not in English', () => {
+    const portuguese = pageOf(
+        [
+            'Objetos JavaScript são coleções de propriedades acessadas por pares de chave e valor.',
+            'Cada objeto possui um protótipo, e a cadeia de protótipos implementa a herança em 2 níveis.',
+        ],
+        { notEnglish: true }
+    );
+
+    it('keeps English points about a Portuguese page, which share no words with it', () => {
+        const kept = validatePoints(
+            { points: [{ text: 'JavaScript objects are collections of key and value pairs.', topic: 'objects' }] },
+            portuguese
+        );
+        expect(kept).toEqual([
+            { text: 'JavaScript objects are collections of key and value pairs.', topicHint: 'objects' },
+        ]);
+    });
+
+    it('still rejects a number that is not on the page', () => {
+        const point = { text: 'The prototype chain is 9 levels deep in every object.', topic: 'prototypes' };
+        expect(validatePoints({ points: [point] }, portuguese)).toBeNull();
+        expect(
+            validatePoints(
+                { points: [{ text: 'The prototype chain implements inheritance in 2 levels.', topic: 'prototypes' }] },
+                portuguese
+            )
+        ).toHaveLength(1);
+    });
+
+    it('stays strict for an English page: the same unrelated point is dropped', () => {
+        const english = pageOf(PARAGRAPHS);
+        const point = { text: 'JavaScript objects are collections of key and value pairs.', topic: 'objects' };
+        expect(validatePoints({ points: [point] }, english)).toBeNull();
+    });
+});
+
 describe('validatePoints', () => {
     it('drops a point the model stopped in the middle of, even though every word is on the page', () => {
         const cut = { text: 'DNS caching stores answers from resolvers for the time given by the', topic: 'DNS' };
