@@ -3,6 +3,8 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import BookmarkView from '../BookmarkView';
 import BookmarkModal from '../components/BookmarkModal';
+import BookmarkNode from '../components/BookmarkNode';
+import type { Bookmark } from '../../../types';
 import { useBoardStore } from '../../../store/boardStore';
 import { ChromeMock, fakeChrome, installChromeMock, respondToMessages } from '../../../test/chromeMock';
 
@@ -56,6 +58,7 @@ describe('BookmarkView', () => {
                 case 'GET_BOOKMARKS':
                     return tree();
                 case 'SEARCH_BOOKMARKS':
+                    if (m.payload.query === 'nothing') return [];
                     return [{ id: '10', parentId: '1', title: 'GitHub', url: 'https://github.com' }];
                 case 'CREATE_BOOKMARK':
                 case 'CREATE_BOOKMARK_FOLDER':
@@ -194,6 +197,49 @@ describe('BookmarkView', () => {
         expect(received.some(m => m.type === 'DELETE_BOOKMARK_TREE')).toBe(true);
     });
 
+    it('warns and skips listeners when the bookmarks API is unavailable', async () => {
+        Reflect.deleteProperty(fakeChrome(), 'bookmarks');
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        render(<BookmarkView />);
+        expect(await screen.findByText('GitHub')).toBeInTheDocument();
+        expect(warn).toHaveBeenCalledWith('Chrome bookmarks API is not available');
+    });
+
+    it('keeps the bookmark when the delete confirmation is declined', async () => {
+        vi.spyOn(window, 'confirm').mockReturnValue(false);
+        render(<BookmarkView />);
+        const github = await screen.findByLabelText('Bookmark: GitHub');
+        fireEvent.keyDown(github, { key: 'Delete' });
+        expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to delete this bookmark?');
+        expect(received.some(m => m.type === 'DELETE_BOOKMARK')).toBe(false);
+        expect(screen.queryByText('Bookmark deleted successfully!')).not.toBeInTheDocument();
+        expect(screen.getByText('GitHub')).toBeInTheDocument();
+    });
+
+    it('applies a saved non-default sort to search results', async () => {
+        localStorage.setItem('tabboard-bookmark-sort', JSON.stringify({ criteria: 'name', order: 'asc' }));
+        render(<BookmarkView />);
+        await screen.findByText('Zed');
+        fireEvent.change(screen.getByLabelText('Search bookmarks'), { target: { value: 'git' } });
+        await waitFor(() => expect(screen.queryByText('Zed')).not.toBeInTheDocument());
+        expect(screen.getByText('GitHub')).toBeInTheDocument();
+    });
+
+    it('shows an empty state when a search finds nothing', async () => {
+        render(<BookmarkView />);
+        await screen.findByText('Zed');
+        fireEvent.change(screen.getByLabelText('Search bookmarks'), { target: { value: 'nothing' } });
+        expect(await screen.findByText('Try adjusting your search terms')).toBeInTheDocument();
+    });
+
+    it('does not throw when opening a bookmark without the tabs API', async () => {
+        render(<BookmarkView />);
+        const github = await screen.findByLabelText('Bookmark: GitHub');
+        Reflect.deleteProperty(fakeChrome(), 'tabs');
+        fireEvent.click(within(github).getByText('GitHub'));
+        expect(github).toBeInTheDocument();
+    });
+
     it('shows loading and error states', async () => {
         useBoardStore.setState({ isLoading: true });
         received.length = 0;
@@ -201,6 +247,67 @@ describe('BookmarkView', () => {
         expect(container.querySelector('.bookmark-loading, .bookmark-tree')).toBeTruthy();
         act(() => useBoardStore.setState({ isLoading: false, error: 'Permission denied' }));
         expect(await screen.findByText(/Permission denied/)).toBeInTheDocument();
+    });
+});
+
+describe('BookmarkNode', () => {
+    const renderNode = (bookmark: Bookmark, props: Partial<React.ComponentProps<typeof BookmarkNode>> = {}) => {
+        const handlers = {
+            onToggleFolder: vi.fn(),
+            onUpdate: vi.fn(),
+            onDelete: vi.fn(),
+            onMove: vi.fn(),
+            onOpenBookmark: vi.fn(),
+        };
+        render(
+            <BookmarkNode
+                bookmark={bookmark}
+                isFolder={false}
+                isExpanded={false}
+                hasChildren={false}
+                level={0}
+                {...handlers}
+                {...props}
+            />
+        );
+        return handlers;
+    };
+
+    it('does not move a bookmark whose parent folder did not change', () => {
+        const h = renderNode({ id: '10', parentId: '1', title: 'GitHub', url: 'https://github.com' });
+        fireEvent.click(screen.getByLabelText('Edit bookmark'));
+        fireEvent.submit(document.querySelector('form')!);
+        expect(h.onUpdate).toHaveBeenCalledWith('10', { title: 'GitHub', url: 'https://github.com' });
+        expect(h.onMove).not.toHaveBeenCalled();
+    });
+
+    it('ignores a click on a bookmark without a url and keys that are not shortcuts', () => {
+        const h = renderNode({ id: '10', title: 'No url' });
+        const node = screen.getByLabelText('Bookmark: No url');
+        fireEvent.click(within(node).getByText('No url'));
+        fireEvent.keyDown(node, { key: 'a' });
+        expect(h.onOpenBookmark).not.toHaveBeenCalled();
+        expect(h.onDelete).not.toHaveBeenCalled();
+        expect(h.onToggleFolder).not.toHaveBeenCalled();
+    });
+
+    it('does not delete a folder with the Delete key', () => {
+        const h = renderNode({ id: '12', title: 'Dir', children: [] }, { isFolder: true });
+        fireEvent.keyDown(screen.getByLabelText('Folder: Dir'), { key: 'Delete' });
+        expect(h.onDelete).not.toHaveBeenCalled();
+    });
+
+    it('shows a zero count for a folder flagged as having children but without a list', () => {
+        renderNode({ id: '12', title: 'Dir' }, { isFolder: true, hasChildren: true });
+        expect(document.querySelector('.bookmark-children-count')).toHaveTextContent('0');
+    });
+
+    it('shows an unparseable url as is, shortening long ones', () => {
+        const long = `not a url ${'x'.repeat(60)}`;
+        renderNode({ id: '1', title: 'Short', url: 'not a url' });
+        expect(screen.getByText('not a url')).toBeInTheDocument();
+        renderNode({ id: '2', title: 'Long', url: long });
+        expect(screen.getByText(`${long.substring(0, 50)}...`)).toBeInTheDocument();
     });
 });
 
