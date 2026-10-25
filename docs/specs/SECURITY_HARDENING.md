@@ -1,12 +1,12 @@
 # Spec: Security and reliability hardening
 
-|             |                                                                                                                                                                            |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | Implemented. Not done: moving `inferSessions` (a `setInterval`) to an alarm, and `context-service` / `organize-service` / `suggest-service` still use their own reply code |
-| **Owner**   | Mohamed                                                                                                                                                                    |
-| **Created** | 2026-10-25                                                                                                                                                                 |
-| **Branch**  | one `feature/<name>` per phase (see §9), merged into `develop`                                                                                                             |
-| **Source**  | Code review and security analysis of the extension, 2026-10-25                                                                                                             |
+|             |                                                                                                                                                      |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**  | Implemented. `context-service`, `organize-service` and `suggest-service` keep their own compact reply code (typed responses, no timers to get wrong) |
+| **Owner**   | Mohamed                                                                                                                                              |
+| **Created** | 2026-10-25                                                                                                                                           |
+| **Branch**  | one `feature/<name>` per phase (see §9), merged into `develop`                                                                                       |
+| **Source**  | Code review and security analysis of the extension, 2026-10-25                                                                                       |
 
 ---
 

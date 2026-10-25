@@ -86,19 +86,27 @@ export async function inferSessions() {
             await addSession(session);
 
             // Notify the UI about the new session
-            chrome.runtime.sendMessage({
-                type: 'SESSION_INFERENCE_COMPLETE',
-                payload: session,
-            });
+            chrome.runtime
+                .sendMessage({
+                    type: 'SESSION_INFERENCE_COMPLETE',
+                    payload: session,
+                })
+                .catch(() => {}); // No TabPlex page open
         }
     } catch (error) {
         console.error('Error inferring sessions:', error);
     }
 }
 
-// Set up automatic session inference periodically
-// Check for session patterns every 30 minutes
-setInterval(inferSessions, 30 * 60 * 1000); // 30 minutes
+// Check for session patterns every 30 minutes. A setInterval would never get there: the service worker sleeps after
+// ~30 s. An alarm wakes it, and survives restarts, so it is only created when missing.
+export const INFER_SESSIONS_ALARM = 'tabplex-infer-sessions';
+chrome.alarms.get(INFER_SESSIONS_ALARM).then(existing => {
+    if (!existing) return chrome.alarms.create(INFER_SESSIONS_ALARM, { periodInMinutes: 30 });
+});
+chrome.alarms.onAlarm.addListener(alarm => {
+    if (alarm.name === INFER_SESSIONS_ALARM) void inferSessions();
+});
 
 // Also infer sessions when the extension starts
 chrome.runtime.onStartup.addListener(() => {

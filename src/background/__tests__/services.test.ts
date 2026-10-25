@@ -603,6 +603,28 @@ describe('session inference', () => {
         expect(console.error).toHaveBeenCalledWith('Error inferring sessions:', expect.any(Error));
     });
 
+    it('runs on a 30 minute alarm that is created once, not on a timer the sleeping worker would lose', async () => {
+        const setIntervalSpy = vi.spyOn(globalThis, 'setInterval');
+        const { INFER_SESSIONS_ALARM } = await import('../session-service');
+        await flush();
+        expect(setIntervalSpy).not.toHaveBeenCalled();
+        expect(fakeChrome().alarms.create).toHaveBeenCalledWith(INFER_SESSIONS_ALARM, { periodInMinutes: 30 });
+
+        // A restarted worker finds the alarm and does not add another
+        vi.resetModules();
+        await import('../session-service');
+        await flush();
+        expect(fakeChrome().alarms.create).toHaveBeenCalledTimes(1);
+
+        await chrome.storage.local.set({ tabboard_tabs: [makeTab({ lastAccessed: new Date().toISOString() })] });
+        mock.browser.events.alarm.emit({ name: 'another-alarm' });
+        await flush();
+        expect(store().tabboard_sessions).toBeUndefined();
+        mock.browser.events.alarm.emit({ name: INFER_SESSIONS_ALARM });
+        await flush();
+        expect((store().tabboard_sessions as any[]).length).toBe(1);
+    });
+
     it('runs 5 seconds after startup', async () => {
         await chrome.storage.local.set({ tabboard_tabs: [makeTab({ lastAccessed: new Date().toISOString() })] });
         mock.browser.events.startup.emit();
