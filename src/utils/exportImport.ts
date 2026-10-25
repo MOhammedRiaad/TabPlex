@@ -7,7 +7,7 @@ import { DISPLAY_NAME_KEY } from '../features/settings/utils/displayName';
 import { THEME_STORAGE_KEY } from '../hooks/useTheme';
 import { TimerSettings, useTimerStore } from '../store/timerStore';
 import { TRACK_ALL_TABS_KEY } from './tabTracking';
-import { MAX_IMPORT_CHARS, describeErrors, sanitizeCollections } from './importValidation';
+import { MAX_IMPORT_CHARS, describeErrors, sanitizeCollections, type ImportCollections } from './importValidation';
 import { PARK_RESUME_SETTINGS_KEY, reconcileTasksWithBackground } from './taskContext';
 import { SUGGEST_DISMISSED_KEY } from './taskSuggest';
 import {
@@ -228,38 +228,65 @@ async function applyImport(parsedData: ExportData): Promise<void> {
     }
 }
 
+/** What a file holds and what was repaired in it, for the confirmation shown before an import */
+export interface ImportSummary {
+    /** Items per kind (only kinds that have any) */
+    counts: Partial<Record<keyof ImportCollections | 'canvases', number>>;
+    /** Repairs made while reading the file, e.g. addresses that were emptied for safety */
+    warnings: string[];
+    /** When the file was exported, if it says */
+    exportedAt?: string;
+}
+
+/** Reads, checks and cleans an export file's text. Throws a readable error when it can't be imported. */
+function parseExportFile(jsonData: string): { parsedData: ExportData; summary: ImportSummary } {
+    if (jsonData.length > MAX_IMPORT_CHARS) throw new Error('The file is too large to import');
+
+    let raw: unknown;
+    try {
+        raw = JSON.parse(jsonData);
+    } catch {
+        throw new Error('The file is not valid JSON');
+    }
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+        throw new Error('The file is not a TabPlex export');
+    }
+    const file = raw as ExportData;
+
+    if (file.version !== EXPORT_VERSION && file.version !== LEGACY_VERSION) {
+        throw new Error(`Unsupported export version: ${file.version}`);
+    }
+
+    const checked = sanitizeCollections(file.data);
+    if (!checked.ok) throw new Error(`The file is damaged: ${describeErrors(checked.errors)}`);
+    const { collections, canvases, warnings } = checked.value;
+
+    const counts: ImportSummary['counts'] = {};
+    for (const [name, items] of Object.entries({ ...collections, canvases })) {
+        if (items.length > 0) counts[name as keyof ImportSummary['counts']] = items.length;
+    }
+
+    return {
+        parsedData: { ...file, data: { ...file.data, ...collections, canvases: canvases as CanvasState[] } },
+        summary: {
+            counts,
+            warnings,
+            exportedAt: typeof file.timestamp === 'string' && file.timestamp ? file.timestamp : undefined,
+        },
+    };
+}
+
+/** What importing this text would do, without changing anything. Throws what importData would throw. */
+export const previewImport = (jsonData: string): ImportSummary => parseExportFile(jsonData).summary;
+
 /**
  * Replaces the data with a file's. The file is checked first (nothing is touched if it is malformed), the current data
  * is kept as a backup, and if writing fails the backup is put back.
  */
 export const importData = async (jsonData: string): Promise<void> => {
     try {
-        if (jsonData.length > MAX_IMPORT_CHARS) throw new Error('The file is too large to import');
-
-        let raw: unknown;
-        try {
-            raw = JSON.parse(jsonData);
-        } catch {
-            throw new Error('The file is not valid JSON');
-        }
-        if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-            throw new Error('The file is not a TabPlex export');
-        }
-        const file = raw as ExportData;
-
-        if (file.version !== EXPORT_VERSION && file.version !== LEGACY_VERSION) {
-            throw new Error(`Unsupported export version: ${file.version}`);
-        }
-
-        const checked = sanitizeCollections(file.data);
-        if (!checked.ok) throw new Error(`The file is damaged: ${describeErrors(checked.errors)}`);
-        const { collections, canvases, warnings } = checked.value;
-        if (warnings.length > 0) console.warn('Import repaired some data:', warnings);
-
-        const parsedData: ExportData = {
-            ...file,
-            data: { ...file.data, ...collections, canvases: canvases as CanvasState[] },
-        };
+        const { parsedData, summary } = parseExportFile(jsonData);
+        if (summary.warnings.length > 0) console.warn('Import repaired some data:', summary.warnings);
 
         // Keep the current data so a failed import can be undone. The copy in storage is best effort (it may not fit).
         const backup = await exportData();
@@ -296,24 +323,13 @@ export const downloadExportFile = async (): Promise<void> => {
     }
 };
 
-export const importFromFile = (file: File): Promise<void> => {
-    return new Promise((resolve, reject) => {
+/** The text of a file the user picked */
+export const readImportFile = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
         const reader = new FileReader();
-
-        reader.onload = async e => {
-            try {
-                const content = e.target?.result as string;
-                await importData(content);
-                resolve();
-            } catch (error) {
-                reject(error);
-            }
-        };
-
-        reader.onerror = () => {
-            reject(new Error('Failed to read file'));
-        };
-
+        reader.onload = e => resolve(e.target?.result as string);
+        reader.onerror = () => reject(new Error('Failed to read file'));
         reader.readAsText(file);
     });
-};
+
+export const importFromFile = async (file: File): Promise<void> => importData(await readImportFile(file));

@@ -1,5 +1,5 @@
 // React is used for JSX compilation
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { HashRouter, useNavigate, useLocation } from 'react-router-dom';
 import TimerManager from './features/sessions/components/TimerManager';
 import CommandPalette from './features/ui/components/CommandPalette';
@@ -11,7 +11,13 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './hooks/useTheme';
 import { useUIStore, useUIActions, ViewType } from './features/ui/store/uiStore';
 import { useShallow } from 'zustand/react/shallow';
-import { downloadExportFile, importFromFile } from './utils/exportImport';
+import {
+    downloadExportFile,
+    importData,
+    previewImport,
+    readImportFile,
+    type ImportSummary,
+} from './utils/exportImport';
 import { SearchResult } from './types';
 import BoardToast from './features/boards/components/BoardToast';
 import ParkDialog from './features/tasks/components/ParkDialog';
@@ -19,6 +25,7 @@ import OrganizeTabsDialog from './features/organize/components/OrganizeTabsDialo
 import TaskFromTabsDialog from './features/taskDraft/components/TaskFromTabsDialog';
 import TabNotesDialog from './features/tabNotes/components/TabNotesDialog';
 import NewTaskDialog from './features/tasks/components/NewTaskDialog';
+import ImportPreviewDialog from './features/settings/components/ImportPreviewDialog';
 import { useParkShortcut } from './features/tasks/hooks/useParkShortcut';
 import './App.css';
 
@@ -130,20 +137,46 @@ function AppContent() {
         fileInputRef.current?.click();
     }, []);
 
+    // A picked file is checked and shown in a dialog first; nothing is replaced until the user confirms
+    const [pendingImport, setPendingImport] = useState<{
+        text: string;
+        fileName: string;
+        summary: ImportSummary;
+    } | null>(null);
+    const [importing, setImporting] = useState(false);
+
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            try {
-                await importFromFile(file);
-                showToast('Data imported successfully! Reloading...', 'success');
-                setTimeout(() => window.location.reload(), 1500); // Delay reload to show toast
-            } catch (error) {
-                console.error('Import failed:', error);
-                showToast('Import failed. Please check the file format.', 'error');
-            }
-        }
-        // Reset the input so the same file can be imported again if needed
+        // Reset the input so the same file can be picked again if needed
         e.target.value = '';
+        if (!file) return;
+        try {
+            const text = await readImportFile(file);
+            setPendingImport({ text, fileName: file.name, summary: previewImport(text) });
+        } catch (error) {
+            console.error('Import failed:', error);
+            showToast(`Import failed. ${error instanceof Error ? error.message : 'Please check the file.'}`, 'error');
+        }
+    };
+
+    const confirmImport = async () => {
+        if (!pendingImport) return;
+        setImporting(true);
+        try {
+            await importData(pendingImport.text);
+            setPendingImport(null);
+            showToast('Data imported successfully! Reloading...', 'success');
+            setTimeout(() => window.location.reload(), 1500); // Delay reload to show toast
+        } catch (error) {
+            console.error('Import failed:', error);
+            setPendingImport(null);
+            showToast(
+                `Import failed. Your data was not changed. ${error instanceof Error ? error.message : ''}`.trim(),
+                'error'
+            );
+        } finally {
+            setImporting(false);
+        }
     };
 
     const handleSearchResultClick = useCallback(
@@ -239,6 +272,16 @@ function AppContent() {
             <TaskFromTabsDialog />
 
             <NewTaskDialog />
+
+            {pendingImport && (
+                <ImportPreviewDialog
+                    fileName={pendingImport.fileName}
+                    summary={pendingImport.summary}
+                    busy={importing}
+                    onConfirm={confirmImport}
+                    onCancel={() => setPendingImport(null)}
+                />
+            )}
 
             {/* key restarts the auto-dismiss timer for each new toast; clearToast is stable so re-renders don't */}
             {toast && <BoardToast key={toast.id} message={toast.message} type={toast.type} onClose={clearToast} />}

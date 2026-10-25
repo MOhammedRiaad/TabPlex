@@ -9,6 +9,7 @@ import {
     importFromFile,
     isImportInThisTab,
     markImportInThisTab,
+    previewImport,
     PAGE_SETTING_KEYS,
 } from '../exportImport';
 import { useTimerStore } from '../../store/timerStore';
@@ -170,6 +171,39 @@ describe('export / import', () => {
 
             respondToMessages(m => (m.type === 'IMPORT_ALL_DATA' ? { error: 'down' } : []));
             await expect(importData(file({ tasks: [] }))).rejects.toThrow('down');
+        });
+    });
+
+    describe('previewImport', () => {
+        it('counts what a file holds without changing anything', async () => {
+            await db.addTask(makeTask({ id: 'keep' }));
+            const text = JSON.stringify({
+                version: '2.0.0',
+                timestamp: '2026-10-03T12:00:00.000Z',
+                data: {
+                    tasks: [makeTask({ id: 'a' }), makeTask({ id: 'b' })],
+                    tabs: [makeTab({ id: 't', url: 'javascript:alert(1)' })],
+                    canvases: [{ id: 'c' }],
+                },
+            });
+            const summary = previewImport(text);
+            expect(summary.counts).toEqual({ tasks: 2, tabs: 1, canvases: 1 });
+            expect(summary.exportedAt).toBe('2026-10-03T12:00:00.000Z');
+            expect(summary.warnings.join()).toContain('unsafe address');
+            expect((await db.getAllTasks()).map(t => t.id)).toEqual(['keep']);
+        });
+
+        it('has no export date for a file without one, and throws what importData throws', () => {
+            expect(previewImport(JSON.stringify({ version: '1.0.0', data: {} }))).toEqual({
+                counts: {},
+                warnings: [],
+                exportedAt: undefined,
+            });
+            expect(() => previewImport('{nope')).toThrow('not valid JSON');
+            expect(() => previewImport(JSON.stringify({ version: '9.0.0' }))).toThrow('Unsupported export version');
+            expect(() => previewImport(JSON.stringify({ version: '2.0.0', data: { tabs: [null] } }))).toThrow(
+                'The file is damaged'
+            );
         });
     });
 
