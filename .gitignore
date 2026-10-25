@@ -33,3 +33,6 @@ test-results
 .claude/skills/modern-web-guidance
 skills-lock.json
 .mcp.json
+
+# Agent workflow scratch (see docs/AGENTIC_WORKFLOW.md)
+.claude/work/
