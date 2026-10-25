@@ -213,6 +213,19 @@ describe('useStorageSync', () => {
         expect(state().tabs).toEqual([expect.objectContaining({ id: 'saved', title: 'Renamed' })]);
     });
 
+    it('reloads when another tab cleared all data, after dropping the stored timer state', async () => {
+        const reload = vi.fn();
+        Object.defineProperty(window, 'location', { value: { ...window.location, reload }, configurable: true });
+        const { unmount } = renderHook(() => useStorageSync());
+        localStorage.setItem('pomodoro-storage', '{}');
+
+        broadcast({ type: 'STORAGE_DATA_CLEARED' });
+
+        expect(reload).toHaveBeenCalledTimes(1);
+        expect(localStorage.getItem('pomodoro-storage')).toBeNull();
+        unmount();
+    });
+
     it('lets the importing tab reload on its own, after showing its toast', async () => {
         const reload = vi.fn();
         Object.defineProperty(window, 'location', { value: { ...window.location, reload }, configurable: true });

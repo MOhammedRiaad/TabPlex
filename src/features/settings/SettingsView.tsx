@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useTheme } from '../../hooks/useTheme';
-import { clearAllData } from '../../utils/storage';
+import { clearEverything } from './utils/clearEverything';
 import ThemeToggle from '../ui/components/ThemeToggle';
 import Toast from '../bookmarks/components/Toast';
 import { useParkResumeSettings } from '../tasks/hooks/useParkResumeSettings';
@@ -41,14 +41,14 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
     }, []);
 
     const handleClearData = async () => {
-        // Made function async
-        if (window.confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+        if (
+            window.confirm(
+                'Are you sure you want to clear all data? This action cannot be undone. ' +
+                    'Recording of the pages you open will be turned off.'
+            )
+        ) {
             try {
-                localStorage.clear();
-                if (typeof chrome !== 'undefined' && chrome.storage) {
-                    await chrome.storage.local.clear(); // Await chrome storage clear
-                }
-                await clearAllData(); // Call clearAllData
+                await clearEverything();
                 showToast('All data cleared. Reloading...', 'success');
                 setTimeout(() => window.location.reload(), 1500);
             } catch (error) {

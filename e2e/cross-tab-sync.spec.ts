@@ -1,5 +1,5 @@
 import type { Page, Worker } from '@playwright/test';
-import { expect, test } from './fixtures';
+import { expect, seedTask, site, test } from './fixtures';
 import type { Board, Folder, Tab } from '../src/types';
 
 /** Write items the way the UI persists them (IndexedDB + ADD_* message), without reloading */
@@ -115,5 +115,42 @@ test.describe('across TabPlex tabs', () => {
         expect(inIdb?.folderId).toBe(folderB.id);
         const inBackground = (await stored<Tab[]>(serviceWorker, 'tabboard_tabs'))?.find(x => x.id === tab.id);
         expect(inBackground?.folderId).toBe(folderB.id);
+    });
+
+    test('clear all data across tabs', async ({ app, context, extensionId, serviceWorker }) => {
+        await seedTask(app, { id: 'task_to_clear', title: 'Task to clear' });
+        // Recording on, as for a user who opted in: Clear All Data must turn it off
+        await serviceWorker.evaluate(() => chrome.storage.local.set({ tabplex_track_all_tabs: true }));
+
+        const other = await context.newPage();
+        await other.goto(`chrome-extension://${extensionId}/index.html#/boards`);
+        await other.evaluate(() => {
+            (window as unknown as { marker: string }).marker = 'before-clear';
+        });
+        await app.goto(`chrome-extension://${extensionId}/index.html#/settings`);
+        app.on('dialog', dialog => dialog.accept());
+        await app.getByRole('button', { name: /Clear Data/ }).click();
+
+        // The other tab reloads (the marker on its window is gone) within 2 s
+        await expect
+            .poll(() => other.evaluate(() => (window as unknown as { marker?: string }).marker), { timeout: 2000 })
+            .toBeUndefined();
+
+        // Wait for both reloads and for BoardView to create its default board
+        await app.waitForTimeout(3000);
+        expect(await idbAll(other, 'tasks')).toEqual([]);
+        expect(((await stored<unknown[]>(serviceWorker, 'tabboard_tasks')) ?? []).length).toBe(0);
+        const boards = await idbAll<Board>(other, 'boards');
+        expect(boards.length).toBeLessThanOrEqual(1);
+        for (const board of boards) expect(board.id).toBe('default_board');
+        expect(await stored<boolean>(serviceWorker, 'tabplex_track_all_tabs')).toBe(false);
+
+        // A page loaded after the clear is not recorded
+        const before = (await stored<Tab[]>(serviceWorker, 'tabboard_tabs')) ?? [];
+        const page = await context.newPage();
+        await page.goto(site('after-clear'));
+        await page.waitForTimeout(1000);
+        const after = (await stored<Tab[]>(serviceWorker, 'tabboard_tabs')) ?? [];
+        expect(after.length).toBe(before.length);
     });
 });

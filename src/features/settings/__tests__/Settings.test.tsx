@@ -72,27 +72,35 @@ describe('SettingsView', () => {
         expect(props.onImportFile).toHaveBeenCalled();
     });
 
-    it('clears all data after confirmation', async () => {
+    it('clears all data after confirmation, turns recording off and reloads after 1.5 s', async () => {
         await db.addTask(makeTask());
         localStorage.setItem('x', '1');
+        await chrome.storage.local.set({ tabplex_track_all_tabs: true, history_items: [{ id: 'h' }] });
         renderSettings();
         vi.mocked(window.confirm).mockReturnValueOnce(false);
         fireEvent.click(screen.getByText(/Clear Data|Clear All/, { selector: 'button' }));
         expect(localStorage.getItem('x')).toBe('1');
+        expect((await chrome.storage.local.get('tabplex_track_all_tabs')).tabplex_track_all_tabs).toBe(true);
+
         fireEvent.click(screen.getByText(/Clear Data|Clear All/, { selector: 'button' }));
         await screen.findByText('All data cleared. Reloading...');
+        expect(window.confirm).toHaveBeenLastCalledWith(expect.stringContaining('turned off'));
         expect(localStorage.getItem('x')).toBeNull();
         expect(await db.getAllTasks()).toEqual([]);
+        expect(await chrome.storage.local.get(null)).toEqual({ tabplex_track_all_tabs: false });
+        expect(reload).not.toHaveBeenCalled();
         act(() => vi.advanceTimersByTime(1500));
         expect(reload).toHaveBeenCalled();
     });
 
-    it('reports clear failures', async () => {
+    it('reports clear failures and tells no other tab to reload', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => undefined);
-        fakeChrome().storage.local.clear.mockRejectedValueOnce(new Error('x'));
+        fakeChrome().storage.local.remove.mockRejectedValueOnce(new Error('x'));
         renderSettings();
         fireEvent.click(screen.getByText(/Clear Data|Clear All/, { selector: 'button' }));
         await screen.findByText('Failed to clear data');
+        expect(fakeChrome().runtime.sendMessage).not.toHaveBeenCalledWith({ type: 'STORAGE_DATA_CLEARED' });
+        expect(reload).not.toHaveBeenCalled();
     });
 
     it('toggles Park & Resume settings', async () => {
