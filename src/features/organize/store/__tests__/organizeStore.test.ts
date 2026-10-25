@@ -284,7 +284,18 @@ describe('organize store', () => {
             await vi.waitFor(() => expect(resolveQuery).toBeDefined());
 
             actions().close();
-            resolveQuery([]);
+            resolveQuery(
+                Array.from({ length: 6 }, (_, i) => ({
+                    id: i + 1,
+                    windowId: 1,
+                    index: i,
+                    url: `https://site${i + 1}.dev/page`,
+                    title: `Tab ${i + 1}`,
+                    pinned: false,
+                    active: false,
+                    groupId: -1,
+                }))
+            );
             await new Promise(r => setTimeout(r, 0));
 
             expect(state()).toMatchObject({ phase: 'closed', tabs: [], proposal: null });
