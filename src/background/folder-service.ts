@@ -39,7 +39,13 @@ export function handleFolderMessage(message: ExtensionMessage, sendResponse: (re
                 return respondWith(
                     releaseFolderTabs(payload)
                         .then(() => deleteFolder(payload.id)) // Now delete the folder itself
-                        .then(() => broadcast('STORAGE_FOLDER_DELETED', { id: payload.id })),
+                        .then(() =>
+                            broadcast('STORAGE_FOLDER_DELETED', {
+                                id: payload.id,
+                                moveTabs: payload.moveTabs === true,
+                                targetFolderId: payload.targetFolderId || '', // same fallback as releaseFolderTabs
+                            })
+                        ),
                     sendResponse,
                     { timeoutMs: 2000, timeoutError: 'Delete folder timed out' }
                 );

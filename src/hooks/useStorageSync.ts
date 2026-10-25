@@ -344,9 +344,20 @@ export const useStorageSync = () => {
                         deleteNoteSilentlyFromStore(event.data.payload.id);
                         break;
 
-                    case 'STORAGE_FOLDER_DELETED':
-                        deleteFolderSilentlyFromStore(event.data.payload.id);
+                    case 'STORAGE_FOLDER_DELETED': {
+                        const { id, moveTabs, targetFolderId } = event.data.payload as {
+                            id: string;
+                            moveTabs?: boolean;
+                            targetFolderId?: string;
+                        };
+                        // Same arguments as the tab that deleted it, or the moved tabs are dropped here and then from IndexedDB
+                        deleteFolderSilentlyFromStore(
+                            id,
+                            moveTabs === true,
+                            typeof targetFolderId === 'string' ? targetFolderId : ''
+                        );
                         break;
+                    }
 
                     case 'STORAGE_SESSION_DELETED':
                         deleteSessionSilentlyFromStore(event.data.payload.id);

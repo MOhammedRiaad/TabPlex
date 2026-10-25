@@ -558,6 +558,26 @@ describe('special cases', () => {
         expect((store().tabboard_tabs as any[])[0].folderId).toBe('');
     });
 
+    it('DELETE_FOLDER broadcasts what it did, so other TabPlex tabs keep the moved tabs', async () => {
+        const sent = () =>
+            vi
+                .mocked(chrome.runtime.sendMessage)
+                .mock.calls.map(c => c[0] as unknown as { type: string; payload?: unknown })
+                .filter(m => m.type === 'STORAGE_FOLDER_DELETED')
+                .map(m => m.payload);
+        call(handlers.folder, 'DELETE_FOLDER', { id: 'a', moveTabs: true, targetFolderId: 'f2' });
+        await flush();
+        call(handlers.folder, 'DELETE_FOLDER', { id: 'b', moveTabs: true });
+        await flush();
+        call(handlers.folder, 'DELETE_FOLDER', { id: 'c' });
+        await flush();
+        expect(sent()).toEqual([
+            { id: 'a', moveTabs: true, targetFolderId: 'f2' },
+            { id: 'b', moveTabs: true, targetFolderId: '' },
+            { id: 'c', moveTabs: false, targetFolderId: '' },
+        ]);
+    });
+
     it('UPDATE_HISTORY fails for unknown items', async () => {
         const { sendResponse } = call(handlers.history, 'UPDATE_HISTORY', { id: 'nope', updates: {} });
         await flush();

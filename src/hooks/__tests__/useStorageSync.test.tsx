@@ -165,6 +165,24 @@ describe('useStorageSync', () => {
         expect(sent.filter((t: string) => t.startsWith('UPDATE_') || t.startsWith('ADD_'))).toEqual([]);
     });
 
+    it('keeps the tabs of a deleted folder when the other tab moved them, also in IndexedDB', async () => {
+        await db.addFolder(makeFolder({ id: 'f1' }));
+        await db.addFolder(makeFolder({ id: 'f2' }));
+        await db.addTab(makeTab({ id: 'moved', folderId: 'f1' }));
+        renderHook(() => useStorageSync());
+        await waitFor(() => expect(state().tabs).toHaveLength(1));
+
+        broadcast({ type: 'STORAGE_FOLDER_DELETED', payload: { id: 'f1', moveTabs: true, targetFolderId: 'f2' } });
+        expect(state().tabs).toEqual([expect.objectContaining({ id: 'moved', folderId: 'f2' })]);
+        await waitFor(async () => expect((await db.getAllTabs()).map(t => t.folderId)).toEqual(['f2']));
+        expect((await db.getAllFolders()).map(f => f.id)).toEqual(['f2']);
+
+        // A payload with only an id (older background) still drops them
+        act(() => useBoardStore.setState({ tabs: [makeTab({ id: 'x', folderId: 'f2' })] }));
+        broadcast({ type: 'STORAGE_FOLDER_DELETED', payload: { id: 'f2' } });
+        expect(state().tabs).toEqual([]);
+    });
+
     it('also listens to window messages, reloads after an import and cleans up', async () => {
         const reload = vi.fn();
         Object.defineProperty(window, 'location', { value: { ...window.location, reload }, configurable: true });
