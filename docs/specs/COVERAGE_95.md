@@ -2,7 +2,7 @@
 
 |             |                                                                                                                       |
 | ----------- | --------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | Draft (Revision 1, after `03-challenge.md`)                                                                           |
+| **Status**  | Implemented (2026-10-25), see `04-build-log.md`                                                                       |
 | **Owner**   | Mohamed                                                                                                               |
 | **Created** | 2026-10-25                                                                                                            |
 | **Branch**  | `feature/coverage-95`, cut from `develop` only after `chore/agentic-workflow` is merged into `develop` (§3 D1, §12 0) |
@@ -623,23 +623,26 @@ breaking changes, so `test`, `chore`, `docs` and `ci` match no rule. (The `hidde
 
 ## 14. Definition of done
 
-- [ ] D1 gate passed: `chore/agentic-workflow` merged into `develop` before `feature/coverage-95` was cut.
-- [ ] `coverage/coverage-summary.json` on the final branch: branches ≥ **95.5%**, statements ≥ 97.58, lines ≥ 98.36,
+- [x] D1 gate passed: `chore/agentic-workflow` merged into `develop` before `feature/coverage-95` was cut.
+- [x] `coverage/coverage-summary.json` on the final branch: branches ≥ **95.5%**, statements ≥ 97.58, lines ≥ 98.36,
       functions ≥ 97.09 (AC 1, AC 2, G1).
-- [ ] `vitest.config.ts` thresholds are 95/95/95/95. `exclude` is unchanged. V2 fails as expected (AC 3, AC 4).
-- [ ] V3 finds no `v8 ignore`, `istanbul ignore` or `c8 ignore` in `src/` or `scripts/` (AC 4).
-- [ ] `git diff --stat develop...HEAD` touches only tests, `src/test/**`, `vitest.config.ts`, the `ci.yml` label, the
+- [x] `vitest.config.ts` thresholds are 95/95/95/95. `exclude` is unchanged. V2 fails as expected (AC 3, AC 4).
+- [x] V3 finds no `v8 ignore`, `istanbul ignore` or `c8 ignore` in `src/` or `scripts/` (AC 4).
+- [x] `git diff --stat develop...HEAD` touches only tests, `src/test/**`, `vitest.config.ts`, the `ci.yml` label, the
       §8 docs, the spec, and (optionally) the §5.5 files in one `refactor(no-release):` commit approved by the code
       reviewer (AC 5, G1 answer 3).
-- [ ] Every new `it` has a behavioural `expect`, confirmed by the unit-test-writer's and the code reviewer's samples
+- [x] Every new `it` has a behavioural `expect`, confirmed by the unit-test-writer's and the code reviewer's samples
       and by V4 (AC 6). No `as any`, no new `eslint-disable`.
-- [ ] `04-build-log.md` has the top-10 before/after table, global numbers, flipped arms per commit, and the reasons for
+- [x] `04-build-log.md` has the top-10 before/after table, global numbers, flipped arms per commit, and the reasons for
       targeted arms left uncovered (AC 7).
-- [ ] `verify` passes: typecheck, lint (0 warnings), format:check, `build:privacy -- --check`, test:coverage, build,
+- [x] `verify` passes: typecheck, lint (0 warnings), format:check, `build:privacy -- --check`, test:coverage, build,
       check:bundle. V5 passes (AC 8).
-- [ ] The §8 `git grep` finds no "85%" in the living docs (AC 9).
-- [ ] If the `refactor` landed: e2e ran once, and G3 covered Infer sessions and theme persistence (§11).
-- [ ] Commits follow §12 types. Nothing user-facing, so `CHROMEWEBSTORE.md` and `PRIVACY.md` are untouched.
+- [x] The §8 `git grep` finds no "85%" in the living docs (AC 9).
+- [x] If the `refactor` landed: e2e ran once, and G3 covered Infer sessions and theme persistence (§11).
+- [x] Commits follow §12 types. Nothing user-facing, so `CHROMEWEBSTORE.md` and `PRIVACY.md` are untouched.
+
+Final numbers: branches 96.38% (6111/6340), statements 98.48%, functions 97.67%, lines 98.89%. The per-file
+JSON used for the top-10 table comes from `--coverage.reporter=json`, not from a plain `npm run test:coverage`.
 
 ## Challenge response
 
