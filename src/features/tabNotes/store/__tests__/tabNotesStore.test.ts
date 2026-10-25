@@ -1213,3 +1213,72 @@ describe('the Combined edits (spec §9)', () => {
         expect(state().combinedEdited).toBe(false);
     });
 });
+
+describe('edits that need data the draft may not have', () => {
+    const sourceOf = (ref: number): NoteSource => ({
+        ref,
+        tabId: ref,
+        windowId: 1,
+        title: `Page ${ref}`,
+        url: `https://example.com/${ref}`,
+        mode: 'ai',
+        truncated: false,
+        notEnglish: false,
+    });
+    const POINTS: KeyPoint[] = [
+        { id: 'p1-1', sourceRef: 1, text: 'Resolvers keep answers.', topicHint: '' },
+        { id: 'p2-1', sourceRef: 2, text: 'Caches keep answers.', topicHint: '' },
+    ];
+    const TOPICS: Topic[] = [
+        {
+            id: 't1',
+            heading: 'Caching',
+            kind: 'shared',
+            combinedBy: 'words',
+            bullets: [
+                {
+                    id: 'b1',
+                    text: 'Worded by the grouping.',
+                    pointIds: ['gone-1', 'gone-2'],
+                    origin: 'point',
+                    edited: false,
+                },
+                { id: 'b2', text: 'Old wording.', pointIds: ['p1-1', 'p2-1'], origin: 'point', edited: false },
+            ],
+            conflicts: [],
+        },
+    ];
+
+    it('keeps the wording of a bullet whose points are no longer in the draft, and shows the current text of the rest', () => {
+        const draft = draftOf({
+            view: 'combined',
+            sources: [sourceOf(1), sourceOf(2)],
+            points: POINTS,
+            combined: TOPICS,
+        });
+
+        expect(draft.combined?.[0].bullets.map(bullet => bullet.text)).toEqual([
+            'Worded by the grouping.',
+            'Resolvers keep answers.',
+        ]);
+    });
+
+    it('ignores removing a point or a source while the run is going', () => {
+        useTabNotesStore.setState({
+            status: 'running',
+            view: 'combined',
+            sources: [sourceOf(1), sourceOf(2)],
+            points: POINTS,
+            combined: TOPICS,
+            combinedEdited: false,
+        });
+
+        actions().removePoint('p1-1');
+        actions().removeSource(2);
+
+        expect(state().points).toEqual(POINTS);
+        expect(state().sources.map(source => source.ref)).toEqual([1, 2]);
+        expect(state().combined).toBe(TOPICS);
+        expect(state().combinedEdited).toBe(false);
+    });
+});

@@ -465,3 +465,63 @@ describe('snapshotTab', () => {
         await assertion;
     });
 });
+
+describe('readPage: further cases', () => {
+    it('keeps the first article when a later one has no more text', () => {
+        setBody(`
+            <article><p>The first article has the most text in it.</p></article>
+            <article><p>Shorter one.</p></article>
+            <article></article>`);
+
+        expect(textsOf(read())).toEqual(['The first article has the most text in it.']);
+    });
+
+    it('reads the text of inline elements inside a block', () => {
+        setBody(`<main><p>Some <b>bold</b> and <a href="/x">linked <i>italic</i></a> words.</p></main>`);
+
+        expect(textsOf(read())).toEqual(['Some bold and linked italic words.']);
+    });
+
+    it('stops reading innerText lines once the character budget is used up', () => {
+        setBody(`<main><div>Bare div line one.</div></main>`);
+        setInnerText(document.querySelector('main') as Element, 'Exactly10!\nThis line gets no budget');
+
+        const snapshot = read(10);
+
+        expect(textsOf(snapshot)).toEqual(['Exactly10!']);
+        expect(snapshot.truncated).toBe(true);
+    });
+});
+
+describe('isPageSnapshot: blocks that are not objects', () => {
+    it.each([null, 'text', 5])('rejects a block that is %s', block => {
+        expect(
+            isPageSnapshot({
+                href: 'https://a.dev/page',
+                contentType: 'text/html',
+                lang: 'en',
+                description: '',
+                blocks: [block],
+                truncated: false,
+            })
+        ).toBe(false);
+    });
+});
+
+describe('snapshotTab: rejections that are not Error objects', () => {
+    it('maps a plain string rejection by its text', async () => {
+        const mock = installChromeMock();
+        mock.browser.addTab({ id: 7, url: 'https://a.dev/page' });
+        fakeChrome().scripting.executeScript.mockRejectedValueOnce('This page is blocked by policy');
+        const tab: ReadableTab = {
+            id: 7,
+            windowId: 1,
+            title: 'Page',
+            url: 'https://a.dev/page',
+            originPattern: 'https://a.dev/*',
+            readable: true,
+        };
+
+        await expect(snapshotTab(tab)).rejects.toMatchObject({ code: 'blocked' });
+    });
+});
