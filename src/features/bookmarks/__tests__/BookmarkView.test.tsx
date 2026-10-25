@@ -236,8 +236,12 @@ describe('BookmarkView', () => {
         render(<BookmarkView />);
         const github = await screen.findByLabelText('Bookmark: GitHub');
         Reflect.deleteProperty(fakeChrome(), 'tabs');
+        const onError = vi.fn();
+        window.addEventListener('error', onError);
         fireEvent.click(within(github).getByText('GitHub'));
-        expect(github).toBeInTheDocument();
+        window.removeEventListener('error', onError);
+        expect(onError).not.toHaveBeenCalled();
+        expect(console.error).not.toHaveBeenCalled();
     });
 
     it('shows loading and error states', async () => {

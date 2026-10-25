@@ -8,7 +8,7 @@ import ParkDialog from '../components/ParkDialog';
 import { useBoardStore } from '../../../store/boardStore';
 import { useUIStore } from '../../ui/store/uiStore';
 import { useTaskDraftStore } from '../../taskDraft/store/taskDraftStore';
-import { ChromeMock, installChromeMock, respondToMessages } from '../../../test/chromeMock';
+import { ChromeMock, flushPromises, installChromeMock, respondToMessages } from '../../../test/chromeMock';
 import { makeContext, makeTab, makeTask } from '../../../test/factories';
 import { Task } from '../../../types';
 import { CONTEXT_MESSAGES, PARK_RESUME_SETTINGS_KEY } from '../../../utils/taskContext';
@@ -259,6 +259,8 @@ describe('ParkDialog', () => {
         fireEvent.keyDown(note, { key: 'Enter' });
 
         await waitFor(() => expect(received.filter(m => m.type === CONTEXT_MESSAGES.PARK)).toHaveLength(1));
+        await flushPromises();
+        expect(received.filter(m => m.type === CONTEXT_MESSAGES.PARK)).toHaveLength(1);
     });
 
     it('creates an on-device summarizer when enabled and available', async () => {

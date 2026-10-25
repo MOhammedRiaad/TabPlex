@@ -1230,6 +1230,7 @@ describe('TabNotesDialog: details of the review', () => {
 
         expect(screen.getByRole('status')).toHaveTextContent('Bullet removed');
         expect(within(screen.getByRole('region', { name: 'Inheritance' })).getAllByRole('listitem')).toHaveLength(2);
+        expect(screen.getByRole('button', { name: 'Edit bullet 2 of Inheritance' })).toHaveFocus();
     });
 
     it('shows the status the run ended with', () => {
@@ -1239,7 +1240,7 @@ describe('TabNotesDialog: details of the review', () => {
         expect(screen.getByText('Model unavailable')).toBeInTheDocument();
     });
 
-    it('closes from the backdrop while picking tabs, but not while reviewing', async () => {
+    it('closes from the backdrop while picking tabs, not from the dialog itself', async () => {
         browser.addTab({ url: ALPHA, title: 'Alpha' });
         openDialog();
         await screen.findByRole('checkbox', { name: /Alpha/ });

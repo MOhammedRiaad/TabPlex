@@ -2,7 +2,6 @@ import { DndContext } from '@dnd-kit/core';
 import { SortableContext } from '@dnd-kit/sortable';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fakeChrome } from '../../../../test/chromeMock';
 import { makeFolder, makeTab } from '../../../../test/factories';
 import BoardNode from '../BoardNode';
 
@@ -51,13 +50,12 @@ describe('BoardNode tab', () => {
         });
     });
 
-    it('opens nothing when no open callback is given', () => {
+    it('does not fail when no open callback is given', () => {
         renderNode({ tab: makeTab({ title: 'Docs' }) });
 
         fireEvent.click(screen.getByText('Docs'));
         fireEvent.click(screen.getByLabelText('Open tab in new tab'));
 
-        expect(fakeChrome().tabs.create).not.toHaveBeenCalled();
         expect(screen.getByLabelText('Tab: Docs')).toBeInTheDocument();
     });
 

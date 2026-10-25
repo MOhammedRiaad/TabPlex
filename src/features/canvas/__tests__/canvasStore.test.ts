@@ -240,7 +240,7 @@ describe('canvas store', () => {
         };
 
         it('leaves the inactive canvas untouched by every element action', () => {
-            const { inactive, original } = setup();
+            const { inactive, original, secondId } = setup();
 
             store().updateElement('a', { x: 5 });
             store().deleteElement('c');
@@ -254,6 +254,10 @@ describe('canvas store', () => {
             store().reorderElement('a', 0);
 
             expect(inactive()).toBe(original);
+            const active = store().canvases.find(cv => cv.canvasId === secondId)!;
+            expect(active.elements.map(e => e.id)).not.toContain('b');
+            expect(active.elements.map(e => e.id)).not.toContain('c');
+            expect(active.elements.find(e => e.id === 'a')?.x).toBe(5);
         });
 
         it('leaves the inactive canvas untouched by align and distribute', () => {
