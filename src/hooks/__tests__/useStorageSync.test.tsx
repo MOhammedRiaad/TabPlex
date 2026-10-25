@@ -53,8 +53,8 @@ describe('useStorageSync', () => {
 
         renderHook(() => useStorageSync());
 
-        await waitFor(() => expect(state().tasks).toHaveLength(1));
-        expect(state().boards.map(b => b.id)).toEqual(['undated', 'dated']);
+        await waitFor(() => expect(state().boards.map(b => b.id)).toEqual(['undated', 'dated']));
+        expect(state().tasks).toHaveLength(1);
     });
 
     it('registers its message listener once, however often it re-renders', async () => {
