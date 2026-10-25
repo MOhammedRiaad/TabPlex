@@ -199,8 +199,9 @@ If you turn on **On-device AI summaries** in Settings, TabPlex uses your browser
 To completely remove all TabPlex data:
 
 1. **Option 1**: Uninstall the extension from Chrome
-2. **Option 2**: Clear browser data for the extension
-3. **Option 3**: Use Chrome's "Clear browsing data" for site data
+2. **Option 2**: Settings → Data Management → Clear All Data deletes your boards, folders, tabs, tasks, notes, sessions, history, canvases and settings, including the backup kept from your last import, and turns "Record every page I open" off. The optional tldraw canvas keeps its own storage: remove it by uninstalling (Option 1)
+3. **Option 3**: Clear browser data for the extension
+4. **Option 4**: Use Chrome's "Clear browsing data" for site data
 
 ## Children's Privacy
 
