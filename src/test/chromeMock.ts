@@ -146,6 +146,7 @@ export function createChromeMock() {
             alarmStore.set(name, { name, periodInMinutes: info.periodInMinutes });
         }),
         get: vi.fn(async (name: string) => alarmStore.get(name)),
+        clear: vi.fn(async (name: string) => alarmStore.delete(name)),
         onAlarm: events.alarm,
     };
 

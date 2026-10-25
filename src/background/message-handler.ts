@@ -147,7 +147,6 @@ chrome.runtime.onMessage.addListener(
             case 'UPDATE_SESSION':
             case 'DELETE_SESSION':
             case 'GET_SESSION':
-            case 'SESSION_INFERENCE_COMPLETE':
                 return handleSessionMessage(message, sendResponse);
 
             // Handle data messages

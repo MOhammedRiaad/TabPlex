@@ -1,12 +1,12 @@
 # Spec: Security and reliability hardening
 
-|             |                                                                                                                                                      |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | Implemented. `context-service`, `organize-service` and `suggest-service` keep their own compact reply code (typed responses, no timers to get wrong) |
-| **Owner**   | Mohamed                                                                                                                                              |
-| **Created** | 2026-10-25                                                                                                                                           |
-| **Branch**  | one `feature/<name>` per phase (see §9), merged into `develop`                                                                                       |
-| **Source**  | Code review and security analysis of the extension, 2026-10-25                                                                                       |
+|             |                                                                                                                                                                                                                                                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Status**  | Implemented, with two changes: the background no longer infers sessions (PRE_RELEASE_REVIEW_FIXES D2), and referential integrity re-parents folders only (D8, §3.3). `context-service`, `organize-service` and `suggest-service` keep their own compact reply code (typed responses, no timers to get wrong) |
+| **Owner**   | Mohamed                                                                                                                                                                                                                                                                                                      |
+| **Created** | 2026-10-25                                                                                                                                                                                                                                                                                                   |
+| **Branch**  | one `feature/<name>` per phase (see §9), merged into `develop`                                                                                                                                                                                                                                               |
+| **Source**  | Code review and security analysis of the extension, 2026-10-25                                                                                                                                                                                                                                               |
 
 ---
 
@@ -78,7 +78,7 @@ Rules:
 - Each collection (`boards, folders, tabs, tasks, notes, sessions, history, canvases`) is an array (missing means empty). Each element is an object with a non-empty string `id` of at most 200 characters. Duplicate ids within a collection are dropped, keeping the last.
 - Required scalar fields per entity are checked for type (`title`/`name`/`content` strings with length caps, `createdAt` ISO strings, enums such as `Task.status`, `Tab.status`). Unknown extra fields are dropped by whitelisting.
 - Every URL field (`Tab.url`, `Session` tab URLs, `Task.context.tabs[].url`, bookmark-like fields, `HistoryItem.url`) must parse and use `http:`, `https:` or `file:`. Elements with an invalid URL are kept but the URL is blanked, and the count is reported to the user.
-- Referential integrity: a tab or folder pointing at a missing board or folder is attached to the default board or folder (`default_folder` / `default_board`) rather than dropped.
+- Referential integrity: a folder pointing at a missing board is attached to `default_board` rather than dropped (created when the file has none). Tabs are **not** re-parented: tabs without a folder or in a missing one already show as unfiled, and re-parenting would move every session tab into the Inbox (PRE_RELEASE_REVIEW_FIXES D8).
 - `settings.extension` keys must be in `EXTENSION_SETTING_KEYS`; `settings.page` keys in `PAGE_SETTING_KEYS`. Other keys are ignored.
 
 Atomic apply, in `importData`:

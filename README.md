@@ -57,7 +57,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 
 - **Pomodoro Timer**: Built-in focus timer with customizable work/break intervals
 - **Task Focus Tracking**: Track focus sessions per task
-- **Session Management**: Automatic session inference based on browsing patterns
+- **Session Management**: Infer sessions from your recent browser history when you click Infer in Sessions
 - **Browser History Integration**: Import and organize browser history
 
 ### 📊 Analytics & Insights

@@ -1,4 +1,4 @@
-import { getAllSessions, addSession, updateSession, deleteSession, getSession, getAllTabs } from './storage';
+import { getAllSessions, addSession, updateSession, deleteSession, getSession } from './storage';
 import { respondWith } from './respond';
 import { ExtensionMessage, Session } from '../types';
 
@@ -49,67 +49,12 @@ export function handleSessionMessage(message: ExtensionMessage, sendResponse: (r
                 });
             }
             break;
-
-        case 'SESSION_INFERENCE_COMPLETE':
-            // Sent from inferSessions; there is nothing to answer
-            console.log('Session inference completed');
-            break;
     }
 
     return false;
 }
 
-// Function to infer sessions based on tab usage patterns
-export async function inferSessions() {
-    try {
-        // Get all tabs from storage
-        const allTabs = await getAllTabs();
-        const now = new Date();
-
-        // Group tabs by recency and patterns
-        // For now, let's create sessions based on tabs accessed in the last hour
-        const recentThreshold = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
-        const recentTabs = allTabs.filter(tab => new Date(tab.lastAccessed) > recentThreshold);
-
-        if (recentTabs.length > 0) {
-            // Create a session for recently accessed tabs
-            const session = {
-                id: `session_${Date.now()}`,
-                name: `Recent Activity Session - ${now.toLocaleString()}`,
-                tabIds: recentTabs.map(tab => tab.id),
-                startTime: recentThreshold.toISOString(),
-                endTime: now.toISOString(),
-                createdAt: now.toISOString(),
-            };
-
-            // Add the inferred session to storage
-            await addSession(session);
-
-            // Notify the UI about the new session
-            chrome.runtime
-                .sendMessage({
-                    type: 'SESSION_INFERENCE_COMPLETE',
-                    payload: session,
-                })
-                .catch(() => {}); // No TabPlex page open
-        }
-    } catch (error) {
-        console.error('Error inferring sessions:', error);
-    }
-}
-
-// Check for session patterns every 30 minutes. A setInterval would never get there: the service worker sleeps after
-// ~30 s. An alarm wakes it, and survives restarts, so it is only created when missing.
-export const INFER_SESSIONS_ALARM = 'tabplex-infer-sessions';
-chrome.alarms.get(INFER_SESSIONS_ALARM).then(existing => {
-    if (!existing) return chrome.alarms.create(INFER_SESSIONS_ALARM, { periodInMinutes: 30 });
-});
-chrome.alarms.onAlarm.addListener(alarm => {
-    if (alarm.name === INFER_SESSIONS_ALARM) void inferSessions();
-});
-
-// Also infer sessions when the extension starts
-chrome.runtime.onStartup.addListener(() => {
-    // Small delay to ensure everything is loaded
-    setTimeout(inferSessions, 5000); // 5 seconds after startup
-});
+// Builds from before this release created a 30-minute session inference alarm. Remove it: TabPlex no longer infers
+// sessions in the background (docs/specs/PRE_RELEASE_REVIEW_FIXES.md D2). Safe to delete after the next release.
+const LEGACY_INFER_SESSIONS_ALARM = 'tabplex-infer-sessions';
+chrome.alarms.clear(LEGACY_INFER_SESSIONS_ALARM).catch(() => {});
