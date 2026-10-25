@@ -9,7 +9,7 @@ interface DeleteFolderPayload {
 }
 
 /** The tabs of a folder that is going away: moved to another folder, or deleted with it */
-async function releaseFolderTabs({ id, moveTabs, targetFolderId }: DeleteFolderPayload): Promise<void> {
+async function releaseFolderTabs({ id, targetFolderId }: DeleteFolderPayload, moveTabs: boolean): Promise<void> {
     const tabsInFolder = (await getAllTabs()).filter(tab => tab.folderId === id);
     if (tabsInFolder.length === 0) return;
     if (moveTabs) {
@@ -36,13 +36,14 @@ export function handleFolderMessage(message: ExtensionMessage, sendResponse: (re
         case 'DELETE_FOLDER':
             if ((message.payload as DeleteFolderPayload | undefined)?.id) {
                 const payload = message.payload as DeleteFolderPayload;
+                const moveTabs = payload.moveTabs === true; // one decision for the tab move and the broadcast
                 return respondWith(
-                    releaseFolderTabs(payload)
+                    releaseFolderTabs(payload, moveTabs)
                         .then(() => deleteFolder(payload.id)) // Now delete the folder itself
                         .then(() =>
                             broadcast('STORAGE_FOLDER_DELETED', {
                                 id: payload.id,
-                                moveTabs: payload.moveTabs === true,
+                                moveTabs,
                                 targetFolderId: payload.targetFolderId || '', // same fallback as releaseFolderTabs
                             })
                         ),

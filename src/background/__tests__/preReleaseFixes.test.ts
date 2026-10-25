@@ -89,8 +89,7 @@ describe('AC1: DELETE_FOLDER broadcast carries what the background really did', 
         });
     });
 
-    // PRODUCT FINDING U1 (MINOR): fails today, so it.fails. Remove .fails once the broadcast matches the background.
-    it.fails('a truthy non-boolean moveTabs: the broadcast must match what the background did', async () => {
+    it('a truthy non-boolean moveTabs: the broadcast must match what the background did', async () => {
         // The background moves tabs for any truthy moveTabs but broadcasts `moveTabs === true`. If the two disagree,
         // other tabs drop tabs that the background kept (and then delete them from the shared IndexedDB).
         send({ type: 'DELETE_FOLDER', payload: { id: 'A', moveTabs: 'yes', targetFolderId: 'B' } });
