@@ -90,7 +90,7 @@ const cases: Case[] = [
         },
         api: storageGet,
         timeoutMs: 1000,
-        timeoutResponse: { error: 'Timed out' },
+        timeoutResponse: { error: 'Timed out: the change may not have been saved' },
     },
     {
         handler: 'note',
@@ -100,7 +100,7 @@ const cases: Case[] = [
         after: () => expect(broadcasts()).toContain('STORAGE_NOTE_ADDED'),
         api: storageGet,
         timeoutMs: 1000,
-        timeoutResponse: { error: 'Timed out' },
+        timeoutResponse: { error: 'Timed out: the change may not have been saved' },
     },
     {
         handler: 'note',
@@ -114,7 +114,7 @@ const cases: Case[] = [
         },
         api: storageGet,
         timeoutMs: 1000,
-        timeoutResponse: { error: 'Timed out' },
+        timeoutResponse: { error: 'Timed out: the change may not have been saved' },
     },
     {
         handler: 'note',
@@ -125,7 +125,7 @@ const cases: Case[] = [
         after: () => expect(broadcasts()).toContain('STORAGE_NOTE_DELETED'),
         api: storageGet,
         timeoutMs: 1000,
-        timeoutResponse: { error: 'Timed out' },
+        timeoutResponse: { error: 'Timed out: the change may not have been saved' },
     },
     {
         handler: 'folder',
@@ -383,7 +383,7 @@ const cases: Case[] = [
             history: [{ id: 'h' }],
         },
         api: storageGet,
-        timeoutMs: 2000,
+        timeoutMs: 15000,
         timeoutResponse: { error: 'Export timed out' },
     },
     {
@@ -398,7 +398,7 @@ const cases: Case[] = [
             expect(broadcasts()).toContain('STORAGE_DATA_IMPORTED');
         },
         api: () => chrome.storage.local.set,
-        timeoutMs: 2000,
+        timeoutMs: 15000,
         timeoutResponse: { error: 'Import timed out' },
     },
 ];

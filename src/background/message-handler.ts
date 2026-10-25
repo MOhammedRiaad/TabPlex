@@ -8,31 +8,22 @@ import { handleDataMessage } from './data-service';
 import { handleBookmarkMessage } from './bookmark-service';
 import { CONTEXT_MESSAGE_TYPES, handleContextMessage } from './context-service';
 import { ORGANIZE_MESSAGE_TYPES, handleOrganizeMessage } from './organize-service';
-import { addBoard, addTab, deleteBoard, deleteTab, getBoard, updateBoard, updateFolder, updateTab } from './storage';
+import { addTab, deleteBoard, deleteTab, saveBoard, updateBoard, updateFolder, updateTab } from './storage';
 import { handleUpdate } from './update-handler';
 import { openApp } from './open-app';
+import { broadcast, respondWith, safeSendResponse } from './respond';
 import { ExtensionMessage, Tab, Board, Folder } from '../types';
 
-// Helper function to safely send response
-// Helper function to safely send response
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function safeSendResponse(_sendResponse: (response: any) => void, response: unknown) {
-    try {
-        _sendResponse(response);
-    } catch (error) {
-        // Response already sent or channel closed
-        console.warn('Failed to send response:', error);
-    }
-}
+const idOf = (message: ExtensionMessage) => (message.payload as { id?: string } | undefined)?.id;
 
 // Listen for messages from the popup/tab
 chrome.runtime.onMessage.addListener(
-    (message: ExtensionMessage, sender, _sendResponse: (response?: unknown) => void) => {
+    (message: ExtensionMessage, sender, sendResponse: (response?: unknown) => void) => {
         // Only this extension's own pages talk to the background; and a malformed message gets an error, not a throw.
         // (Payloads hold notes, tasks and URLs, so they are never logged.)
         if (sender?.id !== undefined && sender.id !== chrome.runtime.id) return false;
         if (!message || typeof message.type !== 'string') {
-            safeSendResponse(_sendResponse, { error: 'Malformed message' });
+            safeSendResponse(sendResponse, { error: 'Malformed message' });
             return false;
         }
 
@@ -44,213 +35,102 @@ chrome.runtime.onMessage.addListener(
         // Handle different message types
 
         switch (message.type) {
+            case 'OPEN_TABBOARD':
+                // The onboarding page's "Get started"
+                return respondWith(openApp(), sendResponse);
+
             case 'MOVE_TAB':
                 // Handle tab movement between folders
-                let moveTabResponseSent = false;
-
-                handleMoveTab(message.payload as { tabId: string; newFolderId: string })
-                    .then(() => {
-                        if (!moveTabResponseSent) {
-                            moveTabResponseSent = true;
-                            safeSendResponse(_sendResponse, { success: true });
-                        }
-                    })
-                    .catch((error: unknown) => {
-                        if (!moveTabResponseSent) {
-                            moveTabResponseSent = true;
-                            safeSendResponse(_sendResponse, { error: (error as Error).message });
-                        }
-                    });
-
-                setTimeout(() => {
-                    if (!moveTabResponseSent) {
-                        moveTabResponseSent = true;
-                        safeSendResponse(_sendResponse, { error: 'Timed out: the change may not have been saved' });
-                    }
-                }, 1000);
-
-                return true;
+                return respondWith(
+                    handleMoveTab(message.payload as { tabId: string; newFolderId: string }),
+                    sendResponse,
+                    { timeoutMs: 1000 }
+                );
 
             case 'ADD_TAB':
-                // Add a tab
                 if (message.payload) {
-                    let addTabResponseSent = false;
-
-                    addTab(message.payload as Tab)
-                        .then(() => {
-                            // Notify the side panel about the addition
-                            chrome.runtime
-                                .sendMessage({
-                                    type: 'STORAGE_TAB_ADDED',
-                                    payload: message.payload,
-                                })
-                                .catch(() => {}); // Ignore errors from sendMessage
-
-                            if (!addTabResponseSent) {
-                                addTabResponseSent = true;
-                                safeSendResponse(_sendResponse, { success: true });
-                            }
-                        })
-                        .catch((error: unknown) => {
-                            if (!addTabResponseSent) {
-                                addTabResponseSent = true;
-                                safeSendResponse(_sendResponse, { error: (error as Error).message });
-                            }
-                        });
-
-                    setTimeout(() => {
-                        if (!addTabResponseSent) {
-                            addTabResponseSent = true;
-                            safeSendResponse(_sendResponse, { error: 'Timed out: the change may not have been saved' });
-                        }
-                    }, 1000);
-
-                    return true;
+                    const tab = message.payload as Tab;
+                    return respondWith(
+                        addTab(tab).then(() => broadcast('STORAGE_TAB_ADDED', tab)),
+                        sendResponse,
+                        { timeoutMs: 1000 }
+                    );
                 }
                 break;
 
-            case 'OPEN_TABBOARD':
-                // The onboarding page's "Get started"
-                openApp()
-                    .then(() => safeSendResponse(_sendResponse, { success: true }))
-                    .catch((error: unknown) => safeSendResponse(_sendResponse, { error: (error as Error).message }));
-                return true;
-
             case 'GET_ACTIVE_TAB':
                 // Return information about the currently active tab
-                let responseSent = false;
-
-                getActiveTabInfo()
-                    .then(tabInfo => {
-                        if (!responseSent) {
-                            responseSent = true;
-                            safeSendResponse(_sendResponse, tabInfo);
-                        }
-                    })
-                    .catch((error: unknown) => {
-                        if (!responseSent) {
-                            responseSent = true;
-                            safeSendResponse(_sendResponse, { error: (error as Error).message });
-                        }
-                    });
-
-                // Set a timeout to prevent hanging if the response isn't sent
-                setTimeout(() => {
-                    if (!responseSent) {
-                        responseSent = true;
-                        safeSendResponse(_sendResponse, { error: 'Timeout getting active tab info' });
-                    }
-                }, 1000);
-
-                return true;
+                return respondWith(getActiveTabInfo(), sendResponse, {
+                    timeoutMs: 1000,
+                    timeoutError: 'Timeout getting active tab info',
+                    map: info => info,
+                });
 
             case 'CREATE_TAB_IN_FOLDER':
                 // Create a new tab and associate it with a folder
                 createTabInFolder(message.payload as { url: string; folderId: string });
-                safeSendResponse(_sendResponse, { success: true });
+                safeSendResponse(sendResponse, { success: true });
                 break;
 
-            case 'DELETE_TAB':
-                // Delete a tab
-                if (message.payload && (message.payload as { id: string }).id) {
-                    let deleteTabResponseSent = false;
-                    const tabId = (message.payload as { id: string }).id;
-
-                    deleteTab(tabId)
-                        .then(() => {
-                            // Notify the side panel about the deletion
-                            chrome.runtime
-                                .sendMessage({
-                                    type: 'STORAGE_TAB_DELETED',
-                                    payload: { id: tabId },
-                                })
-                                .catch(() => {}); // Ignore errors from sendMessage
-
-                            if (!deleteTabResponseSent) {
-                                deleteTabResponseSent = true;
-                                safeSendResponse(_sendResponse, { success: true });
-                            }
-                        })
-                        .catch((error: unknown) => {
-                            if (!deleteTabResponseSent) {
-                                deleteTabResponseSent = true;
-                                safeSendResponse(_sendResponse, { error: (error as Error).message });
-                            }
-                        });
-
-                    setTimeout(() => {
-                        if (!deleteTabResponseSent) {
-                            deleteTabResponseSent = true;
-                            safeSendResponse(_sendResponse, { error: 'Timed out: the change may not have been saved' });
-                        }
-                    }, 1000);
-
-                    return true;
+            case 'DELETE_TAB': {
+                const id = idOf(message);
+                if (id) {
+                    return respondWith(
+                        deleteTab(id).then(() => broadcast('STORAGE_TAB_DELETED', { id })),
+                        sendResponse,
+                        { timeoutMs: 1000 }
+                    );
                 }
                 break;
+            }
 
             case 'ADD_BOARD':
                 // Add or update a board (through the serialized storage layer, so concurrent writes can't clobber)
                 if (message.payload) {
                     const board = message.payload as Board;
-                    getBoard(board.id)
-                        .then(existing =>
-                            addBoard(board).then(() => {
-                                if (!existing) {
-                                    chrome.runtime
-                                        .sendMessage({ type: 'STORAGE_BOARD_ADDED', payload: board })
-                                        .catch(() => {}); // No listener open
-                                }
-                                safeSendResponse(_sendResponse, { success: true });
-                            })
-                        )
-                        .catch((error: unknown) => {
-                            safeSendResponse(_sendResponse, { error: (error as Error).message });
-                        });
-                    return true;
+                    return respondWith(
+                        saveBoard(board).then(({ created }) => {
+                            if (created) broadcast('STORAGE_BOARD_ADDED', board);
+                        }),
+                        sendResponse
+                    );
                 }
                 break;
 
-            case 'DELETE_BOARD':
-                if (message.payload && (message.payload as { id: string }).id) {
-                    const boardId = (message.payload as { id: string }).id;
-                    deleteBoard(boardId)
-                        .then(() => {
-                            chrome.runtime
-                                .sendMessage({ type: 'STORAGE_BOARD_DELETED', payload: { id: boardId } })
-                                .catch(() => {}); // No listener open
-                            safeSendResponse(_sendResponse, { success: true });
-                        })
-                        .catch((error: unknown) => {
-                            safeSendResponse(_sendResponse, { error: (error as Error).message });
-                        });
-                    return true;
+            case 'DELETE_BOARD': {
+                const id = idOf(message);
+                if (id) {
+                    return respondWith(
+                        deleteBoard(id).then(() => broadcast('STORAGE_BOARD_DELETED', { id })),
+                        sendResponse
+                    );
                 }
                 break;
+            }
 
             // Edits made in a TabPlex tab (rename, move, reorder…)
             case 'UPDATE_TAB':
-                return handleUpdate<Tab>(message, updateTab, 'STORAGE_TAB_UPDATED', _sendResponse);
+                return handleUpdate<Tab>(message, updateTab, 'STORAGE_TAB_UPDATED', sendResponse);
             case 'UPDATE_BOARD':
-                return handleUpdate<Board>(message, updateBoard, 'STORAGE_BOARD_UPDATED', _sendResponse);
+                return handleUpdate<Board>(message, updateBoard, 'STORAGE_BOARD_UPDATED', sendResponse);
             case 'UPDATE_FOLDER':
-                return handleUpdate<Folder>(message, updateFolder, 'STORAGE_FOLDER_UPDATED', _sendResponse);
+                return handleUpdate<Folder>(message, updateFolder, 'STORAGE_FOLDER_UPDATED', sendResponse);
 
             case 'ADD_FOLDER':
             case 'DELETE_FOLDER':
-                return handleFolderMessage(message, _sendResponse);
+                return handleFolderMessage(message, sendResponse);
 
             // Handle task messages
             case 'ADD_TASK':
             case 'UPDATE_TASK':
             case 'DELETE_TASK':
-                return handleTaskMessage(message, _sendResponse);
+                return handleTaskMessage(message, sendResponse);
 
             // Handle note messages
             case 'ADD_NOTE':
             case 'UPDATE_NOTE':
             case 'DELETE_NOTE':
-                return handleNoteMessage(message, _sendResponse);
+                return handleNoteMessage(message, sendResponse);
 
             // Handle history messages
             case 'GET_HISTORY':
@@ -259,7 +139,7 @@ chrome.runtime.onMessage.addListener(
             case 'DELETE_HISTORY':
             case 'GET_HISTORY_ITEM':
             case 'GET_BROWSER_HISTORY':
-                return handleHistoryMessage(message, _sendResponse);
+                return handleHistoryMessage(message, sendResponse);
 
             // Handle session messages
             case 'GET_SESSIONS':
@@ -268,12 +148,12 @@ chrome.runtime.onMessage.addListener(
             case 'DELETE_SESSION':
             case 'GET_SESSION':
             case 'SESSION_INFERENCE_COMPLETE':
-                return handleSessionMessage(message, _sendResponse);
+                return handleSessionMessage(message, sendResponse);
 
             // Handle data messages
             case 'EXPORT_ALL_DATA':
             case 'IMPORT_ALL_DATA':
-                return handleDataMessage(message, _sendResponse);
+                return handleDataMessage(message, sendResponse);
 
             // Handle bookmark messages
             case 'GET_BOOKMARKS':
@@ -286,19 +166,19 @@ chrome.runtime.onMessage.addListener(
             case 'DELETE_BOOKMARK_TREE':
             case 'SEARCH_BOOKMARKS':
             case 'GET_BOOKMARK_CHILDREN':
-                return handleBookmarkMessage(message, _sendResponse);
+                return handleBookmarkMessage(message, sendResponse);
 
             default:
                 // Park & Resume task contexts
                 if (CONTEXT_MESSAGE_TYPES.includes(message.type)) {
-                    return handleContextMessage(message, _sendResponse);
+                    return handleContextMessage(message, sendResponse);
                 }
                 // Organize tabs (create / undo tab groups)
                 if (ORGANIZE_MESSAGE_TYPES.includes(message.type)) {
-                    return handleOrganizeMessage(message, _sendResponse);
+                    return handleOrganizeMessage(message, sendResponse);
                 }
-                console.warn('Unknown message type:', message.type, message);
-                safeSendResponse(_sendResponse, { error: `Unknown message type: ${message.type}` });
+                console.warn('Unknown message type:', message.type);
+                safeSendResponse(sendResponse, { error: `Unknown message type: ${message.type}` });
                 break;
         }
 

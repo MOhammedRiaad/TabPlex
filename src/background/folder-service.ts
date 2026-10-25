@@ -1,123 +1,48 @@
 import { addFolder, deleteFolder, getAllTabs, updateTab, deleteTab } from './storage';
+import { broadcast, respondWith } from './respond';
 import { ExtensionMessage, Folder } from '../types';
 
-// Helper function to safely send response
-// Helper function to safely send response
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function safeSendResponse(_sendResponse: (response: any) => void, response: unknown) {
-    try {
-        _sendResponse(response);
-    } catch (error) {
-        // Response already sent or channel closed
-        console.warn('Failed to send response:', error);
+interface DeleteFolderPayload {
+    id: string;
+    moveTabs?: boolean;
+    targetFolderId?: string;
+}
+
+/** The tabs of a folder that is going away: moved to another folder, or deleted with it */
+async function releaseFolderTabs({ id, moveTabs, targetFolderId }: DeleteFolderPayload): Promise<void> {
+    const tabsInFolder = (await getAllTabs()).filter(tab => tab.folderId === id);
+    if (tabsInFolder.length === 0) return;
+    if (moveTabs) {
+        await Promise.all(tabsInFolder.map(tab => updateTab({ ...tab, folderId: targetFolderId || '' })));
+    } else {
+        await Promise.all(tabsInFolder.map(tab => deleteTab(tab.id)));
     }
 }
 
 // Handle folder-related messages
-export function handleFolderMessage(message: ExtensionMessage, _sendResponse: (response: unknown) => void) {
+export function handleFolderMessage(message: ExtensionMessage, sendResponse: (response: unknown) => void) {
     switch (message.type) {
         case 'ADD_FOLDER':
-            // Add a folder
             if (message.payload) {
-                let addFolderResponseSent = false;
-
-                addFolder(message.payload as Folder)
-                    .then(() => {
-                        // Notify the side panel about the addition
-                        chrome.runtime
-                            .sendMessage({
-                                type: 'STORAGE_FOLDER_ADDED',
-                                payload: message.payload,
-                            })
-                            .catch(() => {}); // Ignore errors from sendMessage
-
-                        if (!addFolderResponseSent) {
-                            addFolderResponseSent = true;
-                            safeSendResponse(_sendResponse, { success: true });
-                        }
-                    })
-                    .catch((error: unknown) => {
-                        if (!addFolderResponseSent) {
-                            addFolderResponseSent = true;
-                            safeSendResponse(_sendResponse, { error: (error as Error).message });
-                        }
-                    });
-
-                setTimeout(() => {
-                    if (!addFolderResponseSent) {
-                        addFolderResponseSent = true;
-                        safeSendResponse(_sendResponse, { error: 'Timed out: the change may not have been saved' });
-                    }
-                }, 1000);
-
-                return true;
+                const folder = message.payload as Folder;
+                return respondWith(
+                    addFolder(folder).then(() => broadcast('STORAGE_FOLDER_ADDED', folder)),
+                    sendResponse,
+                    { timeoutMs: 1000 }
+                );
             }
             break;
 
         case 'DELETE_FOLDER':
-            // Delete a folder
-            if (
-                message.payload &&
-                (message.payload as { id: string; moveTabs?: boolean; targetFolderId?: string }).id
-            ) {
-                let deleteFolderResponseSent = false;
-                const deletePayload = message.payload as { id: string; moveTabs?: boolean; targetFolderId?: string };
-
-                // First, get all tabs to check if the folder has any tabs
-                getAllTabs()
-                    .then(allTabs => {
-                        const tabsInFolder = allTabs.filter(tab => tab.folderId === deletePayload.id);
-
-                        if (tabsInFolder.length > 0) {
-                            // Folder has tabs - check if we should move them or delete them
-                            if (deletePayload.moveTabs) {
-                                // Move tabs to another folder
-                                const updatedTabs = tabsInFolder.map(tab => ({
-                                    ...tab,
-                                    folderId: deletePayload.targetFolderId || '',
-                                }));
-
-                                // Save updated tabs
-                                return Promise.all(updatedTabs.map(tab => updateTab(tab)));
-                            } else {
-                                // Delete the tabs in the folder
-                                return Promise.all(tabsInFolder.map(tab => deleteTab(tab.id)));
-                            }
-                        }
-                    })
-                    .then(() => {
-                        // Now delete the folder itself
-                        return deleteFolder(deletePayload.id);
-                    })
-                    .then(() => {
-                        // Notify the side panel about the deletion
-                        chrome.runtime
-                            .sendMessage({
-                                type: 'STORAGE_FOLDER_DELETED',
-                                payload: { id: deletePayload.id },
-                            })
-                            .catch(() => {}); // Suppress errors if message listener is unavailable
-
-                        if (!deleteFolderResponseSent) {
-                            deleteFolderResponseSent = true;
-                            safeSendResponse(_sendResponse, { success: true });
-                        }
-                    })
-                    .catch((error: unknown) => {
-                        if (!deleteFolderResponseSent) {
-                            deleteFolderResponseSent = true;
-                            safeSendResponse(_sendResponse, { error: (error as Error).message });
-                        }
-                    });
-
-                setTimeout(() => {
-                    if (!deleteFolderResponseSent) {
-                        deleteFolderResponseSent = true;
-                        safeSendResponse(_sendResponse, { error: 'Delete folder timed out' });
-                    }
-                }, 2000);
-
-                return true;
+            if ((message.payload as DeleteFolderPayload | undefined)?.id) {
+                const payload = message.payload as DeleteFolderPayload;
+                return respondWith(
+                    releaseFolderTabs(payload)
+                        .then(() => deleteFolder(payload.id)) // Now delete the folder itself
+                        .then(() => broadcast('STORAGE_FOLDER_DELETED', { id: payload.id })),
+                    sendResponse,
+                    { timeoutMs: 2000, timeoutError: 'Delete folder timed out' }
+                );
             }
             break;
     }

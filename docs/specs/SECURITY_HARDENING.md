@@ -1,12 +1,12 @@
 # Spec: Security and reliability hardening
 
-|             |                                                                                                                                                |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | Implemented: S1–S5, B1, B2, B3 (timeouts), B4 (listeners, broadcasts). Not done: `respondWith` helper, import summary dialog, `ADD_BOARD` race |
-| **Owner**   | Mohamed                                                                                                                                        |
-| **Created** | 2026-10-25                                                                                                                                     |
-| **Branch**  | one `feature/<name>` per phase (see §9), merged into `develop`                                                                                 |
-| **Source**  | Code review and security analysis of the extension, 2026-10-25                                                                                 |
+|             |                                                                                                                                                                            |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**  | Implemented. Not done: moving `inferSessions` (a `setInterval`) to an alarm, and `context-service` / `organize-service` / `suggest-service` still use their own reply code |
+| **Owner**   | Mohamed                                                                                                                                                                    |
+| **Created** | 2026-10-25                                                                                                                                                                 |
+| **Branch**  | one `feature/<name>` per phase (see §9), merged into `develop`                                                                                                             |
+| **Source**  | Code review and security analysis of the extension, 2026-10-25                                                                                                             |
 
 ---
 

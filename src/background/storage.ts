@@ -44,11 +44,12 @@ function withWriteLock<R>(key: string, fn: () => Promise<R>): Promise<R> {
     return next;
 }
 
-function addItem<T>(key: string, item: T): Promise<void> {
-    return withWriteLock(key, () => upsertItemUnlocked(key, item));
+async function addItem<T>(key: string, item: T): Promise<void> {
+    await withWriteLock(key, () => upsertItemUnlocked(key, item));
 }
 
-async function upsertItemUnlocked<T>(key: string, item: T): Promise<void> {
+/** Saves the item over the one with the same id, or appends it. Resolves true when it was new. */
+async function upsertItemUnlocked<T>(key: string, item: T): Promise<boolean> {
     const items = await getAllItems<T>(key);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const itemId = (item as any).id;
@@ -66,11 +67,12 @@ async function upsertItemUnlocked<T>(key: string, item: T): Promise<void> {
     }
 
     await chrome.storage.local.set({ [key]: items });
+    return existingIndex === -1;
 }
 
-function updateItem<T>(key: string, item: T): Promise<void> {
+async function updateItem<T>(key: string, item: T): Promise<void> {
     // Upsert: replaces the item with the same id, or appends it if missing
-    return withWriteLock(key, () => upsertItemUnlocked(key, item));
+    await withWriteLock(key, () => upsertItemUnlocked(key, item));
 }
 
 function deleteItem(key: string, id: string): Promise<void> {
@@ -93,6 +95,11 @@ export async function getBoard(id: string): Promise<Board | undefined> {
 
 export async function addBoard(board: Board): Promise<void> {
     await addItem<Board>(BOARDS_KEY, board);
+}
+
+/** Add or replace a board, and say whether it is new: the check and the write happen under one lock */
+export async function saveBoard(board: Board): Promise<{ created: boolean }> {
+    return { created: await withWriteLock(BOARDS_KEY, () => upsertItemUnlocked(BOARDS_KEY, board)) };
 }
 
 export async function updateBoard(board: Board): Promise<void> {

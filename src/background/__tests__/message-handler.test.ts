@@ -249,6 +249,20 @@ describe('message-handler', () => {
         expect(dispatch({ type: 'DELETE_BOARD', payload: {} }).keepOpen).toBe(false);
     });
 
+    it('announces a board as new only once when the same ADD_BOARD arrives twice at the same time', async () => {
+        const board = { id: 'twice', name: 'Work', createdAt: '', updatedAt: '' };
+        const first = dispatch({ type: 'ADD_BOARD', payload: board });
+        const second = dispatch({ type: 'ADD_BOARD', payload: board });
+        await flush();
+        expect(first.sendResponse).toHaveBeenCalledWith({ success: true });
+        expect(second.sendResponse).toHaveBeenCalledWith({ success: true });
+        const added = fakeChrome().runtime.sendMessage.mock.calls.filter(
+            (c: any[]) => c[0].type === 'STORAGE_BOARD_ADDED'
+        );
+        expect(added).toHaveLength(1);
+        expect(store().tabboard_boards).toHaveLength(1);
+    });
+
     it.each(['ADD_BOARD', 'DELETE_BOARD'])('%s reports storage errors', async type => {
         fakeChrome().storage.local.get.mockRejectedValueOnce(new Error('broken'));
         const { sendResponse } = dispatch({ type, payload: { id: 'b1' } });
