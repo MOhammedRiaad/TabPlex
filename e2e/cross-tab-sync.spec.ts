@@ -132,9 +132,15 @@ test.describe('across TabPlex tabs', () => {
         await app.getByRole('button', { name: /Clear Data/ }).click();
 
         // The other tab reloads (the marker on its window is gone) within 2 s
+        // (evaluate throws while the page is navigating: that counts as reloading)
         await expect
-            .poll(() => other.evaluate(() => (window as unknown as { marker?: string }).marker), { timeout: 2000 })
-            .toBeUndefined();
+            .poll(
+                () => other.evaluate(() => (window as unknown as { marker?: string }).marker).catch(() => 'navigating'),
+                { timeout: 2000 }
+            )
+            .not.toBe('before-clear');
+        await other.waitForLoadState('load');
+        expect(await other.evaluate(() => (window as unknown as { marker?: string }).marker)).toBeUndefined();
 
         // Wait for both reloads and for BoardView to create its default board
         await app.waitForTimeout(3000);
