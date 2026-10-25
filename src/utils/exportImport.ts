@@ -267,6 +267,21 @@ async function applyImport(parsedData: ExportData): Promise<void> {
     }
 }
 
+/** Writes a checked export; when that fails, puts the data in `backupJson` back and rethrows the original error */
+async function applyWithRollback(parsedData: ExportData, backupJson: string): Promise<void> {
+    try {
+        await applyImport(parsedData);
+    } catch (error) {
+        try {
+            await applyImport(JSON.parse(backupJson) as ExportData);
+        } catch (restoreError) {
+            console.error('Could not restore the data after a failed import or restore:', restoreError);
+        }
+        markImportInThisTab(false);
+        throw error;
+    }
+}
+
 /** What a file holds and what was repaired in it, for the confirmation shown before an import */
 export interface ImportSummary {
     /** Items per kind (only kinds that have any) */
@@ -342,17 +357,7 @@ export const importData = async (jsonData: string): Promise<void> => {
             console.warn('Could not store the import backup:', error);
         }
 
-        try {
-            await applyImport(parsedData);
-        } catch (error) {
-            try {
-                await applyImport(JSON.parse(backup) as ExportData);
-            } catch (restoreError) {
-                console.error('Could not restore the data after a failed import:', restoreError);
-            }
-            markImportInThisTab(false);
-            throw error;
-        }
+        await applyWithRollback(parsedData, backup);
     } catch (error) {
         console.error('Error importing data:', error);
         throw error;
@@ -388,11 +393,15 @@ export const getImportBackupDate = async (): Promise<string | null> => {
     return typeof at === 'string' ? at : '';
 };
 
-/** Puts back the data kept from before the last import (checked like any import file). The backup stays. */
+/**
+ * Puts back the data kept from before the last import (checked like any import file). The backup stays. If writing
+ * fails, the data from before the restore is put back.
+ */
 export const restoreImportBackup = async (): Promise<void> => {
     const stored = await chrome.storage.local.get([IMPORT_BACKUP_KEY]);
     const backup = stored[IMPORT_BACKUP_KEY];
     if (typeof backup !== 'string') throw new Error('There is no backup to restore');
     const { parsedData } = parseExportFile(backup);
-    await applyImport(parsedData);
+    // The current data, so a failed restore can be undone. The stored backup itself stays.
+    await applyWithRollback(parsedData, await exportData());
 };

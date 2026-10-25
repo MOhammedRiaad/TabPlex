@@ -201,6 +201,35 @@ describe('export / import', () => {
             expect(await getImportBackupDate()).not.toBeNull();
         });
 
+        it('puts the data from before the restore back when writing it fails, and keeps the backup', async () => {
+            await db.addTask(makeTask({ id: 'before' }));
+            await importData(file({ tasks: [makeTask({ id: 'after' })] }));
+            markImportInThisTab(false);
+            const backup = (await chrome.storage.local.get(IMPORT_BACKUP_KEY))[IMPORT_BACKUP_KEY];
+
+            // The background refuses the first write (the restore) and accepts the second (putting 'after' back)
+            let writes = 0;
+            respondToMessages(m => (m.type === 'IMPORT_ALL_DATA' && writes++ === 0 ? { error: 'down' } : undefined));
+            await expect(restoreImportBackup()).rejects.toThrow('down');
+
+            expect((await db.getAllTasks()).map(t => t.id)).toEqual(['after']);
+            expect(isImportInThisTab()).toBe(false);
+            expect((await chrome.storage.local.get(IMPORT_BACKUP_KEY))[IMPORT_BACKUP_KEY]).toBe(backup);
+        });
+
+        it('throws the original error and logs when the rollback fails too', async () => {
+            await db.addTask(makeTask({ id: 'before' }));
+            await importData(file({ tasks: [makeTask({ id: 'after' })] }));
+            markImportInThisTab(false);
+
+            respondToMessages(m => (m.type === 'IMPORT_ALL_DATA' ? { error: 'down' } : undefined));
+            await expect(restoreImportBackup()).rejects.toThrow('The background could not import the data: down');
+            expect(console.error).toHaveBeenCalledWith(
+                'Could not restore the data after a failed import or restore:',
+                expect.any(Error)
+            );
+        });
+
         it('reports a backup of unknown date as an empty text, and refuses a damaged backup', async () => {
             await chrome.storage.local.set({ [IMPORT_BACKUP_KEY]: '{nope' });
             expect(await getImportBackupDate()).toBe('');
