@@ -6,6 +6,7 @@ import { BOARD_STYLE_KEY } from '../features/boards/switcher/boardStyle';
 import { DISPLAY_NAME_KEY } from '../features/settings/utils/displayName';
 import { THEME_STORAGE_KEY } from '../hooks/useTheme';
 import { TimerSettings, useTimerStore } from '../store/timerStore';
+import { MAX_IMPORT_CHARS, describeErrors, sanitizeCollections } from './importValidation';
 import { PARK_RESUME_SETTINGS_KEY, reconcileTasksWithBackground } from './taskContext';
 import { SUGGEST_DISMISSED_KEY } from './taskSuggest';
 import {
@@ -183,46 +184,97 @@ export const exportData = async (): Promise<string> => {
     }
 };
 
+/** chrome.storage.local key holding the data as it was just before the last import (restorable if the import fails) */
+export const IMPORT_BACKUP_KEY = 'tabplex_import_backup';
+
+/** Writes a checked export into IndexedDB, the settings and the background. Does not validate: see importData. */
+async function applyImport(parsedData: ExportData): Promise<void> {
+    // Clear existing data in IndexedDB
+    await clearAllData();
+
+    // Older or hand-edited exports may omit collections; treat them as empty
+    const { boards = [], folders = [], tabs = [], tasks = [], notes = [], sessions = [] } = parsedData.data ?? {};
+
+    // Import data into IndexedDB
+    await Promise.all([
+        ...boards.map(b => addBoard(b)),
+        ...folders.map(f => addFolder(f)),
+        ...tabs.map(t => addTab(t)),
+        ...tasks.map(t => addTask(t)),
+        ...notes.map(n => addNote(n)),
+        ...sessions.map(s => addSession(s)),
+    ]);
+
+    // 1.0.0 files have no canvases or settings: keep the current ones then
+    if (parsedData.version !== LEGACY_VERSION) await restoreCanvasesAndSettings(parsedData);
+
+    // Replace the background's copy too. Otherwise, on reload, useStorageSync merges tasks with the
+    // background's newer pre-import versions (undoing the restore), and Park & Resume keeps acting on
+    // the old data. The background then broadcasts STORAGE_DATA_IMPORTED so other TabPlex tabs reload.
+    // Exports made before history was included carry an empty list: keep the current history then.
+    const history = parsedData.data?.history?.length ? parsedData.data.history : await getBackgroundHistory();
+    markImportInThisTab(true);
+    try {
+        const response = (await chrome.runtime.sendMessage({
+            type: 'IMPORT_ALL_DATA',
+            payload: { boards, folders, tabs, tasks, notes, sessions, history },
+        })) as { error?: string } | undefined;
+        if (response?.error) throw new Error(`The background could not import the data: ${response.error}`);
+    } catch (error) {
+        markImportInThisTab(false);
+        throw error;
+    }
+}
+
+/**
+ * Replaces the data with a file's. The file is checked first (nothing is touched if it is malformed), the current data
+ * is kept as a backup, and if writing fails the backup is put back.
+ */
 export const importData = async (jsonData: string): Promise<void> => {
     try {
-        const parsedData = JSON.parse(jsonData) as ExportData;
+        if (jsonData.length > MAX_IMPORT_CHARS) throw new Error('The file is too large to import');
 
-        if (parsedData.version !== EXPORT_VERSION && parsedData.version !== LEGACY_VERSION) {
-            throw new Error(`Unsupported export version: ${parsedData.version}`);
+        let raw: unknown;
+        try {
+            raw = JSON.parse(jsonData);
+        } catch {
+            throw new Error('The file is not valid JSON');
+        }
+        if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+            throw new Error('The file is not a TabPlex export');
+        }
+        const file = raw as ExportData;
+
+        if (file.version !== EXPORT_VERSION && file.version !== LEGACY_VERSION) {
+            throw new Error(`Unsupported export version: ${file.version}`);
         }
 
-        // Clear existing data in IndexedDB
-        await clearAllData();
+        const checked = sanitizeCollections(file.data);
+        if (!checked.ok) throw new Error(`The file is damaged: ${describeErrors(checked.errors)}`);
+        const { collections, canvases, warnings } = checked.value;
+        if (warnings.length > 0) console.warn('Import repaired some data:', warnings);
 
-        // Older or hand-edited exports may omit collections; treat them as empty
-        const { boards = [], folders = [], tabs = [], tasks = [], notes = [], sessions = [] } = parsedData.data ?? {};
+        const parsedData: ExportData = {
+            ...file,
+            data: { ...file.data, ...collections, canvases: canvases as CanvasState[] },
+        };
 
-        // Import data into IndexedDB
-        await Promise.all([
-            ...boards.map(b => addBoard(b)),
-            ...folders.map(f => addFolder(f)),
-            ...tabs.map(t => addTab(t)),
-            ...tasks.map(t => addTask(t)),
-            ...notes.map(n => addNote(n)),
-            ...sessions.map(s => addSession(s)),
-        ]);
-
-        // 1.0.0 files have no canvases or settings: keep the current ones then
-        if (parsedData.version !== LEGACY_VERSION) await restoreCanvasesAndSettings(parsedData);
-
-        // Replace the background's copy too. Otherwise, on reload, useStorageSync merges tasks with the
-        // background's newer pre-import versions (undoing the restore), and Park & Resume keeps acting on
-        // the old data. The background then broadcasts STORAGE_DATA_IMPORTED so other TabPlex tabs reload.
-        // Exports made before history was included carry an empty list: keep the current history then.
-        const history = parsedData.data?.history?.length ? parsedData.data.history : await getBackgroundHistory();
-        markImportInThisTab(true);
+        // Keep the current data so a failed import can be undone. The copy in storage is best effort (it may not fit).
+        const backup = await exportData();
         try {
-            const response = (await chrome.runtime.sendMessage({
-                type: 'IMPORT_ALL_DATA',
-                payload: { boards, folders, tabs, tasks, notes, sessions, history },
-            })) as { error?: string } | undefined;
-            if (response?.error) throw new Error(`The background could not import the data: ${response.error}`);
+            await chrome.storage.local.set({ [IMPORT_BACKUP_KEY]: backup });
         } catch (error) {
+            console.warn('Could not store the import backup:', error);
+        }
+
+        try {
+            await applyImport(parsedData);
+        } catch (error) {
+            try {
+                await applyImport(JSON.parse(backup) as ExportData);
+            } catch (restoreError) {
+                console.error('Could not restore the data after a failed import:', restoreError);
+            }
             markImportInThisTab(false);
             throw error;
         }

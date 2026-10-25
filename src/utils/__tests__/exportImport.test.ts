@@ -5,6 +5,7 @@ import {
     EXTENSION_SETTING_KEYS,
     exportData,
     importData,
+    IMPORT_BACKUP_KEY,
     importFromFile,
     isImportInThisTab,
     markImportInThisTab,
@@ -13,7 +14,8 @@ import {
 import { useTimerStore } from '../../store/timerStore';
 import { BACKGROUND_TASKS_KEY } from '../taskContext';
 import * as db from '../storage';
-import { makeFolder, makeTask } from '../../test/factories';
+import { MAX_IMPORT_CHARS } from '../importValidation';
+import { makeFolder, makeTab, makeTask } from '../../test/factories';
 import { fakeChrome, respondToMessages } from '../../test/chromeMock';
 
 describe('export / import', () => {
@@ -119,6 +121,56 @@ describe('export / import', () => {
             'Unsupported export version'
         );
         await expect(importData('{nope')).rejects.toThrow();
+    });
+
+    describe('safety', () => {
+        const file = (data: unknown) => JSON.stringify({ version: '2.0.0', timestamp: '', data });
+
+        it('refuses a damaged file without touching the current data', async () => {
+            await db.addTask(makeTask({ id: 'keep' }));
+            await expect(importData(file({ tabs: [null], tasks: [{ id: 'x', title: 5 }] }))).rejects.toThrow(
+                'The file is damaged'
+            );
+            await expect(importData('[]')).rejects.toThrow('not a TabPlex export');
+            await expect(importData('{nope')).rejects.toThrow('not valid JSON');
+            expect((await db.getAllTasks()).map(t => t.id)).toEqual(['keep']);
+        });
+
+        it('refuses a file over the size limit', async () => {
+            await expect(importData(' '.repeat(MAX_IMPORT_CHARS + 1))).rejects.toThrow('too large');
+        });
+
+        it('empties unsafe addresses before saving them', async () => {
+            await importData(file({ tabs: [makeTab({ id: 'bad', url: 'javascript:alert(1)' })] }));
+            expect((await db.getAllTabs())[0].url).toBe('');
+            markImportInThisTab(false);
+        });
+
+        it('keeps a backup of the current data and puts it back when the background fails', async () => {
+            await db.addTask(makeTask({ id: 'before' }));
+            let imports = 0;
+            respondToMessages(m => {
+                if (m.type !== 'IMPORT_ALL_DATA') return [];
+                imports += 1;
+                return imports === 1 ? { error: 'disk full' } : { success: true };
+            });
+            await expect(importData(file({ tasks: [makeTask({ id: 'after' })] }))).rejects.toThrow('disk full');
+            expect((await db.getAllTasks()).map(t => t.id)).toEqual(['before']);
+            const stored = await chrome.storage.local.get([IMPORT_BACKUP_KEY]);
+            expect(JSON.parse(stored[IMPORT_BACKUP_KEY] as string).data.tasks[0].id).toBe('before');
+            expect(isImportInThisTab()).toBe(false);
+        });
+
+        it('still imports when the backup cannot be stored, and survives a failed restore', async () => {
+            vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            fakeChrome().storage.local.set.mockRejectedValueOnce(new Error('quota'));
+            await importData(file({ tasks: [makeTask({ id: 'new' })] }));
+            expect((await db.getAllTasks()).map(t => t.id)).toEqual(['new']);
+            markImportInThisTab(false);
+
+            respondToMessages(m => (m.type === 'IMPORT_ALL_DATA' ? { error: 'down' } : []));
+            await expect(importData(file({ tasks: [] }))).rejects.toThrow('down');
+        });
     });
 
     describe('canvases and settings (2.0.0)', () => {

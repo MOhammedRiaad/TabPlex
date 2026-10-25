@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { escapeHtml, renderMarkdownLinks } from '../../../utils/markdown';
+import { escapeHtml, transformKeepingLinks } from '../../../utils/markdown';
 import './MarkdownEditor.css';
 
 interface MarkdownEditorProps {
@@ -14,51 +14,52 @@ interface MarkdownEditorProps {
 
 // Simple markdown parser for preview
 export const parseMarkdown = (text: string): string => {
-    let html = escapeHtml(text)
-        // Code blocks (must be before inline code)
-        .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>')
-        // Inline code
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        // Headers
-        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-        // Bold and italic
-        .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/___(.+?)___/g, '<strong><em>$1</em></strong>')
-        .replace(/__(.+?)__/g, '<strong>$1</strong>')
-        .replace(/_(.+?)_/g, '<em>$1</em>')
-        // Strikethrough
-        .replace(/~~(.+?)~~/g, '<del>$1</del>')
-        // Unordered lists
-        .replace(/^\s*[-*+] (.+)$/gm, '<li>$1</li>')
-        // Ordered lists
-        .replace(/^\s*\d+\. (.+)$/gm, '<li>$1</li>')
-        // Checkboxes
-        .replace(/^\s*\[x\] (.+)$/gm, '<div class="checkbox checked">☑ $1</div>')
-        .replace(/^\s*\[ \] (.+)$/gm, '<div class="checkbox">☐ $1</div>')
-        // Blockquotes
-        .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>') // '>' is already escaped above
-        // Horizontal rules
-        .replace(/^---$/gm, '<hr />')
-        // Line breaks
-        .replace(/\n/g, '<br />');
+    // Links are cut out before the rules below and put back after them (links: only web and mail URLs)
+    return transformKeepingLinks(escapeHtml(text), escaped => {
+        let html = escaped
+            // Code blocks (must be before inline code)
+            .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>')
+            // Inline code
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            // Headers
+            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+            .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+            // Bold and italic
+            .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/___(.+?)___/g, '<strong><em>$1</em></strong>')
+            .replace(/__(.+?)__/g, '<strong>$1</strong>')
+            .replace(/_(.+?)_/g, '<em>$1</em>')
+            // Strikethrough
+            .replace(/~~(.+?)~~/g, '<del>$1</del>')
+            // Unordered lists
+            .replace(/^\s*[-*+] (.+)$/gm, '<li>$1</li>')
+            // Ordered lists
+            .replace(/^\s*\d+\. (.+)$/gm, '<li>$1</li>')
+            // Checkboxes
+            .replace(/^\s*\[x\] (.+)$/gm, '<div class="checkbox checked">☑ $1</div>')
+            .replace(/^\s*\[ \] (.+)$/gm, '<div class="checkbox">☐ $1</div>')
+            // Blockquotes
+            .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>') // '>' is already escaped above
+            // Horizontal rules
+            .replace(/^---$/gm, '<hr />')
+            // Line breaks
+            .replace(/\n/g, '<br />');
 
-    // Wrap consecutive <li> tags in <ul>
-    // Links: only web and mail URLs
-    html = renderMarkdownLinks(html);
-    html = html.replace(/(<li>.*?<\/li>(<br \/>)?)+/g, match => {
-        return '<ul>' + match.replace(/<br \/>/g, '') + '</ul>';
+        // Wrap consecutive <li> tags in <ul>
+        html = html.replace(/(<li>.*?<\/li>(<br \/>)?)+/g, match => {
+            return '<ul>' + match.replace(/<br \/>/g, '') + '</ul>';
+        });
+
+        // Clean up consecutive blockquotes
+        html = html.replace(/(<blockquote>.*?<\/blockquote>(<br \/>)?)+/g, match => {
+            return match.replace(/<\/blockquote><br \/><blockquote>/g, '<br />');
+        });
+
+        return html;
     });
-
-    // Clean up consecutive blockquotes
-    html = html.replace(/(<blockquote>.*?<\/blockquote>(<br \/>)?)+/g, match => {
-        return match.replace(/<\/blockquote><br \/><blockquote>/g, '<br />');
-    });
-
-    return html;
 };
 
 const MarkdownEditor: React.FC<MarkdownEditorProps> = ({

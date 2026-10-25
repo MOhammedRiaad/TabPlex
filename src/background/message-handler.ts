@@ -26,8 +26,14 @@ function safeSendResponse(_sendResponse: (response: any) => void, response: unkn
 
 // Listen for messages from the popup/tab
 chrome.runtime.onMessage.addListener(
-    (message: ExtensionMessage, _sender, _sendResponse: (response?: unknown) => void) => {
-        console.log('Background received message:', message);
+    (message: ExtensionMessage, sender, _sendResponse: (response?: unknown) => void) => {
+        // Only this extension's own pages talk to the background; and a malformed message gets an error, not a throw.
+        // (Payloads hold notes, tasks and URLs, so they are never logged.)
+        if (sender?.id !== undefined && sender.id !== chrome.runtime.id) return false;
+        if (!message || typeof message.type !== 'string') {
+            safeSendResponse(_sendResponse, { error: 'Malformed message' });
+            return false;
+        }
 
         // Ignore internal STORAGE_* notification messages (these are sent from background to popup)
         if (message.type.startsWith('STORAGE_')) {

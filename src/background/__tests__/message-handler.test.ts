@@ -27,6 +27,28 @@ describe('message-handler', () => {
     });
     afterEach(() => vi.useRealTimers());
 
+    it('answers a malformed message with an error and never throws', () => {
+        for (const message of [undefined, null, {}, { type: 5 }]) {
+            const sendResponse = vi.fn();
+            const results = mock.browser.events.runtimeMessage.emit(message as any, {}, sendResponse);
+            expect(results[0]).toBe(false);
+            expect(sendResponse).toHaveBeenCalledWith({ error: 'Malformed message' });
+        }
+    });
+
+    it('ignores messages from other extensions and does not log payloads', () => {
+        const sendResponse = vi.fn();
+        const results = mock.browser.events.runtimeMessage.emit(
+            { type: 'DELETE_BOARD', payload: { id: 'b' } },
+            { id: 'someone-else' },
+            sendResponse
+        );
+        expect(results[0]).toBe(false);
+        expect(sendResponse).not.toHaveBeenCalled();
+        dispatch({ type: 'GET_HISTORY', payload: { note: 'secret' } });
+        expect(JSON.stringify(vi.mocked(console.log).mock.calls)).not.toContain('secret');
+    });
+
     it.each([
         ['UPDATE_TAB', 'tabboard_tabs', 'STORAGE_TAB_UPDATED', makeTab({ id: 't1', title: 'Old' }), { title: 'New' }],
         ['UPDATE_FOLDER', 'tabboard_folders', 'STORAGE_FOLDER_UPDATED', makeFolder({ id: 't1' }), { name: 'New' }],

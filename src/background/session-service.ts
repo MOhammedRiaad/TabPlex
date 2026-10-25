@@ -165,7 +165,7 @@ export function handleSessionMessage(message: ExtensionMessage, _sendResponse: (
             // Handle session inference completion
             // This message is sent from the inferSessions function
             // We don't need to send a response for this
-            console.log('Session inference completed:', message.payload);
+            console.log('Session inference completed');
             break;
     }
 

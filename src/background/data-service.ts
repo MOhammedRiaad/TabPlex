@@ -1,6 +1,7 @@
 import { ExtensionMessage, Board, Folder, Tab, Task, Note, Session, HistoryItem } from '../types';
 import { STORAGE_KEYS } from './storage';
 import { ACTIVE_CONTEXT_KEY } from '../utils/taskContext';
+import { describeErrors, sanitizeCollections } from '../utils/importValidation';
 
 const COLLECTIONS = ['boards', 'folders', 'tabs', 'tasks', 'notes', 'sessions', 'history'] as const;
 
@@ -82,12 +83,19 @@ export function handleDataMessage(message: ExtensionMessage, _sendResponse: (res
             if (message.payload) {
                 let importAllResponseSent = false;
 
-                // Save all data to storage
-                const payload = message.payload as ImportPayload;
+                // The payload crosses a message boundary: check and clean it again, then save every collection
+                // in one call so a failure can't leave the collections half replaced
+                const checked = sanitizeCollections(message.payload);
+                if (!checked.ok) {
+                    safeSendResponse(_sendResponse, {
+                        error: `Invalid import data: ${describeErrors(checked.errors)}`,
+                    });
+                    return false;
+                }
+                const payload = checked.value.collections as ImportPayload;
                 // Missing collections are written as empty lists
-                Promise.all(
-                    COLLECTIONS.map(name => chrome.storage.local.set({ [STORAGE_KEYS[name]]: payload[name] ?? [] }))
-                )
+                chrome.storage.local
+                    .set(Object.fromEntries(COLLECTIONS.map(name => [STORAGE_KEYS[name], payload[name] ?? []])))
                     .then(() => clearActiveContextIfGone(payload.tasks ?? []))
                     .then(() => {
                         // Notify the UI about the import completion

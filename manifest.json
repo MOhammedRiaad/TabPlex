@@ -33,11 +33,5 @@
                 "default": "Ctrl+Shift+T"
             }
         }
-    },
-    "web_accessible_resources": [
-        {
-            "resources": ["onboarding.html", "onboarding.css", "onboarding.js", "index.html", "assets/*"],
-            "matches": ["<all_urls>"]
-        }
-    ]
+    }
 }
