@@ -792,11 +792,20 @@ describe('context-service', () => {
 
         it('postpones the snapshot while our own tab work is running, then saves it', async () => {
             const started = await startActive();
-            const [first] = mock.browser.groupTabs(groupOf(started));
+            const groupId = groupOf(started);
+            const [first] = mock.browser.groupTabs(groupId);
             const extra = mock.browser.addTab({ url: 'https://extra.dev/' });
+            // A slow grouping call that raises no tab events, so nothing else reschedules the snapshot
+            fakeChrome().tabs.group.mockImplementationOnce(
+                () => new Promise<number>(resolve => setTimeout(() => resolve(groupId), 300))
+            );
             mock.browser.events.tabMoved.emit(first.id, {}); // schedules the snapshot for +1500 ms
             await settle(1400);
-            await send(CONTEXT_MESSAGES.ADD_TABS, { task: started, chromeTabIds: [extra.id] }); // busy for 300 ms
+            const adding = send(CONTEXT_MESSAGES.ADD_TABS, { task: started, chromeTabIds: [extra.id] });
+
+            await settle(200); // the snapshot is due now, but we are busy
+            await settle(200);
+            await adding;
             liveTab(first.id).title = 'Renamed A';
 
             await settle(800);
