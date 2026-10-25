@@ -119,6 +119,30 @@ describe('PomodoroTimer', () => {
         expect(screen.getByText(/No active tasks/i)).toBeInTheDocument();
     });
 
+    it('fills one progress dot per completed session in the current round', () => {
+        useTimerStore.setState({ completedSessions: 1 });
+        renderView();
+
+        expect(document.querySelectorAll('.session-dot')).toHaveLength(2);
+        expect(document.querySelectorAll('.session-dot.filled')).toHaveLength(1);
+    });
+
+    it('falls back to the defaults when a duration or interval is cleared', () => {
+        renderView();
+        fireEvent.click(screen.getByLabelText('Settings'));
+        const [work, , long, interval] = screen.getAllByRole('spinbutton');
+        fireEvent.change(work, { target: { value: '50' } });
+        fireEvent.change(long, { target: { value: '20' } });
+        fireEvent.change(interval, { target: { value: '3' } });
+        expect(timer().settings).toMatchObject({ workDuration: 50, longBreakDuration: 20, longBreakInterval: 3 });
+
+        fireEvent.change(work, { target: { value: '' } });
+        fireEvent.change(long, { target: { value: '' } });
+        fireEvent.change(interval, { target: { value: '' } });
+
+        expect(timer().settings).toMatchObject({ workDuration: 25, longBreakDuration: 15, longBreakInterval: 4 });
+    });
+
     it('edits settings', () => {
         renderView();
         fireEvent.click(screen.getByLabelText('Settings'));
@@ -171,6 +195,46 @@ describe('TimerManager', () => {
         act(() => timer().setIsRunning(true));
         act(() => vi.advanceTimersByTime(15 * 60_000 + 1000));
         expect(timer()).toMatchObject({ mode: 'work', isRunning: true });
+    });
+
+    it('completes a work session whose linked task no longer exists without touching other tasks', () => {
+        useTimerStore.setState({ linkedTaskId: 'gone', settings: { ...settings, soundEnabled: false } });
+        const before = useBoardStore.getState().tasks;
+        render(<TimerManager />);
+        act(() => timer().setIsRunning(true));
+        act(() => vi.advanceTimersByTime(25 * 60_000 + 1000));
+
+        expect(timer()).toMatchObject({ mode: 'shortBreak', completedSessions: 1 });
+        expect(useBoardStore.getState().tasks).toBe(before);
+    });
+
+    it('plays the sound through the prefixed audio context when the standard one is missing', () => {
+        const created = vi.fn();
+        class PrefixedAudioContext extends FakeAudioContext {
+            constructor() {
+                super();
+                created();
+            }
+        }
+        vi.stubGlobal('AudioContext', undefined);
+        vi.stubGlobal('webkitAudioContext', PrefixedAudioContext);
+        render(<TimerManager />);
+        act(() => timer().setIsRunning(true));
+        act(() => vi.advanceTimersByTime(25 * 60_000 + 1000));
+
+        expect(created).toHaveBeenCalledTimes(1);
+        expect(timer()).toMatchObject({ mode: 'shortBreak', completedSessions: 1 });
+    });
+
+    it('does not notify when the notification permission is not granted', () => {
+        vi.stubGlobal('Notification', Object.assign(vi.fn(), { permission: 'denied', requestPermission: vi.fn() }));
+        useTimerStore.setState({ settings: { ...settings, soundEnabled: false } });
+        render(<TimerManager />);
+        act(() => timer().setIsRunning(true));
+        act(() => vi.advanceTimersByTime(25 * 60_000 + 1000));
+
+        expect(Notification).not.toHaveBeenCalled();
+        expect(timer()).toMatchObject({ mode: 'shortBreak', isRunning: false });
     });
 
     it('keeps the visible time when viewing another mode, and survives audio errors', () => {

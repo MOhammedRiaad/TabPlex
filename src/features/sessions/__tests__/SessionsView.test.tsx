@@ -2,11 +2,13 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SessionsView from '../SessionsView';
 import { useBoardStore } from '../../../store/boardStore';
-import { fakeChrome, ChromeMock, installChromeMock, respondToMessages } from '../../../test/chromeMock';
+import { fakeChrome, ChromeMock, FakeTab, installChromeMock, respondToMessages } from '../../../test/chromeMock';
 import { makeSession, makeTab } from '../../../test/factories';
+import { SESSION_NAME_MAX } from '../utils/sessionName';
 
 let mock: ChromeMock;
 let sessions: ReturnType<typeof makeSession>[];
+let received: ReturnType<typeof respondToMessages>;
 
 function renderView() {
     return render(<SessionsView />);
@@ -17,7 +19,7 @@ describe('SessionsView', () => {
         mock = installChromeMock();
         sessions = [];
         useBoardStore.setState({ sessions: [], tabs: [] });
-        respondToMessages(m => {
+        received = respondToMessages(m => {
             if (m.type === 'GET_SESSIONS') return sessions;
             if (['ADD_SESSION', 'UPDATE_SESSION', 'DELETE_SESSION', 'ADD_TAB'].includes(m.type))
                 return { success: true };
@@ -139,6 +141,118 @@ describe('SessionsView', () => {
         const ended = screen.getByText('Done one').closest('article')!;
         fireEvent.click(within(ended).getAllByLabelText('Delete session').slice(-1)[0]);
         await waitFor(() => expect(useBoardStore.getState().sessions.map(s => s.id)).toEqual(['s1']));
+    });
+
+    it('trims and shortens a renamed session to the maximum length', async () => {
+        sessions = [makeSession({ id: 's1', name: 'Old name' })];
+        renderView();
+        const card = (await screen.findByText('Old name')).closest('article')!;
+        fireEvent.click(within(card).getByLabelText('Toggle actions menu'));
+        fireEvent.click(within(card).getByRole('menuitem', { name: /Rename/ }));
+        const input = within(card).getByLabelText('Session name');
+        fireEvent.change(input, { target: { value: `  ${'n'.repeat(SESSION_NAME_MAX + 20)}  ` } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+
+        await waitFor(() => expect(received.some(m => m.type === 'UPDATE_SESSION')).toBe(true));
+        expect(received.find(m => m.type === 'UPDATE_SESSION')!.payload).toEqual({
+            id: 's1',
+            name: 'n'.repeat(SESSION_NAME_MAX),
+        });
+    });
+
+    it('stores tabs without an id or title using the url as title and a null browser tab id', async () => {
+        fakeChrome().tabs.query.mockImplementationOnce(async () => [{ url: 'https://a.test' }, {}] as FakeTab[]);
+        renderView();
+        fireEvent.click(screen.getByText('Start Session from Current Tabs'));
+        await waitFor(() => expect(useBoardStore.getState().sessions).toHaveLength(1));
+
+        const stored = useBoardStore.getState().tabs;
+        expect(stored.map(t => t.tabId)).toEqual([null, null]);
+        expect(stored.map(t => ({ title: t.title, url: t.url }))).toEqual([
+            { title: 'https://a.test', url: 'https://a.test' },
+            { title: '', url: '' },
+        ]);
+    });
+
+    it('infers one session from visits that have no visit time, dated now', async () => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        const now = new Date('2026-10-05T12:00:00.000Z');
+        vi.setSystemTime(now);
+        fakeChrome().history.search.mockResolvedValueOnce([
+            { url: 'https://docs.dev/a' },
+            { url: 'https://docs.dev/b' },
+            { url: 'https://docs.dev/c' },
+        ]);
+        renderView();
+        fireEvent.click(screen.getByText('Infer Sessions from History'));
+
+        await waitFor(() => expect(received.filter(m => m.type === 'ADD_SESSION')).toHaveLength(1));
+        const added = received.find(m => m.type === 'ADD_SESSION')!.payload as {
+            startTime: string;
+            endTime: string;
+            summary: string;
+        };
+        expect(added.startTime).toBe(now.toISOString());
+        expect(added.endTime).toBe(now.toISOString());
+        expect(added.summary).toBe('Browsing session with 3 related visits to docs.dev');
+    });
+
+    it('creates no session when visits to a domain are hours apart', async () => {
+        const now = Date.now();
+        fakeChrome().history.search.mockResolvedValueOnce([
+            { url: 'https://docs.dev/a', lastVisitTime: now },
+            { url: 'https://docs.dev/b', lastVisitTime: now - 2 * 3600_000 },
+            { url: 'https://docs.dev/c', lastVisitTime: now - 4 * 3600_000 },
+        ]);
+        renderView();
+        fireEvent.click(screen.getByText('Infer Sessions from History'));
+
+        await waitFor(() => expect(fakeChrome().sessions.getRecentlyClosed).toHaveBeenCalled());
+        expect(received.some(m => m.type === 'ADD_SESSION')).toBe(false);
+    });
+
+    it('infers from history alone when the sessions API is missing', async () => {
+        Reflect.deleteProperty(fakeChrome(), 'sessions');
+        const now = Date.now();
+        fakeChrome().history.search.mockResolvedValueOnce([
+            { url: 'https://docs.dev/a', lastVisitTime: now },
+            { url: 'https://docs.dev/b', lastVisitTime: now - 1000 },
+            { url: 'https://docs.dev/c', lastVisitTime: now - 2000 },
+        ]);
+        renderView();
+        fireEvent.click(screen.getByText('Infer Sessions from History'));
+
+        await waitFor(() => expect(received.filter(m => m.type === 'ADD_SESSION')).toHaveLength(1));
+        expect(console.error).not.toHaveBeenCalled();
+    });
+
+    it('restores no tabs when the browser no longer has the session tabs', async () => {
+        sessions = [makeSession({ id: 's1', name: 'Gone', tabIds: ['tab_1_42'] })];
+        fakeChrome().tabs.get.mockImplementationOnce(async () => undefined as unknown as FakeTab);
+        renderView();
+        const card = (await screen.findByText('Gone')).closest('article')!;
+        fireEvent.click(within(card).getAllByLabelText('Restore session tabs')[0]);
+
+        await screen.findByText('Restored 0 tabs from session: Gone');
+        expect(received.some(m => m.type === 'ADD_TAB')).toBe(false);
+        expect(fakeChrome().tabs.create).not.toHaveBeenCalled();
+    });
+
+    it('recreates still-open session tabs, using the url or an empty title when there is no title', async () => {
+        sessions = [makeSession({ id: 's1', name: 'Mixed', tabIds: ['tab_1_42', 'tab_1_43'] })];
+        fakeChrome()
+            .tabs.get.mockImplementationOnce(async () => ({ url: 'https://a.test' }) as FakeTab)
+            .mockImplementationOnce(async () => ({}) as FakeTab);
+        renderView();
+        const card = (await screen.findByText('Mixed')).closest('article')!;
+        fireEvent.click(within(card).getAllByLabelText('Restore session tabs')[0]);
+
+        await screen.findByText('Restored 2 tabs from session: Mixed');
+        const stored = useBoardStore.getState().tabs.map(t => ({ title: t.title, url: t.url, tabId: t.tabId }));
+        expect(stored).toEqual([
+            { title: 'https://a.test', url: 'https://a.test', tabId: 42 },
+            { title: '', url: '', tabId: 43 },
+        ]);
     });
 
     it('reports restore problems', async () => {
