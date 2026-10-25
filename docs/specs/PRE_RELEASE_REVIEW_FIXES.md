@@ -1,12 +1,12 @@
 # Spec: Pre-release fixes, PR 1 (release blockers)
 
-|             |                                                                                                                                              |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | Draft, Revision 1 (2026-10-25). Waiting for human approval of §13 Q1 and Q2                                                                  |
-| **Owner**   | Mohamed                                                                                                                                      |
-| **Created** | 2026-10-25                                                                                                                                   |
-| **Branch**  | `feature/pre-release-fixes`, cut from `develop` @ `9cd9a39` (PR #67 is already merged)                                                       |
-| **Source**  | Mohamed's pre-release audit of `develop` against `main` (`v1.3.0`, `82fb732`), corrected by `.claude/work/pre-release-fixes/03-challenge.md` |
+|             |                                                                                                                                                    |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**  | Implemented on `feature/pre-release-fixes` (2026-10-25); waiting for the browser tester, the human check and the reviews. Q1 and Q2 approved at G2 |
+| **Owner**   | Mohamed                                                                                                                                            |
+| **Created** | 2026-10-25                                                                                                                                         |
+| **Branch**  | `feature/pre-release-fixes`, cut from `develop` @ `9cd9a39` (PR #67 is already merged)                                                             |
+| **Source**  | Mohamed's pre-release audit of `develop` against `main` (`v1.3.0`, `82fb732`), corrected by `.claude/work/pre-release-fixes/03-challenge.md`       |
 
 The audit is split into three PRs (challenge C14). This spec is **PR 1**: the fixes that should land before `develop`
 goes to `main`. PR 2 (recorded pages reaching the UI) and PR 3 (message sender check, error toasts, markdown and
@@ -461,14 +461,14 @@ The release PR `develop` → `main` goes out only after this PR is merged. PR 2 
 
 ## 13. Open questions
 
-1. **D2: remove the startup inference shipped in `v1.3.0`?** (needs a human) Recommendation: yes, remove all
+1. **D2: remove the startup inference shipped in `v1.3.0`?** **Answered at G2: yes, remove all background inference.** Recommendation: yes, remove all
    background inference. Users lose a "Recent Activity Session" per browser start that they never asked for; the
    Infer button covers the explicit case. If you want to keep it, the alternative is to gate it on
    `isTrackingEnabled()`, keep `inferSessions` and disclose it in PRIVACY.md; then AC9 changes.
-2. **D4: Clear All Data turns recording off for everyone, including users who opted in?** (needs a human)
+2. **D4: Clear All Data turns recording off for everyone, including users who opted in?** **Answered at G2: yes; the confirm text says so.**
    Recommendation: yes, a clear returns to fresh-install defaults. The alternative is to keep the previous value
    (still `false` when it was missing, so legacy users are not silently re-recorded).
-3. **CHROMEWEBSTORE.md status of `1.1.0` to `1.3.0`** (needs a human): the repo does not say which versions were
+3. **CHROMEWEBSTORE.md status of `1.1.0` to `1.3.0`** **Answered at G2: "GitHub release", each row checked against `CHANGELOG.md`.**: the repo does not say which versions were
    submitted to or published on Chrome and Edge. Recommendation: Mohamed fills in the Status column; the engineer
    writes "GitHub release" until then.
 4. **How long to keep `chrome.alarms.clear('tabplex-infer-sessions')`.** Recommendation: delete it in the release after
@@ -478,19 +478,19 @@ The release PR `develop` → `main` goes out only after this PR is merged. PR 2 
 
 ## 14. Definition of done
 
-- [ ] AC1-AC9 each have the tests in §11, and every bug test was seen failing on `9cd9a39` (`04-build-log.md`).
-- [ ] `verify` passes: `npm run typecheck`, `npm run lint` (0 warnings), `npm run format:check`,
+- [x] AC1-AC9 each have the tests in §11, and every bug test was seen failing on `9cd9a39` (`04-build-log.md`).
+- [x] `verify` passes: `npm run typecheck`, `npm run lint` (0 warnings), `npm run format:check`,
       `npm run build:privacy -- --check`, `npm run test:coverage` (≥ 95% statements, branches, functions and lines,
       no new exclusions), `npm run build`, `npm run check:bundle`.
-- [ ] `npm run test:e2e` passes, including `e2e/cross-tab-sync.spec.ts`.
-- [ ] `npm audit --omit=dev --audit-level=high` exits 0 on the final branch, and `ci.yml` has no `continue-on-error`
+- [x] `npm run test:e2e` passes, including `e2e/cross-tab-sync.spec.ts`.
+- [x] `npm audit --omit=dev --audit-level=high` exits 0 on the final branch, and `ci.yml` has no `continue-on-error`
       on it (AC10).
-- [ ] The §8 docs are updated, `landing-page/privacy.html` is regenerated, and no doc still claims automatic session
+- [x] The §8 docs are updated, `landing-page/privacy.html` is regenerated, and no doc still claims automatic session
       inference or the infer alarm (`git grep -n -i "automatic.*inference\|tabplex-infer-sessions"` finds only this spec,
       the legacy `clear` line in `session-service.ts` and its test).
 - [ ] The browser tester's checks in Chrome and Edge pass, and `07-human-signoff.md` records the human check.
-- [ ] Commits follow §12. The PR targets `develop`; the branch is deleted after the merge.
-- [ ] §13 Q1 and Q2 are answered and the spec reflects the answers.
+- [x] Commits follow §12. The PR targets `develop`; the branch is deleted after the merge.
+- [x] §13 Q1 and Q2 are answered and the spec reflects the answers.
 
 ## 15. Follow-ups (separate cycles, not in this PR)
 
@@ -538,6 +538,22 @@ happen. Already true, so not part of the fix: `createTabInFolder` broadcasts `ST
   (`tabNotesStore.ts:341-344`, built-in-ai rule 2). If the origin changed and `missingOrigins` is not empty, fail with
   "needs site access, pick it again" instead of prompting after an await. Test that the AI session factory is called
   synchronously within `retryTab`.
+
+## Implementation notes (2026-10-25)
+
+Decisions taken while building, from the round-2 challenge (`03-challenge-r2.md`) and the G2 answers:
+
+- **D2** removes the startup run too; the old alarm is cleared once at worker start.
+- **D4** confirm text: "... Recording of the pages you open will be turned off."
+- **C1** the chrome.storage removal is repeated once after the IndexedDB clear (simpler than taking the background write locks); a write that lands after the second pass is still possible but needs a background read-modify-write that straddles both.
+- **C2** `clearEverything` resets the timer store and calls `useTimerStore.persist.clearStorage()`; receiving tabs clear the stored timer before they reload.
+- **C3** a present `settings.extension.tabplex_track_all_tabs` that is not true/false rejects the file.
+- **C4** the status line and §3.3 of `SECURITY_HARDENING.md` record D2 and D8 (the file never mentioned the inference alarm).
+- **C5** the synthesized "My Board" is dated at import time, not the epoch, so it does not become the current board.
+- **C6** missing tab/history `title` and `url` become `''`; a present non-text `title`, `url`, `description` (tasks), note `title` or session `summary` rejects the file. Data already in IndexedDB that was written by other means is not repaired.
+- **C7** tests cover the rejecting `alarms.clear` and `sendMessage` promises.
+- **C8** `npm audit --omit=dev --audit-level=high` was run on Node 24 / npm 11 (Node 22 was not installed); 0 vulnerabilities. A new high advisory fails CI on any branch; the response is an `npm audit fix` PR into `develop`.
+- **C9** timer durations must be whole numbers from 1 to 1440 and `longBreakInterval` from 1 to 100.
 
 ## Challenge response
 
