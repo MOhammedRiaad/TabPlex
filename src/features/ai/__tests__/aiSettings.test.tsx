@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { act, configure, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SettingsView from '../../settings/SettingsView';
 import ModelStatus from '../components/ModelStatus';
@@ -7,6 +7,11 @@ import { readAiSettings, useAiSettings } from '../hooks/useAiSettings';
 import { useModelAvailability } from '../hooks/useModelAvailability';
 import { AI_SETTINGS_KEY, DEFAULT_AI_SETTINGS } from '../constants';
 import { fakeChrome } from '../../../test/chromeMock';
+
+// These tests mount whole screens. On a busy machine (parallel test files, CI) they take several times longer than on a
+// quiet one, so the default 5 s test limit and 1 s waitFor limit fail them at random. Same checks, more patience.
+vi.setConfig({ testTimeout: 30_000 });
+configure({ asyncUtilTimeout: 5000 });
 
 function renderSettings() {
     render(
