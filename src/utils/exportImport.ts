@@ -6,6 +6,7 @@ import { BOARD_STYLE_KEY } from '../features/boards/switcher/boardStyle';
 import { DISPLAY_NAME_KEY } from '../features/settings/utils/displayName';
 import { THEME_STORAGE_KEY } from '../hooks/useTheme';
 import { TimerSettings, useTimerStore } from '../store/timerStore';
+import { TRACK_ALL_TABS_KEY } from './tabTracking';
 import { MAX_IMPORT_CHARS, describeErrors, sanitizeCollections } from './importValidation';
 import { PARK_RESUME_SETTINGS_KEY, reconcileTasksWithBackground } from './taskContext';
 import { SUGGEST_DISMISSED_KEY } from './taskSuggest';
@@ -42,6 +43,7 @@ export const EXTENSION_SETTING_KEYS: string[] = [
     AI_SETTINGS_KEY,
     BOARD_STYLE_KEY,
     SUGGEST_DISMISSED_KEY,
+    TRACK_ALL_TABS_KEY,
 ];
 
 /**

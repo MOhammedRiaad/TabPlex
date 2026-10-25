@@ -64,6 +64,7 @@ export function createChromeMock() {
         runtimeMessage: new FakeEvent(),
         installed: new FakeEvent(),
         startup: new FakeEvent(),
+        alarm: new FakeEvent(),
         storageChanged: new FakeEvent(),
         tabCreated: new FakeEvent(),
         tabUpdated: new FakeEvent(),
@@ -128,6 +129,24 @@ export function createChromeMock() {
         clear: vi.fn(async () => {
             for (const key of Object.keys(store)) delete store[key];
         }),
+        /** Size of the stored JSON, which is close to what Chrome counts */
+        getBytesInUse: vi.fn(async (keys?: string | string[] | null) => {
+            const { names } = resolveKeys(keys);
+            return names
+                .filter(name => name in store)
+                .reduce((sum, name) => sum + JSON.stringify(store[name]).length, 0);
+        }),
+        QUOTA_BYTES: 10485760,
+    };
+
+    // ----- alarms ------------------------------------------------------------------------------
+    const alarmStore = new Map<string, { name: string; periodInMinutes?: number }>();
+    const alarms = {
+        create: vi.fn(async (name: string, info: { periodInMinutes?: number }) => {
+            alarmStore.set(name, { name, periodInMinutes: info.periodInMinutes });
+        }),
+        get: vi.fn(async (name: string) => alarmStore.get(name)),
+        onAlarm: events.alarm,
     };
 
     // ----- runtime messaging -----------------------------------------------------------------
@@ -378,6 +397,7 @@ export function createChromeMock() {
         tabGroups: tabGroupsApi,
         windows: windowsApi,
         permissions: permissionsApi,
+        alarms,
         scripting,
         action: { onClicked: events.actionClicked },
         history: {

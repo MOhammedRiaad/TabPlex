@@ -190,11 +190,18 @@
 <li><strong>Data Access</strong>: Only the sites you allowed, and only when you click Summarize or Make quick view</li>
 </ul>
 </li>
+<li><p><strong><code>alarms</code></strong></p>
+<ul>
+<li><strong>Purpose</strong>: Run a small cleanup once a day, even though the extension&#39;s background worker sleeps between uses</li>
+<li><strong>Usage</strong>: Removes closed tabs TabPlex recorded more than 30 days ago and keeps the recorded list under 2,000 tabs</li>
+<li><strong>Data Access</strong>: None. It only deletes old entries from TabPlex&#39;s own list on your device</li>
+</ul>
+</li>
 </ol>
 <p><strong>Website access</strong>: TabPlex has no site access when you install it, and it never reads, injects into or changes a page in the background. It reads a page only after you pick that tab in &quot;Summarize open tabs&quot; and your browser has granted access to that site. Otherwise it only sees tab titles and addresses through the <code>tabs</code> permission.</p>
 <h3>How Permissions Are Used</h3>
 <ul>
-<li><strong>No Background Tracking</strong>: TabPlex does not monitor your browsing</li>
+<li><strong>No Background Tracking</strong>: TabPlex does not monitor your browsing. New installs record only the tabs you put on a board or in a task. &quot;Record every page I open&quot; in Settings → Tab tracking &amp; storage is off by default and keeps its list on your device</li>
 <li><strong>Explicit Actions Only</strong>: Data is only captured when you explicitly add tabs or import history</li>
 <li><strong>No Analytics</strong>: We do not track how you use the extension</li>
 <li><strong>No Telemetry</strong>: No usage statistics are collected</li>

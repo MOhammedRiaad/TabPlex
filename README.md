@@ -320,6 +320,7 @@ TabPlex requests the following Chrome permissions:
 - **`sessions`**: To restore recently closed tabs and windows
 - **`bookmarks`**: To manage and organize your browser bookmarks (read/write access)
 - **`favicon`**: To show website icons from Chrome's own local icon cache (no third-party icon service)
+- **`alarms`**: To run a daily cleanup of old closed tabs in TabPlex's own list (nothing is read or sent)
 - **`scripting`** and **optional site access**: To read the text of the pages you pick in "Summarize open tabs". Nothing is granted at install: your browser asks, naming only the sites of the tabs you picked, and you can remove access in Settings → On-device AI → Page access
 
 **Important**: These permissions are used solely for the extension's functionality. We never transmit your data anywhere.

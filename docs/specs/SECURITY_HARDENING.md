@@ -223,7 +223,7 @@ Phases 1 and 2 are independent and can ship immediately. Phase 4 should precede 
 
 ## 10. Open questions
 
-1. **Auto-tracking of every page load** (§3.4): keep, restrict, or make opt-in? Recommended: opt-in with a Settings toggle.
+1. **Auto-tracking of every page load** (§3.4): decided: opt-in. New installs start with it off, existing installs keep it on until turned off (Settings → Tab tracking & storage).
 2. **Markdown**: adopt `markdown-it` for both renderers (A), or keep the hand-written parser with placeholders (B)?
 3. **Import backup**: is one level of backup enough, or should the user be able to download it from Settings?
 4. **Release**: ship phase 7 with `alarms` in the next minor, or batch it with the next planned permission change?

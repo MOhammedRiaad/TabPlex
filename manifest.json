@@ -16,6 +16,7 @@
     "action": {},
     "permissions": [
         "tabs",
+        "alarms",
         "tabGroups",
         "history",
         "sessions",

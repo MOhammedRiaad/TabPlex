@@ -143,6 +143,16 @@ export async function deleteTab(id: string): Promise<void> {
     await deleteItem(TABS_KEY, id);
 }
 
+export async function deleteTabs(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    const drop = new Set(ids);
+    // One write for all of them (a cleanup can remove hundreds)
+    await withWriteLock(TABS_KEY, async () => {
+        const items = await getAllItems<Tab>(TABS_KEY);
+        await chrome.storage.local.set({ [TABS_KEY]: items.filter(item => !drop.has(item.id)) });
+    });
+}
+
 export async function getAllTasks(): Promise<Task[]> {
     return await getAllItems<Task>(TASKS_KEY);
 }
