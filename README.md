@@ -27,7 +27,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 - **Board & Folder System**: Organize tabs into visual boards with customizable folders
 - **Several boards**: Keep separate boards (work, home, a side project); switch, create, rename or delete them from the Boards header. Deleting a board moves its folders to another board or deletes them, and TabPlex remembers the board you last used
 - **Drag & Drop**: Intuitive drag-and-drop interface for moving tabs between folders
-- **Smart Tab Management**: Automatically capture and organize browser tabs
+- **Smart Tab Management**: Capture and organize browser tabs. Recording every page you open is opt-in (Settings → Tab tracking & storage)
 - **Local-First Storage**: All data stored locally with no cloud dependency
 
 ### ✅ Task Management
@@ -235,7 +235,7 @@ npm run preview      # Preview production build
 
 1. **Create Your First Board**: Click "Add Board" to create a workspace
 2. **Add Folders**: Organize your tabs into folders by topic or project
-3. **Capture Tabs**: Manually add current tabs or let TabPlex auto-capture
+3. **Capture Tabs**: Manually add current tabs, or turn on "Record every page I open" in Settings
 4. **Create Tasks**: Use the Today view to manage your daily tasks
 5. **Track Focus**: Use the Pomodoro timer to track focus sessions
 

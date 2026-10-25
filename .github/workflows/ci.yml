@@ -26,6 +26,9 @@ jobs:
                   cache: npm
 
             - run: npm ci
+            - name: Dependency advisories (production, high and above)
+              run: npm audit --omit=dev --audit-level=high
+              continue-on-error: true # warns for now; make it blocking once it has stayed clean
             - run: npm run typecheck
             - run: npm run lint
             - run: npm run format:check

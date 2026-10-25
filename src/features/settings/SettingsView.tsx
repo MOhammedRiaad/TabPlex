@@ -9,6 +9,7 @@ import AiFeaturesSetting from '../ai/components/AiFeaturesSetting';
 import BoardStyleSetting from './components/BoardStyleSetting';
 import TabTrackingSetting from './components/TabTrackingSetting';
 import StorageUsage from './components/StorageUsage';
+import RestoreBackupSetting from './components/RestoreBackupSetting';
 import { DISPLAY_NAME_KEY, DISPLAY_NAME_MAX, saveDisplayName } from './utils/displayName';
 import './SettingsView.css';
 
@@ -186,6 +187,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                                 style={{ display: 'none' }}
                             />
                         </div>
+
+                        <RestoreBackupSetting />
 
                         <div className="setting-item danger">
                             <div className="setting-info">

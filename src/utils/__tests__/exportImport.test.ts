@@ -6,6 +6,8 @@ import {
     exportData,
     importData,
     IMPORT_BACKUP_KEY,
+    getImportBackupDate,
+    restoreImportBackup,
     importFromFile,
     isImportInThisTab,
     markImportInThisTab,
@@ -171,6 +173,35 @@ describe('export / import', () => {
 
             respondToMessages(m => (m.type === 'IMPORT_ALL_DATA' ? { error: 'down' } : []));
             await expect(importData(file({ tasks: [] }))).rejects.toThrow('down');
+        });
+    });
+
+    describe('restoring the backup kept by an import', () => {
+        const file = (data: unknown) => JSON.stringify({ version: '2.0.0', timestamp: '', data });
+
+        it('has no backup before the first import', async () => {
+            expect(await getImportBackupDate()).toBeNull();
+            await expect(restoreImportBackup()).rejects.toThrow('no backup');
+        });
+
+        it('keeps the data from before an import, says when, and puts it back', async () => {
+            await db.addTask(makeTask({ id: 'before' }));
+            await importData(file({ tasks: [makeTask({ id: 'after' })] }));
+            markImportInThisTab(false);
+            expect((await db.getAllTasks()).map(t => t.id)).toEqual(['after']);
+
+            expect(Date.parse((await getImportBackupDate()) as string)).not.toBeNaN();
+            await restoreImportBackup();
+            markImportInThisTab(false);
+            expect((await db.getAllTasks()).map(t => t.id)).toEqual(['before']);
+            // The backup stays, so it can be used again
+            expect(await getImportBackupDate()).not.toBeNull();
+        });
+
+        it('reports a backup of unknown date as an empty text, and refuses a damaged backup', async () => {
+            await chrome.storage.local.set({ [IMPORT_BACKUP_KEY]: '{nope' });
+            expect(await getImportBackupDate()).toBe('');
+            await expect(restoreImportBackup()).rejects.toThrow('not valid JSON');
         });
     });
 

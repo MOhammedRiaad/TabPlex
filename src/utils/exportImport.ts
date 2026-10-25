@@ -188,6 +188,8 @@ export const exportData = async (): Promise<string> => {
 
 /** chrome.storage.local key holding the data as it was just before the last import (restorable if the import fails) */
 export const IMPORT_BACKUP_KEY = 'tabplex_import_backup';
+/** When that backup was taken (ISO), so Settings can show it without parsing the whole backup */
+export const IMPORT_BACKUP_AT_KEY = 'tabplex_import_backup_at';
 
 /** Writes a checked export into IndexedDB, the settings and the background. Does not validate: see importData. */
 async function applyImport(parsedData: ExportData): Promise<void> {
@@ -291,7 +293,10 @@ export const importData = async (jsonData: string): Promise<void> => {
         // Keep the current data so a failed import can be undone. The copy in storage is best effort (it may not fit).
         const backup = await exportData();
         try {
-            await chrome.storage.local.set({ [IMPORT_BACKUP_KEY]: backup });
+            await chrome.storage.local.set({
+                [IMPORT_BACKUP_KEY]: backup,
+                [IMPORT_BACKUP_AT_KEY]: new Date().toISOString(),
+            });
         } catch (error) {
             console.warn('Could not store the import backup:', error);
         }
@@ -333,3 +338,20 @@ export const readImportFile = (file: File): Promise<string> =>
     });
 
 export const importFromFile = async (file: File): Promise<void> => importData(await readImportFile(file));
+
+/** When the data kept from before the last import was taken, or null when there is none */
+export const getImportBackupDate = async (): Promise<string | null> => {
+    const stored = await chrome.storage.local.get([IMPORT_BACKUP_KEY, IMPORT_BACKUP_AT_KEY]);
+    if (typeof stored[IMPORT_BACKUP_KEY] !== 'string') return null;
+    const at = stored[IMPORT_BACKUP_AT_KEY];
+    return typeof at === 'string' ? at : '';
+};
+
+/** Puts back the data kept from before the last import (checked like any import file). The backup stays. */
+export const restoreImportBackup = async (): Promise<void> => {
+    const stored = await chrome.storage.local.get([IMPORT_BACKUP_KEY]);
+    const backup = stored[IMPORT_BACKUP_KEY];
+    if (typeof backup !== 'string') throw new Error('There is no backup to restore');
+    const { parsedData } = parseExportFile(backup);
+    await applyImport(parsedData);
+};

@@ -1,4 +1,4 @@
-import { addTab, updateTab, getAllTabs } from './storage';
+import { addTab, updateTab, getAllTabs, getTabByBrowserId } from './storage';
 import { pruneTabs } from './tab-retention';
 import type { Tab } from '../types';
 import { isTrackingEnabled, MAX_TRACKED_TABS } from '../utils/tabTracking';
@@ -7,8 +7,7 @@ import { isTrackingEnabled, MAX_TRACKED_TABS } from '../utils/tabTracking';
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     if (changeInfo.status === 'complete' && tab.url) {
         // Check if this tab is already in our storage
-        const allTabs = await getAllTabs();
-        const existingTab = allTabs.find(t => t.tabId === tabId);
+        const existingTab = await getTabByBrowserId(tabId);
 
         if (existingTab) {
             // Update existing tab
@@ -35,15 +34,14 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
                 createdAt: new Date().toISOString(),
             });
             // The list has a size limit: drop the oldest closed tabs now rather than wait for the daily cleanup
-            if (allTabs.length >= MAX_TRACKED_TABS) await pruneTabs();
+            if ((await getAllTabs()).length > MAX_TRACKED_TABS) await pruneTabs();
         }
     }
 });
 
 // Listen for tab removal
 chrome.tabs.onRemoved.addListener(async tabId => {
-    const allTabs = await getAllTabs();
-    const tabToRemove = allTabs.find(t => t.tabId === tabId);
+    const tabToRemove = await getTabByBrowserId(tabId);
 
     if (tabToRemove) {
         await updateTab({

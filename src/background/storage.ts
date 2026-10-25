@@ -138,6 +138,11 @@ export async function getTab(id: string): Promise<Tab | undefined> {
     return await getItemById<Tab>(TABS_KEY, id);
 }
 
+/** The tracked tab that is open as this browser tab, if any */
+export async function getTabByBrowserId(tabId: number): Promise<Tab | undefined> {
+    return (await getAllItems<Tab>(TABS_KEY)).find(tab => tab.tabId === tabId);
+}
+
 export async function addTab(tab: Tab): Promise<void> {
     await addItem<Tab>(TABS_KEY, tab);
 }
