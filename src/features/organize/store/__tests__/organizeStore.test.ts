@@ -2,8 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NOTHING_TO_ORGANIZE, startOrganize, useOrganizeStore } from '../organizeStore';
 import { useUIStore } from '../../../ui/store/uiStore';
 import { useBoardStore } from '../../../../store/boardStore';
-import { respondToMessages } from '../../../../test/chromeMock';
+import { FakeTab, fakeChrome, respondToMessages } from '../../../../test/chromeMock';
 import { ModelAvailability } from '../../../ai/types';
+import { GroupProposal } from '../../types';
 import { ORGANIZE_MESSAGES } from '../../../../utils/organizeTabs';
 
 const state = () => useOrganizeStore.getState();
@@ -232,6 +233,165 @@ describe('organize store', () => {
             await settle();
             expect(prompt.mock.calls[0][0]).toContain('Suggest a different grouping');
             expect(state().proposal!.groups[0].name).toBe('Pricing Research');
+        });
+    });
+
+    describe('guards and fallbacks', () => {
+        const organizable = (n: number) =>
+            Array.from({ length: n }, (_, i) => ({
+                id: i + 1,
+                windowId: 1,
+                title: `Tab ${i + 1}`,
+                url: `https://t${i + 1}.dev`,
+            }));
+        const proposalOf = (groups: GroupProposal['groups'], ungroupedTabIds: number[] = []): GroupProposal => ({
+            source: 'site',
+            groups,
+            ungroupedTabIds,
+            omittedTabIds: [],
+        });
+        const group = (tabIds: number[], enabled = true): GroupProposal['groups'][number] => ({
+            key: 'g1',
+            name: 'Group',
+            color: 'blue',
+            tabIds,
+            enabled,
+        });
+
+        it('stays closed, without an error, when reading the tabs fails after closing', async () => {
+            env(false, 'unsupported');
+            let rejectQuery!: (reason: Error) => void;
+            fakeChrome().tabs.query.mockImplementationOnce(
+                () => new Promise<FakeTab[]>((_resolve, reject) => (rejectQuery = reject))
+            );
+            startOrganize();
+            await vi.waitFor(() => expect(rejectQuery).toBeDefined());
+
+            actions().close();
+            rejectQuery(new Error('window gone'));
+            await new Promise(r => setTimeout(r, 0));
+
+            expect(state()).toMatchObject({ phase: 'closed', error: null });
+        });
+
+        it('keeps the tab list empty when closed while the tabs are being read', async () => {
+            env(false, 'unsupported');
+            let resolveQuery!: (tabs: FakeTab[]) => void;
+            fakeChrome().tabs.query.mockImplementationOnce(
+                () => new Promise<FakeTab[]>(resolve => (resolveQuery = resolve))
+            );
+            startOrganize();
+            await vi.waitFor(() => expect(resolveQuery).toBeDefined());
+
+            actions().close();
+            resolveQuery([]);
+            await new Promise(r => setTimeout(r, 0));
+
+            expect(state()).toMatchObject({ phase: 'closed', tabs: [], proposal: null });
+        });
+
+        it('ignores group edits when there is no proposal', () => {
+            actions().toggleGroup('g1');
+            actions().renameGroup('g1', 'Name');
+            actions().removeTab('g1', 1);
+
+            expect(state().proposal).toBeNull();
+            expect(state().dirty).toBe(false);
+        });
+
+        it('does nothing on "try again" when no tabs were read', () => {
+            const confirm = vi.spyOn(window, 'confirm');
+            const { create } = stubModel();
+
+            actions().retryWithAi();
+
+            expect(create).not.toHaveBeenCalled();
+            expect(confirm).not.toHaveBeenCalled();
+            expect(state().phase).toBe('closed');
+        });
+
+        it('asks the model about the first tabs when "try again" follows a site grouping', async () => {
+            await six();
+            const { prompt } = stubModel();
+            env(false, 'unsupported');
+            startOrganize();
+            await settle();
+            expect(state().considered).toEqual([]);
+
+            actions().retryWithAi();
+            await settle();
+
+            expect(prompt.mock.calls[0][0]).toContain('Group these 6 tabs.');
+            expect(prompt.mock.calls[0][0]).not.toContain('Suggest a different grouping');
+            expect(state().proposal!.source).toBe('ai');
+        });
+
+        it('puts a removed tab among the ungrouped ones in tab order', () => {
+            useOrganizeStore.setState({
+                phase: 'preview',
+                tabs: organizable(6),
+                proposal: proposalOf([group([1, 2, 3])], [4]),
+            });
+
+            actions().removeTab('g1', 2);
+
+            expect(state().proposal!.ungroupedTabIds).toEqual([2, 4]);
+        });
+
+        it('sorts an ungrouped tab it does not know first', () => {
+            useOrganizeStore.setState({
+                phase: 'preview',
+                tabs: organizable(6),
+                proposal: proposalOf([group([1, 2, 3])], [99]),
+            });
+
+            actions().removeTab('g1', 2);
+
+            expect(state().proposal!.ungroupedTabIds).toEqual([99, 2]);
+        });
+
+        it('keeps a group enabled, or disabled, when it still has enough tabs after a removal', () => {
+            useOrganizeStore.setState({
+                phase: 'preview',
+                tabs: organizable(6),
+                proposal: proposalOf([group([1, 2, 3])]),
+            });
+            actions().removeTab('g1', 3);
+            expect(state().proposal!.groups[0]).toMatchObject({ tabIds: [1, 2], enabled: true });
+
+            useOrganizeStore.setState({ proposal: proposalOf([group([1, 2, 3], false)]) });
+            actions().removeTab('g1', 3);
+            expect(state().proposal!.groups[0]).toMatchObject({ tabIds: [1, 2], enabled: false });
+        });
+
+        it('sends nothing to apply without a proposal or a window', async () => {
+            const sent = respondToMessages();
+
+            await actions().apply();
+            useOrganizeStore.setState({ phase: 'preview', windowId: null, proposal: proposalOf([group([1, 2])]) });
+            await actions().apply();
+
+            expect(sent).toEqual([]);
+            expect(state().phase).toBe('preview');
+        });
+
+        it('reports a background that does not answer', async () => {
+            respondToMessages(() => undefined);
+            useOrganizeStore.setState({ phase: 'preview', windowId: 1, proposal: proposalOf([group([1, 2])]) });
+
+            await actions().apply();
+
+            expect(toast()).toBe("Couldn't create groups: The background service did not respond");
+            expect(state().phase).toBe('preview');
+        });
+
+        it('treats a reply without created or skipped tabs as empty lists', async () => {
+            respondToMessages(m => (m.type === ORGANIZE_MESSAGES.APPLY ? { success: true } : undefined));
+            useOrganizeStore.setState({ phase: 'preview', windowId: 1, proposal: proposalOf([group([1, 2])]) });
+
+            await actions().apply();
+
+            expect(state()).toMatchObject({ phase: 'done', created: [], skippedTabIds: [] });
         });
     });
 
