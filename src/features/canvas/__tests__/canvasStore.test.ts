@@ -203,6 +203,88 @@ describe('canvas store', () => {
         });
     });
 
+    describe('with a stale active canvas id', () => {
+        it('ignores element changes and records no history', () => {
+            const el = makeElement('rectangle', { id: 'a' });
+            seed(el);
+            const snapshot = store().canvases;
+            useCanvasStore.setState({ activeCanvasId: 'stale', history: {} });
+
+            store().addElement(makeElement('ellipse', { id: 'b' }));
+            store().deleteElement('a');
+            store().deleteElements(['a']);
+            store().bringToFront(['a']);
+            store().reorderElement('a', 0);
+
+            expect(store().canvases).toEqual(snapshot);
+            expect(store().canvases[0].elements.map(e => e.id)).toEqual(['a']);
+            expect(store().history).toEqual({});
+        });
+    });
+
+    describe('with two canvases', () => {
+        const setup = () => {
+            store().createCanvas('board_1');
+            const firstId = store().activeCanvasId!;
+            const a = makeElement('rectangle', { id: 'a', x: 0, y: 0, width: 10, height: 10 });
+            const b = makeElement('rectangle', { id: 'b', x: 50, y: 50, width: 10, height: 10 });
+            const c = makeElement('rectangle', { id: 'c', x: 100, y: 100, width: 10, height: 10 });
+            for (const el of [a, b, c]) store().addElement(el);
+            store().setSelectedIds(['a', 'b', 'c']);
+            store().createCanvas('board_2');
+            const secondId = store().activeCanvasId!;
+            for (const el of [a, b, c]) store().addElement({ ...el });
+            store().setSelectedIds(['a', 'b', 'c']);
+            const inactive = () => store().canvases.find(cv => cv.canvasId === firstId)!;
+            return { inactive, secondId, original: inactive() };
+        };
+
+        it('leaves the inactive canvas untouched by every element action', () => {
+            const { inactive, original } = setup();
+
+            store().updateElement('a', { x: 5 });
+            store().deleteElement('c');
+            store().deleteElements(['b']);
+            store().bringToFront(['a']);
+            store().sendToBack(['a']);
+            store().bringForward(['a']);
+            store().sendBackward(['a']);
+            store().groupElements(['a', 'b']);
+            store().ungroupElements('missing');
+            store().reorderElement('a', 0);
+
+            expect(inactive()).toBe(original);
+        });
+
+        it('leaves the inactive canvas untouched by align and distribute', () => {
+            const { inactive, original, secondId } = setup();
+
+            store().alignElements('left');
+            store().distributeElements('horizontal');
+
+            expect(inactive()).toBe(original);
+            const active = store().canvases.find(cv => cv.canvasId === secondId)!;
+            expect(active.elements.map(e => e.x)).toEqual([0, 0, 0]);
+        });
+
+        it('keeps unselected elements as the same objects when aligning', () => {
+            store().createCanvas('board_1');
+            const els = [
+                makeElement('rectangle', { id: 'a', x: 0, width: 10, height: 10 }),
+                makeElement('rectangle', { id: 'b', x: 50, width: 10, height: 10 }),
+                makeElement('rectangle', { id: 'c', x: 70, width: 10, height: 10 }),
+            ];
+            for (const el of els) store().addElement(el);
+            store().setSelectedIds(['a', 'b']);
+            const untouched = canvas().elements[2];
+
+            store().alignElements('left');
+
+            expect(canvas().elements[2]).toBe(untouched);
+            expect(canvas().elements.map(e => e.x)).toEqual([0, 0, 70]);
+        });
+    });
+
     describe('selection, history and view', () => {
         it('manages the selection', () => {
             seed(makeElement('rectangle', { id: 'a' }), makeElement('rectangle', { id: 'b' }));
@@ -255,6 +337,36 @@ describe('canvas store', () => {
             store().undo();
             store().undo(); // nothing left
             expect(ids()).toEqual([]);
+        });
+
+        it('undoes and redoes only the active canvas when there are two', () => {
+            store().createCanvas('board_1');
+            const firstId = store().activeCanvasId!;
+            store().addElement(makeElement('rectangle', { id: 'x' }));
+            store().createCanvas('board_2');
+            store().addElement(makeElement('rectangle', { id: 'a' }));
+            const other = () => store().canvases.find(c => c.canvasId === firstId)!;
+            const before = other();
+
+            store().undo();
+            expect(ids()).toEqual([]);
+            store().redo();
+            expect(ids()).toEqual(['a']);
+            expect(other()).toBe(before);
+        });
+
+        it('does nothing on redo with an empty future and reports no history for a fresh canvas', () => {
+            store().createCanvas('board_1');
+            expect(store().canUndo()).toBe(false);
+            expect(store().canRedo()).toBe(false);
+
+            store().addElement(makeElement('rectangle', { id: 'a' }));
+            const before = store().canvases;
+            store().redo();
+
+            expect(store().canvases).toBe(before);
+            expect(ids()).toEqual(['a']);
+            expect(store().canRedo()).toBe(false);
         });
 
         it('ignores history for a missing canvas and caps it at 50 states', () => {
