@@ -821,7 +821,8 @@ describe('TabNotesDialog: the AI steps while the run is going', () => {
     });
 });
 
-describe('TabNotesDialog: editing the Combined review', () => {
+// userEvent typing is slow under coverage instrumentation, so give these tests more than the 5 s default
+describe('TabNotesDialog: editing the Combined review', { timeout: 20_000 }, () => {
     const GAMMA = 'https://gamma.test/g';
 
     const sourceAt = (ref: number, title: string, url: string, tabId: number): NoteSource => ({

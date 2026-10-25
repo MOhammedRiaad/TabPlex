@@ -176,7 +176,7 @@ describe('App', () => {
         expect(screen.queryByRole('dialog', { name: 'Replace your data with this file?' })).toBeNull();
         fireEvent.change(input, { target: { files: [] } }); // dialog cancelled: nothing happens
         Object.defineProperty(window, 'location', { value: realLocation, configurable: true });
-    });
+    }, 20_000); // mounts the whole app and waits for a reload scheduled 1.5 s after the toast
 
     it('opens at the Today view when the address is the root', async () => {
         window.location.hash = '#/';
