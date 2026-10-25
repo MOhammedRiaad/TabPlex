@@ -338,16 +338,16 @@ describe('organize store', () => {
             expect(state().proposal!.ungroupedTabIds).toEqual([2, 4]);
         });
 
-        it('sorts an ungrouped tab it does not know first', () => {
+        it('sorts ungrouped tabs it does not know before known ones', () => {
             useOrganizeStore.setState({
                 phase: 'preview',
                 tabs: organizable(6),
-                proposal: proposalOf([group([1, 2, 3])], [99]),
+                proposal: proposalOf([group([1, 2, 3])], [98, 99]),
             });
 
             actions().removeTab('g1', 2);
 
-            expect(state().proposal!.ungroupedTabIds).toEqual([99, 2]);
+            expect(state().proposal!.ungroupedTabIds).toEqual([98, 99, 2]);
         });
 
         it('keeps a group enabled, or disabled, when it still has enough tabs after a removal', () => {
