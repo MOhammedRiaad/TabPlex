@@ -18,6 +18,7 @@ import { useTimerStore } from '../../store/timerStore';
 import { BACKGROUND_TASKS_KEY } from '../taskContext';
 import * as db from '../storage';
 import { MAX_IMPORT_CHARS } from '../importValidation';
+import { TRACK_ALL_TABS_KEY } from '../tabTracking';
 import { makeFolder, makeTab, makeTask } from '../../test/factories';
 import { fakeChrome, respondToMessages } from '../../test/chromeMock';
 
@@ -294,10 +295,38 @@ describe('export / import', () => {
             const stored = await chrome.storage.local.get(null);
             expect(stored.canvases).toEqual([]);
             expect(stored).not.toHaveProperty('canvasSettings');
-            EXTENSION_SETTING_KEYS.forEach(key => expect(stored).not.toHaveProperty(key));
+            EXTENSION_SETTING_KEYS.filter(key => key !== TRACK_ALL_TABS_KEY).forEach(key =>
+                expect(stored).not.toHaveProperty(key)
+            );
             PAGE_SETTING_KEYS.forEach(key => expect(localStorage.getItem(key)).toBeNull());
             // No timer settings in the file: keep the current ones
             expect(useTimerStore.getState().settings.workDuration).toBe(50);
+        });
+
+        it.each([
+            ['off', false],
+            ['on', true],
+            ['missing', undefined],
+        ])('a file without the recording setting keeps it %s', async (_label, before) => {
+            await wipeEverything();
+            if (before !== undefined) await chrome.storage.local.set({ [TRACK_ALL_TABS_KEY]: before });
+            const old = { version: EXPORT_VERSION, timestamp: '', data: {}, settings: { extension: {}, page: {} } };
+            await importData(JSON.stringify(old));
+            const stored = await chrome.storage.local.get(null);
+            if (before === undefined) expect(stored).not.toHaveProperty(TRACK_ALL_TABS_KEY);
+            else expect(stored[TRACK_ALL_TABS_KEY]).toBe(before);
+        });
+
+        it('a file with the recording setting sets it', async () => {
+            await chrome.storage.local.set({ [TRACK_ALL_TABS_KEY]: false });
+            const file = {
+                version: EXPORT_VERSION,
+                timestamp: '',
+                data: {},
+                settings: { extension: { [TRACK_ALL_TABS_KEY]: true }, page: {} },
+            };
+            await importData(JSON.stringify(file));
+            expect((await chrome.storage.local.get(TRACK_ALL_TABS_KEY))[TRACK_ALL_TABS_KEY]).toBe(true);
         });
 
         it('a 1.0.0 import keeps the current canvases and settings', async () => {

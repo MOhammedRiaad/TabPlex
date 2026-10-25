@@ -113,7 +113,10 @@ function readPageSettings(): Record<string, string> {
     return page;
 }
 
-/** Restores the custom canvases and every listed setting: present in the file → set, missing → removed */
+/**
+ * Restores the custom canvases and every listed setting: present in the file → set, missing → removed. The one
+ * exception is the recording setting, which stays as it is when the file has none.
+ */
 async function restoreCanvasesAndSettings(parsed: ExportData): Promise<void> {
     const { canvases = [], canvasSettings = null } = parsed.data ?? {};
     const extension = parsed.settings?.extension ?? {};
@@ -125,7 +128,8 @@ async function restoreCanvasesAndSettings(parsed: ExportData): Promise<void> {
     else toRemove.push(CANVAS_SETTINGS_KEY);
     for (const key of EXTENSION_SETTING_KEYS) {
         if (extension[key] !== undefined) toSet[key] = extension[key];
-        else toRemove.push(key);
+        // Files from v1.3.0 and earlier have no recording setting: removing it would turn recording back on
+        else if (key !== TRACK_ALL_TABS_KEY) toRemove.push(key);
     }
     await chrome.storage.local.set(toSet);
     await chrome.storage.local.remove(toRemove);
