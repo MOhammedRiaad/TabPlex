@@ -4,7 +4,7 @@ import { useBoardStore } from '../../../store/boardStore';
 import MarkdownEditor from '../../ui/components/MarkdownEditor';
 import TagInput, { TagList } from '../../ui/components/TagInput';
 import { collectTags } from '../../../utils/tags';
-import { escapeHtml, renderMarkdownLinks } from '../../../utils/markdown';
+import { escapeHtml, transformKeepingLinks } from '../../../utils/markdown';
 import NoteAiMenu from './NoteAiMenu';
 import NoteAiDialog from './NoteAiDialog';
 import { ActionItem, NoteAiAction, NoteHelper, insertSummary, startNoteHelper } from '../utils/aiNoteHelpers';
@@ -18,31 +18,31 @@ interface NoteCardProps {
 
 // Simple markdown parser for display
 export const parseMarkdownToHtml = (text: string): string => {
-    const html = escapeHtml(text)
-        // Code blocks
-        .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-        // Inline code
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        // Checkboxes and bullets first, so a leading "*" or "-" is not read as emphasis or left as raw text
-        .replace(/^[ \t]*(?:[-*+] )?\[x\] (.+)$/gm, '☑ $1')
-        .replace(/^[ \t]*(?:[-*+] )?\[ \] (.+)$/gm, '☐ $1')
-        .replace(/^[ \t]*[-*+] (.+)$/gm, '• $1')
-        // Headers
-        .replace(/^### (.+)$/gm, '<strong>$1</strong>')
-        .replace(/^## (.+)$/gm, '<strong>$1</strong>')
-        .replace(/^# (.+)$/gm, '<strong>$1</strong>')
-        // Bold and italic
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/__(.+?)__/g, '<strong>$1</strong>')
-        .replace(/_(.+?)_/g, '<em>$1</em>')
-        // Strikethrough
-        .replace(/~~(.+?)~~/g, '<del>$1</del>')
-        // Line breaks (simple)
-        .replace(/\n/g, '<br />');
-
-    // Links: only web and mail URLs
-    return renderMarkdownLinks(html);
+    // Links are cut out before the rules below and put back after them (links: only web and mail URLs)
+    return transformKeepingLinks(escapeHtml(text), escaped =>
+        escaped
+            // Code blocks
+            .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+            // Inline code
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            // Checkboxes and bullets first, so a leading "*" or "-" is not read as emphasis or left as raw text
+            .replace(/^[ \t]*(?:[-*+] )?\[x\] (.+)$/gm, '☑ $1')
+            .replace(/^[ \t]*(?:[-*+] )?\[ \] (.+)$/gm, '☐ $1')
+            .replace(/^[ \t]*[-*+] (.+)$/gm, '• $1')
+            // Headers
+            .replace(/^### (.+)$/gm, '<strong>$1</strong>')
+            .replace(/^## (.+)$/gm, '<strong>$1</strong>')
+            .replace(/^# (.+)$/gm, '<strong>$1</strong>')
+            // Bold and italic
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/__(.+?)__/g, '<strong>$1</strong>')
+            .replace(/_(.+?)_/g, '<em>$1</em>')
+            // Strikethrough
+            .replace(/~~(.+?)~~/g, '<del>$1</del>')
+            // Line breaks (simple)
+            .replace(/\n/g, '<br />')
+    );
 };
 
 const NoteCard: React.FC<NoteCardProps> = ({ note }) => {

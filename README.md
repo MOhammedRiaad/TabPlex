@@ -27,7 +27,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 - **Board & Folder System**: Organize tabs into visual boards with customizable folders
 - **Several boards**: Keep separate boards (work, home, a side project); switch, create, rename or delete them from the Boards header. Deleting a board moves its folders to another board or deletes them, and TabPlex remembers the board you last used
 - **Drag & Drop**: Intuitive drag-and-drop interface for moving tabs between folders
-- **Smart Tab Management**: Automatically capture and organize browser tabs
+- **Smart Tab Management**: Capture and organize browser tabs. Recording every page you open is opt-in (Settings → Tab tracking & storage)
 - **Local-First Storage**: All data stored locally with no cloud dependency
 
 ### ✅ Task Management
@@ -235,7 +235,7 @@ npm run preview      # Preview production build
 
 1. **Create Your First Board**: Click "Add Board" to create a workspace
 2. **Add Folders**: Organize your tabs into folders by topic or project
-3. **Capture Tabs**: Manually add current tabs or let TabPlex auto-capture
+3. **Capture Tabs**: Manually add current tabs, or turn on "Record every page I open" in Settings
 4. **Create Tasks**: Use the Today view to manage your daily tasks
 5. **Track Focus**: Use the Pomodoro timer to track focus sessions
 
@@ -320,6 +320,7 @@ TabPlex requests the following Chrome permissions:
 - **`sessions`**: To restore recently closed tabs and windows
 - **`bookmarks`**: To manage and organize your browser bookmarks (read/write access)
 - **`favicon`**: To show website icons from Chrome's own local icon cache (no third-party icon service)
+- **`alarms`**: To run a daily cleanup of old closed tabs in TabPlex's own list (nothing is read or sent)
 - **`scripting`** and **optional site access**: To read the text of the pages you pick in "Summarize open tabs". Nothing is granted at install: your browser asks, naming only the sites of the tabs you picked, and you can remove access in Settings → On-device AI → Page access
 
 **Important**: These permissions are used solely for the extension's functionality. We never transmit your data anywhere.

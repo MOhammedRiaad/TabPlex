@@ -1,22 +1,14 @@
 import { ExtensionMessage, Board, Folder, Tab, Task, Note, Session, HistoryItem } from '../types';
 import { STORAGE_KEYS } from './storage';
+import { broadcast, respondWith, safeSendResponse } from './respond';
 import { ACTIVE_CONTEXT_KEY } from '../utils/taskContext';
+import { describeErrors, sanitizeCollections } from '../utils/importValidation';
 
 const COLLECTIONS = ['boards', 'folders', 'tabs', 'tasks', 'notes', 'sessions', 'history'] as const;
 
-// Helper function to safely send response
-// Helper function to safely send response
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function safeSendResponse(_sendResponse: (response: any) => void, response: unknown) {
-    try {
-        _sendResponse(response);
-    } catch (error) {
-        // Response already sent or channel closed
-        console.warn('Failed to send response:', error);
-    }
-}
+/** A whole export or import moves every collection: give it far longer than a single-item write */
+const BULK_TIMEOUT_MS = 15_000;
 
-// Handle data-related messages
 interface ImportPayload {
     boards: Board[];
     folders: Folder[];
@@ -33,92 +25,55 @@ async function clearActiveContextIfGone(tasks: Task[]): Promise<void> {
     if (activeId && !tasks.some(task => task.id === activeId)) await chrome.storage.local.remove(ACTIVE_CONTEXT_KEY);
 }
 
-export function handleDataMessage(message: ExtensionMessage, _sendResponse: (response: unknown) => void) {
+// Handle data-related messages
+export function handleDataMessage(message: ExtensionMessage, sendResponse: (response: unknown) => void) {
     switch (message.type) {
         case 'EXPORT_ALL_DATA':
-            // Export all data from storage
-
-            let exportAllResponseSent = false;
-
             // Read every collection by its real key (history lives under 'history_items', not
             // 'tabboard_history', so exports used to drop it)
-            Promise.all(
-                COLLECTIONS.map(name =>
-                    chrome.storage.local.get([STORAGE_KEYS[name]]).then(result => result[STORAGE_KEYS[name]] || [])
-                )
-            )
-                .then(([boards, folders, tabs, tasks, notes, sessions, history]) => {
-                    if (!exportAllResponseSent) {
-                        exportAllResponseSent = true;
-                        safeSendResponse(_sendResponse, {
-                            boards,
-                            folders,
-                            tabs,
-                            tasks,
-                            notes,
-                            sessions,
-                            history,
-                        });
-                    }
-                })
-                .catch(error => {
-                    if (!exportAllResponseSent) {
-                        exportAllResponseSent = true;
-                        safeSendResponse(_sendResponse, { error: error.message });
-                    }
-                });
-
-            setTimeout(() => {
-                if (!exportAllResponseSent) {
-                    exportAllResponseSent = true;
-                    safeSendResponse(_sendResponse, { error: 'Export timed out' });
-                }
-            }, 2000);
-
-            return true;
-
-        case 'IMPORT_ALL_DATA':
-            // Import all data to storage
-            if (message.payload) {
-                let importAllResponseSent = false;
-
-                // Save all data to storage
-                const payload = message.payload as ImportPayload;
-                // Missing collections are written as empty lists
+            return respondWith(
                 Promise.all(
-                    COLLECTIONS.map(name => chrome.storage.local.set({ [STORAGE_KEYS[name]]: payload[name] ?? [] }))
-                )
-                    .then(() => clearActiveContextIfGone(payload.tasks ?? []))
-                    .then(() => {
-                        // Notify the UI about the import completion
-                        chrome.runtime
-                            .sendMessage({
-                                type: 'STORAGE_DATA_IMPORTED',
-                            })
-                            .catch(() => {}); // Suppress errors if message listener is unavailable
+                    COLLECTIONS.map(name =>
+                        chrome.storage.local.get([STORAGE_KEYS[name]]).then(result => result[STORAGE_KEYS[name]] || [])
+                    )
+                ),
+                sendResponse,
+                {
+                    timeoutMs: BULK_TIMEOUT_MS,
+                    timeoutError: 'Export timed out',
+                    map: ([boards, folders, tabs, tasks, notes, sessions, history]) => ({
+                        boards,
+                        folders,
+                        tabs,
+                        tasks,
+                        notes,
+                        sessions,
+                        history,
+                    }),
+                }
+            );
 
-                        if (!importAllResponseSent) {
-                            importAllResponseSent = true;
-                            safeSendResponse(_sendResponse, { success: true });
-                        }
-                    })
-                    .catch(error => {
-                        if (!importAllResponseSent) {
-                            importAllResponseSent = true;
-                            safeSendResponse(_sendResponse, { error: error.message });
-                        }
-                    });
+        case 'IMPORT_ALL_DATA': {
+            if (!message.payload) break;
 
-                setTimeout(() => {
-                    if (!importAllResponseSent) {
-                        importAllResponseSent = true;
-                        safeSendResponse(_sendResponse, { error: 'Import timed out' });
-                    }
-                }, 2000);
-
-                return true;
+            // The payload crosses a message boundary: check and clean it again, then save every collection
+            // in one call so a failure can't leave the collections half replaced
+            const checked = sanitizeCollections(message.payload);
+            if (!checked.ok) {
+                safeSendResponse(sendResponse, { error: `Invalid import data: ${describeErrors(checked.errors)}` });
+                return false;
             }
-            break;
+            const payload = checked.value.collections as ImportPayload;
+            // Missing collections are written as empty lists
+            return respondWith(
+                chrome.storage.local
+                    .set(Object.fromEntries(COLLECTIONS.map(name => [STORAGE_KEYS[name], payload[name] ?? []])))
+                    .then(() => clearActiveContextIfGone(payload.tasks ?? []))
+                    .then(() => broadcast('STORAGE_DATA_IMPORTED')), // The UI reloads
+                sendResponse,
+                { timeoutMs: BULK_TIMEOUT_MS, timeoutError: 'Import timed out' }
+            );
+        }
     }
 
     return false;

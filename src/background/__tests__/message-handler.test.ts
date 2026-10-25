@@ -27,6 +27,42 @@ describe('message-handler', () => {
     });
     afterEach(() => vi.useRealTimers());
 
+    it('OPEN_TABBOARD opens the app and answers, and reports a failure', async () => {
+        const { keepOpen, sendResponse } = dispatch({ type: 'OPEN_TABBOARD' });
+        expect(keepOpen).toBe(true);
+        await flush();
+        expect(fakeChrome().tabs.create).toHaveBeenCalledWith({ url: `${EXTENSION_BASE}index.html` });
+        expect(sendResponse).toHaveBeenCalledWith({ success: true });
+
+        fakeChrome().tabs.query.mockRejectedValueOnce(new Error('query failed'));
+        fakeChrome().tabs.create.mockRejectedValueOnce(new Error('cannot open'));
+        const failed = dispatch({ type: 'OPEN_TABBOARD' });
+        await flush();
+        expect(failed.sendResponse).toHaveBeenCalledWith({ error: 'cannot open' });
+    });
+
+    it('answers a malformed message with an error and never throws', () => {
+        for (const message of [undefined, null, {}, { type: 5 }]) {
+            const sendResponse = vi.fn();
+            const results = mock.browser.events.runtimeMessage.emit(message as any, {}, sendResponse);
+            expect(results[0]).toBe(false);
+            expect(sendResponse).toHaveBeenCalledWith({ error: 'Malformed message' });
+        }
+    });
+
+    it('ignores messages from other extensions and does not log payloads', () => {
+        const sendResponse = vi.fn();
+        const results = mock.browser.events.runtimeMessage.emit(
+            { type: 'DELETE_BOARD', payload: { id: 'b' } },
+            { id: 'someone-else' },
+            sendResponse
+        );
+        expect(results[0]).toBe(false);
+        expect(sendResponse).not.toHaveBeenCalled();
+        dispatch({ type: 'GET_HISTORY', payload: { note: 'secret' } });
+        expect(JSON.stringify(vi.mocked(console.log).mock.calls)).not.toContain('secret');
+    });
+
     it.each([
         ['UPDATE_TAB', 'tabboard_tabs', 'STORAGE_TAB_UPDATED', makeTab({ id: 't1', title: 'Old' }), { title: 'New' }],
         ['UPDATE_FOLDER', 'tabboard_folders', 'STORAGE_FOLDER_UPDATED', makeFolder({ id: 't1' }), { name: 'New' }],
@@ -98,7 +134,7 @@ describe('message-handler', () => {
         expect(missing.sendResponse).toHaveBeenCalledWith({ success: true });
     });
 
-    it('reports MOVE_TAB errors and falls back after a timeout', async () => {
+    it('reports MOVE_TAB errors and reports a timeout as an error', async () => {
         fakeChrome().storage.local.get.mockRejectedValueOnce(new Error('read'));
         const failed = dispatch({ type: 'MOVE_TAB', payload: { tabId: 't1', newFolderId: 'f2' } });
         await flush();
@@ -107,7 +143,7 @@ describe('message-handler', () => {
         fakeChrome().storage.local.get.mockReturnValueOnce(new Promise(() => undefined));
         const slow = dispatch({ type: 'MOVE_TAB', payload: { tabId: 't1', newFolderId: 'f2' } });
         await vi.advanceTimersByTimeAsync(1000);
-        expect(slow.sendResponse).toHaveBeenCalledWith({ success: true });
+        expect(slow.sendResponse).toHaveBeenCalledWith({ error: 'Timed out: the change may not have been saved' });
     });
 
     it('adds and deletes tabs', async () => {
@@ -126,7 +162,7 @@ describe('message-handler', () => {
         expect(dispatch({ type: 'DELETE_TAB', payload: {} }).keepOpen).toBe(false);
     });
 
-    it.each(['ADD_TAB', 'DELETE_TAB'])('%s reports errors and times out with success', async type => {
+    it.each(['ADD_TAB', 'DELETE_TAB'])('%s reports errors and reports a timeout as an error', async type => {
         const payload = type === 'ADD_TAB' ? makeTab() : { id: 'x' };
         fakeChrome().storage.local.get.mockRejectedValueOnce(new Error('nope'));
         const failed = dispatch({ type, payload });
@@ -138,7 +174,7 @@ describe('message-handler', () => {
         fakeChrome().storage.local.get.mockReturnValueOnce(new Promise(() => undefined));
         const slow = dispatch({ type, payload });
         await vi.advanceTimersByTimeAsync(1000);
-        expect(slow.sendResponse).toHaveBeenCalledWith({ success: true });
+        expect(slow.sendResponse).toHaveBeenCalledWith({ error: 'Timed out: the change may not have been saved' });
     });
 
     it('returns information about the active tab', async () => {
@@ -211,6 +247,20 @@ describe('message-handler', () => {
 
         expect(dispatch({ type: 'ADD_BOARD' }).keepOpen).toBe(false);
         expect(dispatch({ type: 'DELETE_BOARD', payload: {} }).keepOpen).toBe(false);
+    });
+
+    it('announces a board as new only once when the same ADD_BOARD arrives twice at the same time', async () => {
+        const board = { id: 'twice', name: 'Work', createdAt: '', updatedAt: '' };
+        const first = dispatch({ type: 'ADD_BOARD', payload: board });
+        const second = dispatch({ type: 'ADD_BOARD', payload: board });
+        await flush();
+        expect(first.sendResponse).toHaveBeenCalledWith({ success: true });
+        expect(second.sendResponse).toHaveBeenCalledWith({ success: true });
+        const added = fakeChrome().runtime.sendMessage.mock.calls.filter(
+            (c: any[]) => c[0].type === 'STORAGE_BOARD_ADDED'
+        );
+        expect(added).toHaveLength(1);
+        expect(store().tabboard_boards).toHaveLength(1);
     });
 
     it.each(['ADD_BOARD', 'DELETE_BOARD'])('%s reports storage errors', async type => {

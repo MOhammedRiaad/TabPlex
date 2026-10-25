@@ -1,24 +1,13 @@
-import { addTab, updateTab, getAllTabs } from './storage';
-
-// Reimport the interfaces to avoid conflicts
-interface Tab {
-    id: string;
-    title: string;
-    url: string;
-    favicon?: string;
-    folderId: string;
-    tabId: number | null;
-    lastAccessed: string;
-    status: 'open' | 'suspended' | 'closed';
-    createdAt: string;
-}
+import { addTab, updateTab, getAllTabs, getTabByBrowserId } from './storage';
+import { pruneTabs } from './tab-retention';
+import type { Tab } from '../types';
+import { isTrackingEnabled, MAX_TRACKED_TABS } from '../utils/tabTracking';
 
 // Listen for tab updates (creation, updates, removal)
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     if (changeInfo.status === 'complete' && tab.url) {
         // Check if this tab is already in our storage
-        const allTabs = await getAllTabs();
-        const existingTab = allTabs.find(t => t.tabId === tabId);
+        const existingTab = await getTabByBrowserId(tabId);
 
         if (existingTab) {
             // Update existing tab
@@ -30,8 +19,8 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
                 lastAccessed: new Date().toISOString(),
                 status: 'open',
             });
-        } else {
-            // Add new tab to storage if it's not already tracked
+        } else if (await isTrackingEnabled()) {
+            // Add new tab to storage if it's not already tracked (only when the user lets TabPlex record every page)
             // For now, we'll add it to the default folder
             await addTab({
                 id: `tab_${Date.now()}_${tabId}`,
@@ -44,14 +33,15 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
                 status: 'open',
                 createdAt: new Date().toISOString(),
             });
+            // The list has a size limit: drop the oldest closed tabs now rather than wait for the daily cleanup
+            if ((await getAllTabs()).length > MAX_TRACKED_TABS) await pruneTabs();
         }
     }
 });
 
 // Listen for tab removal
 chrome.tabs.onRemoved.addListener(async tabId => {
-    const allTabs = await getAllTabs();
-    const tabToRemove = allTabs.find(t => t.tabId === tabId);
+    const tabToRemove = await getTabByBrowserId(tabId);
 
     if (tabToRemove) {
         await updateTab({
@@ -74,13 +64,15 @@ export async function handleMoveTab(payload: { tabId: string; newFolderId: strin
         });
 
         // Notify the side panel about the change
-        chrome.runtime.sendMessage({
-            type: 'STORAGE_TAB_UPDATED',
-            payload: {
-                ...tabToMove,
-                folderId: payload.newFolderId,
-            },
-        });
+        chrome.runtime
+            .sendMessage({
+                type: 'STORAGE_TAB_UPDATED',
+                payload: {
+                    ...tabToMove,
+                    folderId: payload.newFolderId,
+                },
+            })
+            .catch(() => {}); // No listener open
     }
 }
 
@@ -123,10 +115,12 @@ export async function createTabInFolder(payload: { url: string; folderId: string
             await addTab(newTab);
 
             // Notify the side panel about the new tab
-            chrome.runtime.sendMessage({
-                type: 'STORAGE_TAB_ADDED',
-                payload: newTab,
-            });
+            chrome.runtime
+                .sendMessage({
+                    type: 'STORAGE_TAB_ADDED',
+                    payload: newTab,
+                })
+                .catch(() => {}); // No listener open
         }
     });
 }

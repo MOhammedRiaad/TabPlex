@@ -6,6 +6,8 @@ import { BOARD_STYLE_KEY } from '../features/boards/switcher/boardStyle';
 import { DISPLAY_NAME_KEY } from '../features/settings/utils/displayName';
 import { THEME_STORAGE_KEY } from '../hooks/useTheme';
 import { TimerSettings, useTimerStore } from '../store/timerStore';
+import { TRACK_ALL_TABS_KEY } from './tabTracking';
+import { MAX_IMPORT_CHARS, describeErrors, sanitizeCollections, type ImportCollections } from './importValidation';
 import { PARK_RESUME_SETTINGS_KEY, reconcileTasksWithBackground } from './taskContext';
 import { SUGGEST_DISMISSED_KEY } from './taskSuggest';
 import {
@@ -41,6 +43,7 @@ export const EXTENSION_SETTING_KEYS: string[] = [
     AI_SETTINGS_KEY,
     BOARD_STYLE_KEY,
     SUGGEST_DISMISSED_KEY,
+    TRACK_ALL_TABS_KEY,
 ];
 
 /**
@@ -183,46 +186,129 @@ export const exportData = async (): Promise<string> => {
     }
 };
 
+/** chrome.storage.local key holding the data as it was just before the last import (restorable if the import fails) */
+export const IMPORT_BACKUP_KEY = 'tabplex_import_backup';
+/** When that backup was taken (ISO), so Settings can show it without parsing the whole backup */
+export const IMPORT_BACKUP_AT_KEY = 'tabplex_import_backup_at';
+
+/** Writes a checked export into IndexedDB, the settings and the background. Does not validate: see importData. */
+async function applyImport(parsedData: ExportData): Promise<void> {
+    // Clear existing data in IndexedDB
+    await clearAllData();
+
+    // Older or hand-edited exports may omit collections; treat them as empty
+    const { boards = [], folders = [], tabs = [], tasks = [], notes = [], sessions = [] } = parsedData.data ?? {};
+
+    // Import data into IndexedDB
+    await Promise.all([
+        ...boards.map(b => addBoard(b)),
+        ...folders.map(f => addFolder(f)),
+        ...tabs.map(t => addTab(t)),
+        ...tasks.map(t => addTask(t)),
+        ...notes.map(n => addNote(n)),
+        ...sessions.map(s => addSession(s)),
+    ]);
+
+    // 1.0.0 files have no canvases or settings: keep the current ones then
+    if (parsedData.version !== LEGACY_VERSION) await restoreCanvasesAndSettings(parsedData);
+
+    // Replace the background's copy too. Otherwise, on reload, useStorageSync merges tasks with the
+    // background's newer pre-import versions (undoing the restore), and Park & Resume keeps acting on
+    // the old data. The background then broadcasts STORAGE_DATA_IMPORTED so other TabPlex tabs reload.
+    // Exports made before history was included carry an empty list: keep the current history then.
+    const history = parsedData.data?.history?.length ? parsedData.data.history : await getBackgroundHistory();
+    markImportInThisTab(true);
+    try {
+        const response = (await chrome.runtime.sendMessage({
+            type: 'IMPORT_ALL_DATA',
+            payload: { boards, folders, tabs, tasks, notes, sessions, history },
+        })) as { error?: string } | undefined;
+        if (response?.error) throw new Error(`The background could not import the data: ${response.error}`);
+    } catch (error) {
+        markImportInThisTab(false);
+        throw error;
+    }
+}
+
+/** What a file holds and what was repaired in it, for the confirmation shown before an import */
+export interface ImportSummary {
+    /** Items per kind (only kinds that have any) */
+    counts: Partial<Record<keyof ImportCollections | 'canvases', number>>;
+    /** Repairs made while reading the file, e.g. addresses that were emptied for safety */
+    warnings: string[];
+    /** When the file was exported, if it says */
+    exportedAt?: string;
+}
+
+/** Reads, checks and cleans an export file's text. Throws a readable error when it can't be imported. */
+function parseExportFile(jsonData: string): { parsedData: ExportData; summary: ImportSummary } {
+    if (jsonData.length > MAX_IMPORT_CHARS) throw new Error('The file is too large to import');
+
+    let raw: unknown;
+    try {
+        raw = JSON.parse(jsonData);
+    } catch {
+        throw new Error('The file is not valid JSON');
+    }
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+        throw new Error('The file is not a TabPlex export');
+    }
+    const file = raw as ExportData;
+
+    if (file.version !== EXPORT_VERSION && file.version !== LEGACY_VERSION) {
+        throw new Error(`Unsupported export version: ${file.version}`);
+    }
+
+    const checked = sanitizeCollections(file.data);
+    if (!checked.ok) throw new Error(`The file is damaged: ${describeErrors(checked.errors)}`);
+    const { collections, canvases, warnings } = checked.value;
+
+    const counts: ImportSummary['counts'] = {};
+    for (const [name, items] of Object.entries({ ...collections, canvases })) {
+        if (items.length > 0) counts[name as keyof ImportSummary['counts']] = items.length;
+    }
+
+    return {
+        parsedData: { ...file, data: { ...file.data, ...collections, canvases: canvases as CanvasState[] } },
+        summary: {
+            counts,
+            warnings,
+            exportedAt: typeof file.timestamp === 'string' && file.timestamp ? file.timestamp : undefined,
+        },
+    };
+}
+
+/** What importing this text would do, without changing anything. Throws what importData would throw. */
+export const previewImport = (jsonData: string): ImportSummary => parseExportFile(jsonData).summary;
+
+/**
+ * Replaces the data with a file's. The file is checked first (nothing is touched if it is malformed), the current data
+ * is kept as a backup, and if writing fails the backup is put back.
+ */
 export const importData = async (jsonData: string): Promise<void> => {
     try {
-        const parsedData = JSON.parse(jsonData) as ExportData;
+        const { parsedData, summary } = parseExportFile(jsonData);
+        if (summary.warnings.length > 0) console.warn('Import repaired some data:', summary.warnings);
 
-        if (parsedData.version !== EXPORT_VERSION && parsedData.version !== LEGACY_VERSION) {
-            throw new Error(`Unsupported export version: ${parsedData.version}`);
+        // Keep the current data so a failed import can be undone. The copy in storage is best effort (it may not fit).
+        const backup = await exportData();
+        try {
+            await chrome.storage.local.set({
+                [IMPORT_BACKUP_KEY]: backup,
+                [IMPORT_BACKUP_AT_KEY]: new Date().toISOString(),
+            });
+        } catch (error) {
+            console.warn('Could not store the import backup:', error);
         }
 
-        // Clear existing data in IndexedDB
-        await clearAllData();
-
-        // Older or hand-edited exports may omit collections; treat them as empty
-        const { boards = [], folders = [], tabs = [], tasks = [], notes = [], sessions = [] } = parsedData.data ?? {};
-
-        // Import data into IndexedDB
-        await Promise.all([
-            ...boards.map(b => addBoard(b)),
-            ...folders.map(f => addFolder(f)),
-            ...tabs.map(t => addTab(t)),
-            ...tasks.map(t => addTask(t)),
-            ...notes.map(n => addNote(n)),
-            ...sessions.map(s => addSession(s)),
-        ]);
-
-        // 1.0.0 files have no canvases or settings: keep the current ones then
-        if (parsedData.version !== LEGACY_VERSION) await restoreCanvasesAndSettings(parsedData);
-
-        // Replace the background's copy too. Otherwise, on reload, useStorageSync merges tasks with the
-        // background's newer pre-import versions (undoing the restore), and Park & Resume keeps acting on
-        // the old data. The background then broadcasts STORAGE_DATA_IMPORTED so other TabPlex tabs reload.
-        // Exports made before history was included carry an empty list: keep the current history then.
-        const history = parsedData.data?.history?.length ? parsedData.data.history : await getBackgroundHistory();
-        markImportInThisTab(true);
         try {
-            const response = (await chrome.runtime.sendMessage({
-                type: 'IMPORT_ALL_DATA',
-                payload: { boards, folders, tabs, tasks, notes, sessions, history },
-            })) as { error?: string } | undefined;
-            if (response?.error) throw new Error(`The background could not import the data: ${response.error}`);
+            await applyImport(parsedData);
         } catch (error) {
+            try {
+                await applyImport(JSON.parse(backup) as ExportData);
+            } catch (restoreError) {
+                console.error('Could not restore the data after a failed import:', restoreError);
+            }
             markImportInThisTab(false);
             throw error;
         }
@@ -242,24 +328,30 @@ export const downloadExportFile = async (): Promise<void> => {
     }
 };
 
-export const importFromFile = (file: File): Promise<void> => {
-    return new Promise((resolve, reject) => {
+/** The text of a file the user picked */
+export const readImportFile = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
         const reader = new FileReader();
-
-        reader.onload = async e => {
-            try {
-                const content = e.target?.result as string;
-                await importData(content);
-                resolve();
-            } catch (error) {
-                reject(error);
-            }
-        };
-
-        reader.onerror = () => {
-            reject(new Error('Failed to read file'));
-        };
-
+        reader.onload = e => resolve(e.target?.result as string);
+        reader.onerror = () => reject(new Error('Failed to read file'));
         reader.readAsText(file);
     });
+
+export const importFromFile = async (file: File): Promise<void> => importData(await readImportFile(file));
+
+/** When the data kept from before the last import was taken, or null when there is none */
+export const getImportBackupDate = async (): Promise<string | null> => {
+    const stored = await chrome.storage.local.get([IMPORT_BACKUP_KEY, IMPORT_BACKUP_AT_KEY]);
+    if (typeof stored[IMPORT_BACKUP_KEY] !== 'string') return null;
+    const at = stored[IMPORT_BACKUP_AT_KEY];
+    return typeof at === 'string' ? at : '';
+};
+
+/** Puts back the data kept from before the last import (checked like any import file). The backup stays. */
+export const restoreImportBackup = async (): Promise<void> => {
+    const stored = await chrome.storage.local.get([IMPORT_BACKUP_KEY]);
+    const backup = stored[IMPORT_BACKUP_KEY];
+    if (typeof backup !== 'string') throw new Error('There is no backup to restore');
+    const { parsedData } = parseExportFile(backup);
+    await applyImport(parsedData);
 };

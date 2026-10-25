@@ -118,11 +118,16 @@ TabPlex requests the following permissions to function:
     - **Usage**: Not granted at install. Your browser asks when you pick tabs for a summary, and names only those sites. Remove it any time in Settings → On-device AI → Page access, or in your browser's extension settings
     - **Data Access**: Only the sites you allowed, and only when you click Summarize or Make quick view
 
+11. **`alarms`**
+    - **Purpose**: Run a small cleanup once a day, even though the extension's background worker sleeps between uses
+    - **Usage**: Removes closed tabs TabPlex recorded more than 30 days ago and keeps the recorded list under 2,000 tabs
+    - **Data Access**: None. It only deletes old entries from TabPlex's own list on your device
+
 **Website access**: TabPlex has no site access when you install it, and it never reads, injects into or changes a page in the background. It reads a page only after you pick that tab in "Summarize open tabs" and your browser has granted access to that site. Otherwise it only sees tab titles and addresses through the `tabs` permission.
 
 ### How Permissions Are Used
 
-- **No Background Tracking**: TabPlex does not monitor your browsing
+- **No Background Tracking**: TabPlex does not monitor your browsing. New installs record only the tabs you put on a board or in a task. "Record every page I open" in Settings → Tab tracking & storage is off by default and keeps its list on your device
 - **Explicit Actions Only**: Data is only captured when you explicitly add tabs or import history
 - **No Analytics**: We do not track how you use the extension
 - **No Telemetry**: No usage statistics are collected

@@ -1,171 +1,58 @@
 import { getAllSessions, addSession, updateSession, deleteSession, getSession, getAllTabs } from './storage';
+import { respondWith } from './respond';
 import { ExtensionMessage, Session } from '../types';
 
-// Helper function to safely send response
-// Helper function to safely send response
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function safeSendResponse(_sendResponse: (response: any) => void, response: unknown) {
-    try {
-        _sendResponse(response);
-    } catch (error) {
-        // Response already sent or channel closed
-        console.warn('Failed to send response:', error);
-    }
-}
-
 // Handle session-related messages
-export function handleSessionMessage(message: ExtensionMessage, _sendResponse: (response: unknown) => void) {
+export function handleSessionMessage(message: ExtensionMessage, sendResponse: (response: unknown) => void) {
+    const id = (message.payload as { id?: string } | undefined)?.id;
+
     switch (message.type) {
         case 'GET_SESSIONS':
             // Return all sessions
-            // ... existing code ...
-            let sessionsResponseSent = false;
-
-            getAllSessions()
-                .then(sessions => {
-                    if (!sessionsResponseSent) {
-                        sessionsResponseSent = true;
-                        safeSendResponse(_sendResponse, sessions);
-                    }
-                })
-                .catch((error: unknown) => {
-                    if (!sessionsResponseSent) {
-                        sessionsResponseSent = true;
-                        safeSendResponse(_sendResponse, { error: (error as Error).message });
-                    }
-                });
-
-            setTimeout(() => {
-                if (!sessionsResponseSent) {
-                    sessionsResponseSent = true;
-                }
-            }, 1000);
-
-            return true;
+            return respondWith(getAllSessions(), sendResponse, {
+                timeoutMs: 1000,
+                timeoutError: 'Timed out',
+                map: sessions => sessions,
+            });
 
         case 'ADD_SESSION':
-            // Add a session
             if (message.payload) {
-                let addSessionResponseSent = false;
-
-                addSession(message.payload as Session)
-                    .then(() => {
-                        if (!addSessionResponseSent) {
-                            addSessionResponseSent = true;
-                            safeSendResponse(_sendResponse, { success: true });
-                        }
-                    })
-                    .catch((error: unknown) => {
-                        if (!addSessionResponseSent) {
-                            addSessionResponseSent = true;
-                            safeSendResponse(_sendResponse, { error: (error as Error).message });
-                        }
-                    });
-
-                setTimeout(() => {
-                    if (!addSessionResponseSent) {
-                        addSessionResponseSent = true;
-                    }
-                }, 1000);
-
-                return true;
+                return respondWith(addSession(message.payload as Session), sendResponse, {
+                    timeoutMs: 1000,
+                    timeoutError: 'Timed out',
+                });
             }
             break;
 
         case 'UPDATE_SESSION':
-            // Update a session
             if (message.payload) {
-                let updateSessionResponseSent = false;
-
-                updateSession(message.payload as Session)
-                    .then(() => {
-                        if (!updateSessionResponseSent) {
-                            updateSessionResponseSent = true;
-                            safeSendResponse(_sendResponse, { success: true });
-                        }
-                    })
-                    .catch((error: unknown) => {
-                        if (!updateSessionResponseSent) {
-                            updateSessionResponseSent = true;
-                            safeSendResponse(_sendResponse, { error: (error as Error).message });
-                        }
-                    });
-
-                setTimeout(() => {
-                    if (!updateSessionResponseSent) {
-                        updateSessionResponseSent = true;
-                    }
-                }, 1000);
-
-                return true;
+                return respondWith(updateSession(message.payload as Session), sendResponse, {
+                    timeoutMs: 1000,
+                    timeoutError: 'Timed out',
+                });
             }
             break;
 
         case 'DELETE_SESSION':
-            // Delete a session
-            if (message.payload && (message.payload as { id: string }).id) {
-                let deleteSessionResponseSent = false;
-                const sessionId = (message.payload as { id: string }).id;
-
-                deleteSession(sessionId)
-                    .then(() => {
-                        if (!deleteSessionResponseSent) {
-                            deleteSessionResponseSent = true;
-                            safeSendResponse(_sendResponse, { success: true });
-                        }
-                    })
-                    .catch((error: unknown) => {
-                        if (!deleteSessionResponseSent) {
-                            deleteSessionResponseSent = true;
-                            safeSendResponse(_sendResponse, { error: (error as Error).message });
-                        }
-                    });
-
-                setTimeout(() => {
-                    if (!deleteSessionResponseSent) {
-                        deleteSessionResponseSent = true;
-                    }
-                }, 1000);
-
-                return true;
+            if (id) {
+                return respondWith(deleteSession(id), sendResponse, { timeoutMs: 1000, timeoutError: 'Timed out' });
             }
             break;
 
         case 'GET_SESSION':
             // Get a specific session
-            if (message.payload && (message.payload as { id: string }).id) {
-                let getSessionResponseSent = false;
-                const sessionId = (message.payload as { id: string }).id;
-
-                getSession(sessionId)
-                    .then(session => {
-                        if (!getSessionResponseSent) {
-                            getSessionResponseSent = true;
-                            safeSendResponse(_sendResponse, session);
-                        }
-                    })
-                    .catch((error: unknown) => {
-                        if (!getSessionResponseSent) {
-                            getSessionResponseSent = true;
-                            safeSendResponse(_sendResponse, { error: (error as Error).message });
-                        }
-                    });
-
-                setTimeout(() => {
-                    if (!getSessionResponseSent) {
-                        getSessionResponseSent = true;
-                    }
-                }, 1000);
-
-                return true;
+            if (id) {
+                return respondWith(getSession(id), sendResponse, {
+                    timeoutMs: 1000,
+                    timeoutError: 'Timed out',
+                    map: session => session,
+                });
             }
             break;
 
         case 'SESSION_INFERENCE_COMPLETE':
-            // Handle session inference completion
-            // This message is sent from the inferSessions function
-            // We don't need to send a response for this
-            console.log('Session inference completed:', message.payload);
+            // Sent from inferSessions; there is nothing to answer
+            console.log('Session inference completed');
             break;
     }
 
@@ -199,19 +86,27 @@ export async function inferSessions() {
             await addSession(session);
 
             // Notify the UI about the new session
-            chrome.runtime.sendMessage({
-                type: 'SESSION_INFERENCE_COMPLETE',
-                payload: session,
-            });
+            chrome.runtime
+                .sendMessage({
+                    type: 'SESSION_INFERENCE_COMPLETE',
+                    payload: session,
+                })
+                .catch(() => {}); // No TabPlex page open
         }
     } catch (error) {
         console.error('Error inferring sessions:', error);
     }
 }
 
-// Set up automatic session inference periodically
-// Check for session patterns every 30 minutes
-setInterval(inferSessions, 30 * 60 * 1000); // 30 minutes
+// Check for session patterns every 30 minutes. A setInterval would never get there: the service worker sleeps after
+// ~30 s. An alarm wakes it, and survives restarts, so it is only created when missing.
+export const INFER_SESSIONS_ALARM = 'tabplex-infer-sessions';
+chrome.alarms.get(INFER_SESSIONS_ALARM).then(existing => {
+    if (!existing) return chrome.alarms.create(INFER_SESSIONS_ALARM, { periodInMinutes: 30 });
+});
+chrome.alarms.onAlarm.addListener(alarm => {
+    if (alarm.name === INFER_SESSIONS_ALARM) void inferSessions();
+});
 
 // Also infer sessions when the extension starts
 chrome.runtime.onStartup.addListener(() => {

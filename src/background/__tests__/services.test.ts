@@ -76,7 +76,7 @@ const cases: Case[] = [
         after: () => expect(broadcasts()).toContain('STORAGE_TASK_ADDED'),
         api: storageGet,
         timeoutMs: 1000,
-        timeoutResponse: { success: true },
+        timeoutResponse: { error: 'Timed out: the change may not have been saved' },
     },
     {
         handler: 'task',
@@ -90,6 +90,7 @@ const cases: Case[] = [
         },
         api: storageGet,
         timeoutMs: 1000,
+        timeoutResponse: { error: 'Timed out: the change may not have been saved' },
     },
     {
         handler: 'note',
@@ -99,6 +100,7 @@ const cases: Case[] = [
         after: () => expect(broadcasts()).toContain('STORAGE_NOTE_ADDED'),
         api: storageGet,
         timeoutMs: 1000,
+        timeoutResponse: { error: 'Timed out: the change may not have been saved' },
     },
     {
         handler: 'note',
@@ -112,6 +114,7 @@ const cases: Case[] = [
         },
         api: storageGet,
         timeoutMs: 1000,
+        timeoutResponse: { error: 'Timed out: the change may not have been saved' },
     },
     {
         handler: 'note',
@@ -122,6 +125,7 @@ const cases: Case[] = [
         after: () => expect(broadcasts()).toContain('STORAGE_NOTE_DELETED'),
         api: storageGet,
         timeoutMs: 1000,
+        timeoutResponse: { error: 'Timed out: the change may not have been saved' },
     },
     {
         handler: 'folder',
@@ -131,7 +135,7 @@ const cases: Case[] = [
         after: () => expect(broadcasts()).toContain('STORAGE_FOLDER_ADDED'),
         api: storageGet,
         timeoutMs: 1000,
-        timeoutResponse: { success: true },
+        timeoutResponse: { error: 'Timed out: the change may not have been saved' },
     },
     {
         handler: 'folder',
@@ -158,6 +162,7 @@ const cases: Case[] = [
         expected: [makeSession()],
         api: storageGet,
         timeoutMs: 1000,
+        timeoutResponse: { error: 'Timed out' },
     },
     {
         handler: 'session',
@@ -166,6 +171,7 @@ const cases: Case[] = [
         expected: { success: true },
         api: storageGet,
         timeoutMs: 1000,
+        timeoutResponse: { error: 'Timed out' },
     },
     {
         handler: 'session',
@@ -175,6 +181,7 @@ const cases: Case[] = [
         after: () => expect((store().tabboard_sessions as any[])[0].name).toBe('Renamed'),
         api: storageGet,
         timeoutMs: 1000,
+        timeoutResponse: { error: 'Timed out' },
     },
     {
         handler: 'session',
@@ -183,6 +190,7 @@ const cases: Case[] = [
         expected: { success: true },
         api: storageGet,
         timeoutMs: 1000,
+        timeoutResponse: { error: 'Timed out' },
     },
     {
         handler: 'session',
@@ -192,6 +200,7 @@ const cases: Case[] = [
         expected: makeSession(),
         api: storageGet,
         timeoutMs: 1000,
+        timeoutResponse: { error: 'Timed out' },
     },
     {
         handler: 'history',
@@ -209,7 +218,7 @@ const cases: Case[] = [
         expected: { success: true },
         api: storageGet,
         timeoutMs: 1000,
-        timeoutResponse: { success: true },
+        timeoutResponse: { error: 'Timed out: the change may not have been saved' },
     },
     {
         handler: 'history',
@@ -220,7 +229,7 @@ const cases: Case[] = [
         after: () => expect((store().history_items as any[])[0]).toEqual({ id: 'h1', title: 'new', url: 'u' }),
         api: storageGet,
         timeoutMs: 1000,
-        timeoutResponse: { success: true },
+        timeoutResponse: { error: 'Timed out: the change may not have been saved' },
     },
     {
         handler: 'history',
@@ -229,7 +238,7 @@ const cases: Case[] = [
         expected: { success: true },
         api: storageGet,
         timeoutMs: 1000,
-        timeoutResponse: { success: true },
+        timeoutResponse: { error: 'Timed out: the change may not have been saved' },
     },
     {
         handler: 'history',
@@ -239,6 +248,7 @@ const cases: Case[] = [
         expected: { id: 'h1' },
         api: storageGet,
         timeoutMs: 1000,
+        timeoutResponse: { error: 'Timed out' },
     },
     {
         handler: 'history',
@@ -249,6 +259,7 @@ const cases: Case[] = [
         expected: [{ id: 'b1', url: 'https://x' }],
         api: () => chrome.history.search,
         timeoutMs: 3000,
+        timeoutResponse: { error: 'Timed out' },
     },
     {
         handler: 'bookmark',
@@ -278,6 +289,7 @@ const cases: Case[] = [
         expected: expect.objectContaining({ id: 'b', title: 'B', parentId: 'p' }),
         api: () => chrome.bookmarks.get,
         timeoutMs: 1000,
+        timeoutResponse: { error: 'Timed out' },
     },
     {
         handler: 'bookmark',
@@ -371,7 +383,7 @@ const cases: Case[] = [
             history: [{ id: 'h' }],
         },
         api: storageGet,
-        timeoutMs: 2000,
+        timeoutMs: 15000,
         timeoutResponse: { error: 'Export timed out' },
     },
     {
@@ -386,7 +398,7 @@ const cases: Case[] = [
             expect(broadcasts()).toContain('STORAGE_DATA_IMPORTED');
         },
         api: () => chrome.storage.local.set,
-        timeoutMs: 2000,
+        timeoutMs: 15000,
         timeoutResponse: { error: 'Import timed out' },
     },
 ];
@@ -589,6 +601,28 @@ describe('session inference', () => {
         vi.mocked(fakeChrome().storage.local.get).mockRejectedValueOnce(new Error('x'));
         await inferSessions();
         expect(console.error).toHaveBeenCalledWith('Error inferring sessions:', expect.any(Error));
+    });
+
+    it('runs on a 30 minute alarm that is created once, not on a timer the sleeping worker would lose', async () => {
+        const setIntervalSpy = vi.spyOn(globalThis, 'setInterval');
+        const { INFER_SESSIONS_ALARM } = await import('../session-service');
+        await flush();
+        expect(setIntervalSpy).not.toHaveBeenCalled();
+        expect(fakeChrome().alarms.create).toHaveBeenCalledWith(INFER_SESSIONS_ALARM, { periodInMinutes: 30 });
+
+        // A restarted worker finds the alarm and does not add another
+        vi.resetModules();
+        await import('../session-service');
+        await flush();
+        expect(fakeChrome().alarms.create).toHaveBeenCalledTimes(1);
+
+        await chrome.storage.local.set({ tabboard_tabs: [makeTab({ lastAccessed: new Date().toISOString() })] });
+        mock.browser.events.alarm.emit({ name: 'another-alarm' });
+        await flush();
+        expect(store().tabboard_sessions).toBeUndefined();
+        mock.browser.events.alarm.emit({ name: INFER_SESSIONS_ALARM });
+        await flush();
+        expect((store().tabboard_sessions as any[]).length).toBe(1);
     });
 
     it('runs 5 seconds after startup', async () => {

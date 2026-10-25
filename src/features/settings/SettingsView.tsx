@@ -7,6 +7,9 @@ import { useParkResumeSettings } from '../tasks/hooks/useParkResumeSettings';
 import AiSummarySetting from './components/AiSummarySetting';
 import AiFeaturesSetting from '../ai/components/AiFeaturesSetting';
 import BoardStyleSetting from './components/BoardStyleSetting';
+import TabTrackingSetting from './components/TabTrackingSetting';
+import StorageUsage from './components/StorageUsage';
+import RestoreBackupSetting from './components/RestoreBackupSetting';
 import { DISPLAY_NAME_KEY, DISPLAY_NAME_MAX, saveDisplayName } from './utils/displayName';
 import './SettingsView.css';
 
@@ -185,6 +188,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                             />
                         </div>
 
+                        <RestoreBackupSetting />
+
                         <div className="setting-item danger">
                             <div className="setting-info">
                                 <h4>Clear All Data</h4>
@@ -288,6 +293,18 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                     </h3>
                     <div className="section-content">
                         <AiFeaturesSetting />
+                    </div>
+                </section>
+
+                {/* Tab tracking and storage Section */}
+                <section className="settings-section">
+                    <h3 className="section-title">
+                        <span className="section-icon">🗂</span>
+                        Tab tracking &amp; storage
+                    </h3>
+                    <div className="section-content">
+                        <TabTrackingSetting />
+                        <StorageUsage />
                     </div>
                 </section>
 
