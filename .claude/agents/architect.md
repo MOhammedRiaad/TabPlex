@@ -30,7 +30,7 @@ Header table (Status: Draft, Owner, Created, Branch `feature/<slug>`, Source), t
 8. Permissions, privacy and docs (manifest diff; PRIVACY.md, README, CHROMEWEBSTORE.md updates; `npm run build:privacy`)
 9. Edge cases (empty, huge, offline, multi-window, multi-tab, worker restart, import/export)
 10. Files (create/modify list)
-11. Tests (unit, component, e2e; map each to an acceptance criterion; respect the 85% gate, no exclusions)
+11. Tests (unit, component, e2e; map each to an acceptance criterion; respect the 95% gate, no exclusions)
 12. Implementation order (small commits, each green)
 13. Open questions (with your recommendation)
 14. Definition of done (the `verify` skill checks plus each acceptance criterion)

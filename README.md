@@ -373,7 +373,7 @@ Contributions are welcome! Please follow these guidelines:
 
 ```bash
 npm test               # unit + component tests (Vitest)
-npm run test:coverage  # same, with the 85% coverage gate CI enforces
+npm run test:coverage  # same, with the 95% coverage gate CI enforces
 npm run build && npm run test:e2e   # end-to-end tests in Chromium (Playwright)
 ```
 

@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Verify a TabPlex change is complete — typecheck, zero-warning lint, prettier check, unit tests with the 85% coverage gate, production build and (for browser-facing changes) the Playwright E2E suite. Use before saying any code change is done, before committing, or when asked to "check", "validate" or "make sure it builds".
+description: Verify a TabPlex change is complete — typecheck, zero-warning lint, prettier check, unit tests with the 95% coverage gate, production build and (for browser-facing changes) the Playwright E2E suite. Use before saying any code change is done, before committing, or when asked to "check", "validate" or "make sure it builds".
 ---
 
 # Verify
@@ -12,7 +12,7 @@ npm run typecheck         # strict TS for src/ and e2e/ (noUnusedLocals/Paramete
 npm run lint              # eslint --max-warnings 0 — a single warning fails
 npm run format:check      # prettier
 npm run build:privacy -- --check  # landing-page/privacy.html matches PRIVACY.md
-npm run test:coverage     # vitest; fails below 85% statements/branches/functions/lines
+npm run test:coverage     # vitest; fails below 95% statements/branches/functions/lines
 npm run build             # tsc && vite build -> dist/
 npm run check:bundle      # every JS chunk under 500 kB except the lazy tldraw canvas
 npm run test:e2e          # only when tabs, groups, background or Park & Resume changed; needs the build
