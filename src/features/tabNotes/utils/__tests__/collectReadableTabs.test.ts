@@ -91,6 +91,7 @@ describe('collectReadableTabs', () => {
             tab({ id: 3, url: 'https://microsoftedge.microsoft.com/addons/detail/z' }),
             tab({ id: 4, url: 'https://arxiv.org/pdf/paper.PDF' }),
             tab({ id: 5, url: 'https://a.dev/asleep', discarded: true }),
+            tab({ id: 8, url: 'https://a.dev/frozen', frozen: true }),
             tab({ id: 6, url: 'https://a.dev/loading', status: 'loading' }),
             // Only the webstore path is blocked, not the rest of the host
             tab({ id: 7, url: 'https://chrome.google.com/about' })
@@ -103,6 +104,7 @@ describe('collectReadableTabs', () => {
         expect(byId[3]).toMatchObject({ readable: false, reason: 'blocked-site' });
         expect(byId[4]).toMatchObject({ readable: false, reason: 'pdf' });
         expect(byId[5]).toMatchObject({ readable: false, reason: 'asleep' });
+        expect(byId[8]).toMatchObject({ readable: false, reason: 'asleep' });
         expect(byId[6]).toMatchObject({ readable: false, reason: 'loading' });
         expect(byId[7]).toMatchObject({ readable: true, reason: undefined });
     });

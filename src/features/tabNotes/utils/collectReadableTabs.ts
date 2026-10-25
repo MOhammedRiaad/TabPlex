@@ -19,7 +19,7 @@ function isStorePage(url: string): boolean {
 function unreadableReason(tab: chrome.tabs.Tab, url: string): UnreadableReason | undefined {
     if (isStorePage(url)) return 'blocked-site';
     if (new URL(url).pathname.toLowerCase().endsWith('.pdf')) return 'pdf';
-    if (tab.discarded) return 'asleep';
+    if (tab.discarded || tab.frozen) return 'asleep';
     if (tab.status !== 'complete') return 'loading';
     return undefined;
 }

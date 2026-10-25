@@ -45,7 +45,16 @@ export interface PageSnapshot {
     truncated: boolean;
 }
 
-export type PageReadError = 'no-access' | 'closed' | 'changed' | 'pdf' | 'blocked' | 'empty' | 'timeout' | 'failed';
+export type PageReadError =
+    | 'no-access'
+    | 'closed'
+    | 'changed'
+    | 'pdf'
+    | 'blocked'
+    | 'empty'
+    | 'asleep'
+    | 'timeout'
+    | 'failed';
 
 export interface PageSection {
     /** '' for text before the first h2/h3 */
