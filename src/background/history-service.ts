@@ -68,7 +68,7 @@ export function handleHistoryMessage(message: ExtensionMessage, _sendResponse: (
                 setTimeout(() => {
                     if (!addHistoryResponseSent) {
                         addHistoryResponseSent = true;
-                        safeSendResponse(_sendResponse, { success: true }); // Fallback response
+                        safeSendResponse(_sendResponse, { error: 'Timed out: the change may not have been saved' });
                     }
                 }, 1000);
 
@@ -109,7 +109,7 @@ export function handleHistoryMessage(message: ExtensionMessage, _sendResponse: (
                 setTimeout(() => {
                     if (!updateHistoryResponseSent) {
                         updateHistoryResponseSent = true;
-                        safeSendResponse(_sendResponse, { success: true }); // Fallback response
+                        safeSendResponse(_sendResponse, { error: 'Timed out: the change may not have been saved' });
                     }
                 }, 1000);
 
@@ -140,7 +140,7 @@ export function handleHistoryMessage(message: ExtensionMessage, _sendResponse: (
                 setTimeout(() => {
                     if (!deleteHistoryResponseSent) {
                         deleteHistoryResponseSent = true;
-                        safeSendResponse(_sendResponse, { success: true }); // Fallback response
+                        safeSendResponse(_sendResponse, { error: 'Timed out: the change may not have been saved' });
                     }
                 }, 1000);
 
@@ -171,6 +171,7 @@ export function handleHistoryMessage(message: ExtensionMessage, _sendResponse: (
                 setTimeout(() => {
                     if (!getHistoryItemResponseSent) {
                         getHistoryItemResponseSent = true;
+                        safeSendResponse(_sendResponse, { error: 'Timed out' });
                     }
                 }, 1000);
 
@@ -205,6 +206,7 @@ export function handleHistoryMessage(message: ExtensionMessage, _sendResponse: (
             setTimeout(() => {
                 if (!browserHistoryResponseSent) {
                     browserHistoryResponseSent = true;
+                    safeSendResponse(_sendResponse, { error: 'Timed out' });
                 }
             }, 3000); // Longer timeout for history search
 

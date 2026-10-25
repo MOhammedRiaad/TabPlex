@@ -38,6 +38,7 @@ export function handleSessionMessage(message: ExtensionMessage, _sendResponse: (
             setTimeout(() => {
                 if (!sessionsResponseSent) {
                     sessionsResponseSent = true;
+                    safeSendResponse(_sendResponse, { error: 'Timed out' });
                 }
             }, 1000);
 
@@ -65,6 +66,7 @@ export function handleSessionMessage(message: ExtensionMessage, _sendResponse: (
                 setTimeout(() => {
                     if (!addSessionResponseSent) {
                         addSessionResponseSent = true;
+                        safeSendResponse(_sendResponse, { error: 'Timed out' });
                     }
                 }, 1000);
 
@@ -94,6 +96,7 @@ export function handleSessionMessage(message: ExtensionMessage, _sendResponse: (
                 setTimeout(() => {
                     if (!updateSessionResponseSent) {
                         updateSessionResponseSent = true;
+                        safeSendResponse(_sendResponse, { error: 'Timed out' });
                     }
                 }, 1000);
 
@@ -124,6 +127,7 @@ export function handleSessionMessage(message: ExtensionMessage, _sendResponse: (
                 setTimeout(() => {
                     if (!deleteSessionResponseSent) {
                         deleteSessionResponseSent = true;
+                        safeSendResponse(_sendResponse, { error: 'Timed out' });
                     }
                 }, 1000);
 
@@ -154,6 +158,7 @@ export function handleSessionMessage(message: ExtensionMessage, _sendResponse: (
                 setTimeout(() => {
                     if (!getSessionResponseSent) {
                         getSessionResponseSent = true;
+                        safeSendResponse(_sendResponse, { error: 'Timed out' });
                     }
                 }, 1000);
 

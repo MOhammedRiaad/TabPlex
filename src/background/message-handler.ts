@@ -10,6 +10,7 @@ import { CONTEXT_MESSAGE_TYPES, handleContextMessage } from './context-service';
 import { ORGANIZE_MESSAGE_TYPES, handleOrganizeMessage } from './organize-service';
 import { addBoard, addTab, deleteBoard, deleteTab, getBoard, updateBoard, updateFolder, updateTab } from './storage';
 import { handleUpdate } from './update-handler';
+import { openApp } from './open-app';
 import { ExtensionMessage, Tab, Board, Folder } from '../types';
 
 // Helper function to safely send response
@@ -64,7 +65,7 @@ chrome.runtime.onMessage.addListener(
                 setTimeout(() => {
                     if (!moveTabResponseSent) {
                         moveTabResponseSent = true;
-                        safeSendResponse(_sendResponse, { success: true }); // Fallback response
+                        safeSendResponse(_sendResponse, { error: 'Timed out: the change may not have been saved' });
                     }
                 }, 1000);
 
@@ -100,13 +101,20 @@ chrome.runtime.onMessage.addListener(
                     setTimeout(() => {
                         if (!addTabResponseSent) {
                             addTabResponseSent = true;
-                            safeSendResponse(_sendResponse, { success: true }); // Fallback response
+                            safeSendResponse(_sendResponse, { error: 'Timed out: the change may not have been saved' });
                         }
                     }, 1000);
 
                     return true;
                 }
                 break;
+
+            case 'OPEN_TABBOARD':
+                // The onboarding page's "Get started"
+                openApp()
+                    .then(() => safeSendResponse(_sendResponse, { success: true }))
+                    .catch((error: unknown) => safeSendResponse(_sendResponse, { error: (error as Error).message }));
+                return true;
 
             case 'GET_ACTIVE_TAB':
                 // Return information about the currently active tab
@@ -173,7 +181,7 @@ chrome.runtime.onMessage.addListener(
                     setTimeout(() => {
                         if (!deleteTabResponseSent) {
                             deleteTabResponseSent = true;
-                            safeSendResponse(_sendResponse, { success: true }); // Fallback response
+                            safeSendResponse(_sendResponse, { error: 'Timed out: the change may not have been saved' });
                         }
                     }, 1000);
 

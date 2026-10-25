@@ -86,6 +86,7 @@ export function handleBookmarkMessage(message: ExtensionMessage, _sendResponse: 
                 setTimeout(() => {
                     if (!getBookmarkResponseSent) {
                         getBookmarkResponseSent = true;
+                        safeSendResponse(_sendResponse, { error: 'Timed out' });
                     }
                 }, 1000);
 

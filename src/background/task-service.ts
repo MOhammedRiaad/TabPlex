@@ -48,7 +48,7 @@ export function handleTaskMessage(message: ExtensionMessage, _sendResponse: (res
                 setTimeout(() => {
                     if (!addTaskResponseSent) {
                         addTaskResponseSent = true;
-                        safeSendResponse(_sendResponse, { success: true }); // Fallback response
+                        safeSendResponse(_sendResponse, { error: 'Timed out: the change may not have been saved' });
                     }
                 }, 1000);
 
@@ -127,6 +127,7 @@ export function handleTaskMessage(message: ExtensionMessage, _sendResponse: (res
                 setTimeout(() => {
                     if (!deleteTaskResponseSent) {
                         deleteTaskResponseSent = true;
+                        safeSendResponse(_sendResponse, { error: 'Timed out' });
                     }
                 }, 1000);
 

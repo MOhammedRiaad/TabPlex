@@ -27,6 +27,20 @@ describe('message-handler', () => {
     });
     afterEach(() => vi.useRealTimers());
 
+    it('OPEN_TABBOARD opens the app and answers, and reports a failure', async () => {
+        const { keepOpen, sendResponse } = dispatch({ type: 'OPEN_TABBOARD' });
+        expect(keepOpen).toBe(true);
+        await flush();
+        expect(fakeChrome().tabs.create).toHaveBeenCalledWith({ url: `${EXTENSION_BASE}index.html` });
+        expect(sendResponse).toHaveBeenCalledWith({ success: true });
+
+        fakeChrome().tabs.query.mockRejectedValueOnce(new Error('query failed'));
+        fakeChrome().tabs.create.mockRejectedValueOnce(new Error('cannot open'));
+        const failed = dispatch({ type: 'OPEN_TABBOARD' });
+        await flush();
+        expect(failed.sendResponse).toHaveBeenCalledWith({ error: 'cannot open' });
+    });
+
     it('answers a malformed message with an error and never throws', () => {
         for (const message of [undefined, null, {}, { type: 5 }]) {
             const sendResponse = vi.fn();
@@ -120,7 +134,7 @@ describe('message-handler', () => {
         expect(missing.sendResponse).toHaveBeenCalledWith({ success: true });
     });
 
-    it('reports MOVE_TAB errors and falls back after a timeout', async () => {
+    it('reports MOVE_TAB errors and reports a timeout as an error', async () => {
         fakeChrome().storage.local.get.mockRejectedValueOnce(new Error('read'));
         const failed = dispatch({ type: 'MOVE_TAB', payload: { tabId: 't1', newFolderId: 'f2' } });
         await flush();
@@ -129,7 +143,7 @@ describe('message-handler', () => {
         fakeChrome().storage.local.get.mockReturnValueOnce(new Promise(() => undefined));
         const slow = dispatch({ type: 'MOVE_TAB', payload: { tabId: 't1', newFolderId: 'f2' } });
         await vi.advanceTimersByTimeAsync(1000);
-        expect(slow.sendResponse).toHaveBeenCalledWith({ success: true });
+        expect(slow.sendResponse).toHaveBeenCalledWith({ error: 'Timed out: the change may not have been saved' });
     });
 
     it('adds and deletes tabs', async () => {
@@ -148,7 +162,7 @@ describe('message-handler', () => {
         expect(dispatch({ type: 'DELETE_TAB', payload: {} }).keepOpen).toBe(false);
     });
 
-    it.each(['ADD_TAB', 'DELETE_TAB'])('%s reports errors and times out with success', async type => {
+    it.each(['ADD_TAB', 'DELETE_TAB'])('%s reports errors and reports a timeout as an error', async type => {
         const payload = type === 'ADD_TAB' ? makeTab() : { id: 'x' };
         fakeChrome().storage.local.get.mockRejectedValueOnce(new Error('nope'));
         const failed = dispatch({ type, payload });
@@ -160,7 +174,7 @@ describe('message-handler', () => {
         fakeChrome().storage.local.get.mockReturnValueOnce(new Promise(() => undefined));
         const slow = dispatch({ type, payload });
         await vi.advanceTimersByTimeAsync(1000);
-        expect(slow.sendResponse).toHaveBeenCalledWith({ success: true });
+        expect(slow.sendResponse).toHaveBeenCalledWith({ error: 'Timed out: the change may not have been saved' });
     });
 
     it('returns information about the active tab', async () => {

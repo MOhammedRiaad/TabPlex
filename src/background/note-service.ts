@@ -46,6 +46,7 @@ export function handleNoteMessage(message: ExtensionMessage, _sendResponse: (res
                 setTimeout(() => {
                     if (!addNoteResponseSent) {
                         addNoteResponseSent = true;
+                        safeSendResponse(_sendResponse, { error: 'Timed out' });
                     }
                 }, 1000);
 
@@ -83,6 +84,7 @@ export function handleNoteMessage(message: ExtensionMessage, _sendResponse: (res
                 setTimeout(() => {
                     if (!updateNoteResponseSent) {
                         updateNoteResponseSent = true;
+                        safeSendResponse(_sendResponse, { error: 'Timed out' });
                     }
                 }, 1000);
 
@@ -121,6 +123,7 @@ export function handleNoteMessage(message: ExtensionMessage, _sendResponse: (res
                 setTimeout(() => {
                     if (!deleteNoteResponseSent) {
                         deleteNoteResponseSent = true;
+                        safeSendResponse(_sendResponse, { error: 'Timed out' });
                     }
                 }, 1000);
 

@@ -46,7 +46,7 @@ export function handleFolderMessage(message: ExtensionMessage, _sendResponse: (r
                 setTimeout(() => {
                     if (!addFolderResponseSent) {
                         addFolderResponseSent = true;
-                        safeSendResponse(_sendResponse, { success: true }); // Fallback response
+                        safeSendResponse(_sendResponse, { error: 'Timed out: the change may not have been saved' });
                     }
                 }, 1000);
 
