@@ -226,6 +226,41 @@ describe('ParkDialog', () => {
         await waitFor(() => expect(received[0].payload).toMatchObject({ note: '' }));
     });
 
+    it('lists each address of the live group once, naming a tab without a title by its pending url', async () => {
+        const a = mock.browser.addTab({ url: 'https://a.example/', title: 'A' });
+        const dup = mock.browser.addTab({ url: 'https://a.example/', title: 'A again' });
+        const pending = mock.browser.addTab({ url: 'https://p.example/' });
+        const internal = mock.browser.addTab({ url: 'chrome://settings/', title: 'Settings' });
+        const group = mock.browser.addGroup({ tabIds: [a.id, dup.id, pending.id, internal.id] });
+        Object.assign(pending, { url: undefined, pendingUrl: 'https://p.example/', title: undefined });
+        open(makeTask({ context: makeContext({ state: 'active', chromeGroupId: group.id }) }));
+
+        await screen.findByText('Tabs to save (2)');
+
+        expect(screen.getByRole('checkbox', { name: 'A' })).toBeChecked();
+        expect(screen.getByRole('checkbox', { name: 'https://p.example/' })).toBeChecked();
+        expect(screen.queryByRole('checkbox', { name: 'A again' })).toBeNull();
+        expect(screen.queryByRole('checkbox', { name: 'Settings' })).toBeNull();
+    });
+
+    it('offers no tab list for a task that has no saved context', async () => {
+        open(makeTask({ context: undefined }));
+
+        expect(await screen.findByLabelText('Where did you leave off?')).toBeInTheDocument();
+        expect(screen.queryByText(/Tabs to save/)).toBeNull();
+    });
+
+    it('parks only once when the note is submitted twice in a row', async () => {
+        open(makeTask({ context: makeContext({ state: 'active', chromeGroupId: null }) }));
+        const note = await screen.findByLabelText('Where did you leave off?');
+        await screen.findByText('Tabs to save (2)');
+
+        fireEvent.keyDown(note, { key: 'Enter' });
+        fireEvent.keyDown(note, { key: 'Enter' });
+
+        await waitFor(() => expect(received.filter(m => m.type === CONTEXT_MESSAGES.PARK)).toHaveLength(1));
+    });
+
     it('creates an on-device summarizer when enabled and available', async () => {
         const create = vi.fn().mockResolvedValue({ summarize: vi.fn().mockResolvedValue('Sum') });
         vi.stubGlobal('Summarizer', { availability: vi.fn().mockResolvedValue('available'), create });
