@@ -87,8 +87,9 @@ export const useStorageSync = () => {
             // createdAt/updatedAt and send an ADD_* message to the background for every stored item
             // on every page load.
             useBoardStore.setState({
-                // IndexedDB returns them by id; keep the order they were created in (the board picker, the default board)
-                boards: storedBoards.sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+                // IndexedDB returns them by id; keep the order they were created in (the board picker, the default board).
+                // Stored data can lack the date too, so a missing one sorts first instead of throwing.
+                boards: storedBoards.sort((a, b) => String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? ''))),
                 folders: storedFolders,
                 tabs: sortedTabs,
                 tasks: reconciledTasks,

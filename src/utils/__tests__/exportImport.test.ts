@@ -82,7 +82,9 @@ describe('export / import', () => {
         const imported = sent.find(m => m.type === 'IMPORT_ALL_DATA');
         expect(imported?.payload?.tasks.map(t => (t as { id: string }).id)).toEqual(['restored']);
         expect(imported?.payload?.folders).toHaveLength(1);
-        expect(imported?.payload?.boards).toEqual([]);
+        // The folder's board is not in the file: it is attached to a synthesized default board
+        expect(imported?.payload?.boards).toEqual([expect.objectContaining({ id: 'default_board', name: 'My Board' })]);
+        expect(imported?.payload?.folders[0]).toMatchObject({ boardId: 'default_board' });
         expect(imported?.payload?.history).toEqual(history);
     });
 
@@ -225,6 +227,25 @@ describe('export / import', () => {
             expect((await db.getAllTasks()).map(t => t.id)).toEqual(['keep']);
         });
 
+        it('lists the repairs: undated items, folders moved to My Board', () => {
+            const summary = previewImport(
+                JSON.stringify({
+                    version: '2.0.0',
+                    data: {
+                        boards: [{ id: 'b', name: 'B' }],
+                        folders: [makeFolder({ id: 'f', boardId: 'gone' })],
+                    },
+                })
+            );
+            expect(summary.warnings).toEqual(
+                expect.arrayContaining([
+                    'boards: 1 item(s) had no creation date',
+                    'folders: 1 folder(s) without a board were moved to "My Board"',
+                ])
+            );
+            expect(summary.counts).toEqual({ boards: 2, folders: 1 });
+        });
+
         it('has no export date for a file without one, and throws what importData throws', () => {
             expect(previewImport(JSON.stringify({ version: '1.0.0', data: {} }))).toEqual({
                 counts: {},
@@ -249,7 +270,12 @@ describe('export / import', () => {
         async function seedEverything() {
             await chrome.storage.local.set({ canvases, canvasSettings });
             await chrome.storage.local.set(
-                Object.fromEntries(EXTENSION_SETTING_KEYS.map((key, i) => [key, { marker: `ext-${i}` }]))
+                Object.fromEntries(
+                    EXTENSION_SETTING_KEYS.map((key, i) => [
+                        key,
+                        key === TRACK_ALL_TABS_KEY ? true : { marker: `ext-${i}` },
+                    ])
+                )
             );
             PAGE_SETTING_KEYS.forEach((key, i) => localStorage.setItem(key, `page-${i}`));
             useTimerStore.getState().updateSettings({ workDuration: 50, soundEnabled: false });
@@ -277,7 +303,9 @@ describe('export / import', () => {
             const stored = await chrome.storage.local.get(null);
             expect(stored.canvases).toEqual(canvases);
             expect(stored.canvasSettings).toEqual(canvasSettings);
-            EXTENSION_SETTING_KEYS.forEach((key, i) => expect(stored[key]).toEqual({ marker: `ext-${i}` }));
+            EXTENSION_SETTING_KEYS.forEach((key, i) =>
+                expect(stored[key]).toEqual(key === TRACK_ALL_TABS_KEY ? true : { marker: `ext-${i}` })
+            );
             PAGE_SETTING_KEYS.forEach((key, i) => expect(localStorage.getItem(key)).toBe(`page-${i}`));
             expect(useTimerStore.getState().settings).toMatchObject({ workDuration: 50, soundEnabled: false });
         });
@@ -315,6 +343,58 @@ describe('export / import', () => {
             const stored = await chrome.storage.local.get(null);
             if (before === undefined) expect(stored).not.toHaveProperty(TRACK_ALL_TABS_KEY);
             else expect(stored[TRACK_ALL_TABS_KEY]).toBe(before);
+        });
+
+        it.each([
+            ['settings that are text', { settings: 'x' }, 'settings'],
+            ['a timer that is a number', { settings: { timer: 3 } }, 'settings.timer'],
+            ['extension settings that are a list', { settings: { extension: [] } }, 'settings.extension'],
+            ['page settings that are text', { settings: { page: 'x' } }, 'settings.page'],
+            ['canvas settings that are a list', { data: { canvasSettings: [] } }, 'data.canvasSettings'],
+            ['recording as text', { settings: { extension: { [TRACK_ALL_TABS_KEY]: 'false' } } }, TRACK_ALL_TABS_KEY],
+        ])('refuses a file with %s, leaving the data alone', async (_label, part, field) => {
+            await db.addTask(makeTask({ id: 'keep' }));
+            await chrome.storage.local.set({ [TRACK_ALL_TABS_KEY]: false });
+            const text = JSON.stringify({ version: EXPORT_VERSION, timestamp: '', data: {}, ...part });
+            expect(() => previewImport(text)).toThrow(field);
+            await expect(importData(text)).rejects.toThrow('The file is damaged');
+            expect((await db.getAllTasks()).map(t => t.id)).toEqual(['keep']);
+            expect((await chrome.storage.local.get(TRACK_ALL_TABS_KEY))[TRACK_ALL_TABS_KEY]).toBe(false);
+        });
+
+        it('applies only the timer settings the app knows, with the right type and sensible numbers', async () => {
+            await wipeEverything();
+            const timer = {
+                workDuration: 50,
+                shortBreakDuration: 0,
+                longBreakDuration: -5,
+                longBreakInterval: 1000,
+                autoStartBreaks: 'yes',
+                autoStartWork: true,
+                soundEnabled: false,
+                madeUp: 1,
+            };
+            await importData(JSON.stringify({ version: EXPORT_VERSION, timestamp: '', data: {}, settings: { timer } }));
+            expect(useTimerStore.getState().settings).toEqual({
+                ...timerDefaults,
+                workDuration: 50,
+                autoStartWork: true,
+                soundEnabled: false,
+            });
+            expect(useTimerStore.getState().settings).not.toHaveProperty('madeUp');
+
+            for (const bad of [NaN, Infinity, 2.5, 1441, '25']) {
+                // JSON turns NaN and Infinity into null, which is not a number either
+                await importData(
+                    JSON.stringify({
+                        version: EXPORT_VERSION,
+                        timestamp: '',
+                        data: {},
+                        settings: { timer: { workDuration: bad } },
+                    })
+                );
+                expect(useTimerStore.getState().settings.workDuration).toBe(50);
+            }
         });
 
         it('a file with the recording setting sets it', async () => {

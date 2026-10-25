@@ -393,7 +393,7 @@ const cases: Case[] = [
         expected: { success: true },
         after: () => {
             expect(store().tabboard_tasks).toEqual([makeTask()]);
-            expect(store().history_items).toEqual([{ id: 'h' }]);
+            expect(store().history_items).toEqual([expect.objectContaining({ id: 'h' })]);
             expect(store().tabboard_notes).toEqual([]);
             expect(broadcasts()).toContain('STORAGE_DATA_IMPORTED');
         },

@@ -44,6 +44,19 @@ describe('useStorageSync', () => {
         expect(fakeChrome().runtime.sendMessage).not.toHaveBeenCalled();
     });
 
+    it('loads when a stored board has no creation date, listing it first', async () => {
+        await db.addBoard({ ...makeBoard({ id: 'undated' }), createdAt: undefined } as unknown as ReturnType<
+            typeof makeBoard
+        >);
+        await db.addBoard(makeBoard({ id: 'dated', createdAt: '2020-01-01T00:00:00.000Z' }));
+        await db.addTask(makeTask());
+
+        renderHook(() => useStorageSync());
+
+        await waitFor(() => expect(state().tasks).toHaveLength(1));
+        expect(state().boards.map(b => b.id)).toEqual(['undated', 'dated']);
+    });
+
     it('registers its message listener once, however often it re-renders', async () => {
         const addListener = vi.spyOn(chrome.runtime.onMessage, 'addListener');
         const { rerender, unmount } = renderHook(() => useStorageSync());

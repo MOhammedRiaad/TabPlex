@@ -7,7 +7,13 @@ import { DISPLAY_NAME_KEY } from '../features/settings/utils/displayName';
 import { THEME_STORAGE_KEY } from '../hooks/useTheme';
 import { TimerSettings, useTimerStore } from '../store/timerStore';
 import { TRACK_ALL_TABS_KEY } from './tabTracking';
-import { MAX_IMPORT_CHARS, describeErrors, sanitizeCollections, type ImportCollections } from './importValidation';
+import {
+    MAX_IMPORT_CHARS,
+    checkSettingsShape,
+    describeErrors,
+    sanitizeCollections,
+    type ImportCollections,
+} from './importValidation';
 import { PARK_RESUME_SETTINGS_KEY, reconcileTasksWithBackground } from './taskContext';
 import { SUGGEST_DISMISSED_KEY } from './taskSuggest';
 import {
@@ -139,7 +145,34 @@ async function restoreCanvasesAndSettings(parsed: ExportData): Promise<void> {
         else localStorage.removeItem(key);
     }
 
-    if (parsed.settings?.timer) useTimerStore.getState().updateSettings(parsed.settings.timer);
+    if (parsed.settings?.timer) {
+        useTimerStore
+            .getState()
+            .updateSettings(pickTimerSettings(useTimerStore.getState().settings, parsed.settings.timer));
+    }
+}
+
+/** Allowed whole numbers per timer setting; the timer divides and multiplies by these, so 0 or -5 would break it */
+const TIMER_LIMITS: Partial<Record<keyof TimerSettings, [min: number, max: number]>> = {
+    workDuration: [1, 1440],
+    shortBreakDuration: [1, 1440],
+    longBreakDuration: [1, 1440],
+    longBreakInterval: [1, 100],
+};
+
+/** The timer settings of a file that the app knows: same key, same type, numbers within limits. The rest is dropped. */
+function pickTimerSettings(current: TimerSettings, fromFile: unknown): Partial<TimerSettings> {
+    const picked: Record<string, unknown> = {};
+    if (typeof fromFile !== 'object' || fromFile === null) return picked;
+    for (const [key, value] of Object.entries(fromFile)) {
+        if (!(key in current) || typeof value !== typeof current[key as keyof TimerSettings]) continue;
+        const limits = TIMER_LIMITS[key as keyof TimerSettings];
+        if (limits && !(Number.isInteger(value) && (value as number) >= limits[0] && (value as number) <= limits[1])) {
+            continue;
+        }
+        picked[key] = value;
+    }
+    return picked as Partial<TimerSettings>;
 }
 
 export const exportData = async (): Promise<string> => {
@@ -264,7 +297,11 @@ function parseExportFile(jsonData: string): { parsedData: ExportData; summary: I
     }
 
     const checked = sanitizeCollections(file.data);
-    if (!checked.ok) throw new Error(`The file is damaged: ${describeErrors(checked.errors)}`);
+    const shapeErrors = checkSettingsShape(raw as Record<string, unknown>);
+    if (!checked.ok || shapeErrors.length > 0) {
+        const errors = [...(checked.ok ? [] : checked.errors), ...shapeErrors];
+        throw new Error(`The file is damaged: ${describeErrors(errors)}`);
+    }
     const { collections, canvases, warnings } = checked.value;
 
     const counts: ImportSummary['counts'] = {};
