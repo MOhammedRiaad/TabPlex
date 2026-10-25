@@ -1,6 +1,6 @@
 ---
 name: write-tests
-description: Write or fix TabPlex tests — Vitest unit/component tests with the in-memory chrome mock, or Playwright E2E against the built extension. Use when adding a feature or bug fix, when coverage drops under 85%, or when asked to "add tests".
+description: Write or fix TabPlex tests — Vitest unit/component tests with the in-memory chrome mock, or Playwright E2E against the built extension. Use when adding a feature or bug fix, when coverage drops under 95%, or when asked to "add tests".
 ---
 
 # Write tests
@@ -33,5 +33,5 @@ description: Write or fix TabPlex tests — Vitest unit/component tests with the
 
 ## Done
 
-`npm run test:coverage` passes (85% gate). Don't add coverage exclusions to get there — only pure-visual canvas code,
+`npm run test:coverage` passes (95% gate). Don't add coverage exclusions to get there — only pure-visual canvas code,
 types and entry files are excluded, by design.

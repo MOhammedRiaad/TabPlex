@@ -684,3 +684,68 @@ describe('buildStudyNote (Combined) after the review edits', () => {
         expect(note).not.toContain('Only in one source');
     });
 });
+
+describe('buildStudyNote (Combined) with incomplete data', () => {
+    const bulletOf = (id: string, text: string, pointIds: string[]) => ({
+        id,
+        text,
+        pointIds,
+        origin: 'point' as const,
+        edited: false,
+    });
+    const sharedTopic = (heading: string, bullets: ReturnType<typeof bulletOf>[]): Topic => ({
+        id: 't1',
+        heading,
+        kind: 'shared',
+        combinedBy: 'words',
+        bullets,
+        conflicts: [],
+    });
+    const points = [point(1, 'First fact about caching.'), point(2, 'Second fact about caching.')];
+
+    it('writes the By tab layout when the Combined view has no topics', () => {
+        const sources = [source(1), source(2)];
+        const withoutTopics = buildStudyNote({ view: 'combined', sources, points }, { date: DATE });
+        const byTab = buildStudyNote({ view: 'byTab', sources, points }, { date: DATE });
+
+        expect(withoutTopics).toBe(byTab);
+        expect(withoutTopics).toContain('First fact about caching.');
+    });
+
+    it('leaves the number of a source without a web address as plain text', () => {
+        const sources = [source(1, { url: 'chrome://settings' }), source(2)];
+        const topics = [sharedTopic('Caching', [bulletOf('b1', 'A shared statement.', ['p1-1', 'p2-1'])])];
+
+        const note = buildStudyNote({ view: 'combined', sources, points, combined: topics }, { date: DATE });
+
+        expect(note).toContain('- A shared statement. ([1], [2](https://example.com/p2))');
+    });
+
+    it('numbers a topic without a heading, skips blank bullets and topics with nothing to show, and drops unknown sources', () => {
+        const sources = [source(1)];
+        const topics = [
+            sharedTopic('Empty topic', [bulletOf('b1', '   ', ['p1-1'])]),
+            {
+                ...sharedTopic('', [bulletOf('b2', 'Kept statement.', ['p1-1']), bulletOf('b3', '', ['p1-1'])]),
+                id: 't2',
+            },
+            { ...sharedTopic('Unknown source', [bulletOf('b4', 'Orphan statement.', ['p2-1'])]), id: 't3' },
+        ];
+
+        const note = buildStudyNote({ view: 'combined', sources, points, combined: topics }, { date: DATE });
+
+        expect(note).not.toContain('Empty topic');
+        expect(note).toContain('## Topic 2\n\n- Kept statement. ([1](https://example.com/p1))');
+        expect(note).toContain('## Unknown source\n\n- Orphan statement.');
+        expect(note).not.toContain('Orphan statement. (');
+    });
+
+    it('has no Sources list when the draft has no sources', () => {
+        const topics = [sharedTopic('Caching', [bulletOf('b1', 'A statement.', ['p1-1'])])];
+
+        const note = buildStudyNote({ view: 'combined', sources: [], points, combined: topics }, { date: DATE });
+
+        expect(note).toContain('## Caching\n\n- A statement.');
+        expect(note).not.toContain('## Sources');
+    });
+});

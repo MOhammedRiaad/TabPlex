@@ -22,7 +22,7 @@ You are the **Spec Challenger**. You are rewarded for finding real problems befo
 5. **Permissions and privacy**: new permission? Violates D12/D17? Anything leaving the device? Matches the PRIVACY.md claims?
 6. **Edge cases**: empty/huge/duplicate/malformed data, offline, restricted `chrome://` pages, incognito, no built-in AI, quota, undo.
 7. **UX and a11y**: missing states (loading/empty/error), keyboard path, focus, dark/light, narrow widths.
-8. **Testability**: can each criterion be tested with the chrome mock, fake-indexeddb and the e2e fixtures? Is the 85% gate realistic?
+8. **Testability**: can each criterion be tested with the chrome mock, fake-indexeddb and the e2e fixtures? Is the 95% gate realistic?
 9. **Phasing**: can it ship in the stated commits, each green? Hidden dependencies or ordering bugs?
 10. **Simpler alternative**: is there a materially smaller design that meets the criteria?
 

@@ -821,7 +821,8 @@ describe('TabNotesDialog: the AI steps while the run is going', () => {
     });
 });
 
-describe('TabNotesDialog: editing the Combined review', () => {
+// userEvent typing is slow under coverage instrumentation, so give these tests more than the 5 s default
+describe('TabNotesDialog: editing the Combined review', { timeout: 20_000 }, () => {
     const GAMMA = 'https://gamma.test/g';
 
     const sourceAt = (ref: number, title: string, url: string, tabId: number): NoteSource => ({
@@ -1133,5 +1134,140 @@ describe('TabNotesDialog: editing the Combined review', () => {
 
         await user.click(within(confirm).getByRole('button', { name: 'Retry and regroup' }));
         expect(retry).toHaveBeenCalledWith(4);
+    });
+});
+
+describe('TabNotesDialog: details of the review', () => {
+    const sourceOf = (ref: number, title: string, url: string): NoteSource => ({
+        ref,
+        tabId: 100 + ref,
+        windowId: 1,
+        title,
+        url,
+        mode: 'ai',
+        truncated: false,
+        notEnglish: false,
+    });
+    const pointOf = (ref: number, n: number, text: string): KeyPoint => ({
+        id: `p${ref}-${n}`,
+        sourceRef: ref,
+        text,
+        topicHint: '',
+    });
+    const topicOf = (id: string, heading: string, pointIds: string[]): Topic => ({
+        id,
+        heading,
+        kind: 'shared',
+        combinedBy: 'words',
+        bullets: pointIds.map((pointId, index) => ({
+            id: `${id}b${index + 1}`,
+            text: `Bullet about ${pointId}`,
+            pointIds: [pointId],
+            origin: 'point',
+            edited: false,
+        })),
+        conflicts: [],
+    });
+    const POINTS: KeyPoint[] = [
+        pointOf(1, 1, 'Resolvers keep answers until the TTL runs out.'),
+        pointOf(2, 1, 'Caches keep answers until the TTL ends.'),
+        pointOf(2, 2, 'Subclasses inherit methods from their parents.'),
+        pointOf(3, 1, 'Subclasses inherit from parent classes.'),
+    ];
+
+    function review(partial: Partial<ReturnType<typeof useTabNotesStore.getState>>) {
+        useTabNotesStore.setState({
+            status: 'done',
+            view: 'combined',
+            combinedEdited: false,
+            points: POINTS,
+            ...partial,
+        });
+        return openDialog();
+    }
+
+    it('names a source without a title or a readable address "Untitled page" when it is removed', async () => {
+        const user = userEvent.setup();
+        const sources = [sourceOf(1, '', 'not a url'), sourceOf(2, 'Beta', BETA)];
+        review({ sources, combined: [topicOf('t1', 'Caching', ['p1-1', 'p2-1'])] });
+
+        await user.click(screen.getByRole('button', { name: 'Remove Untitled page from the note' }));
+
+        expect(screen.getByRole('status')).toHaveTextContent('Removed Untitled page from the note');
+        expect(screen.queryByRole('button', { name: 'Remove Untitled page from the note' })).toBeNull();
+    });
+
+    it('renders two topics made of the same points without a duplicate key', () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const sources = [sourceOf(1, 'Alpha', ALPHA), sourceOf(2, 'Beta', BETA)];
+        review({
+            sources,
+            combined: [topicOf('t1', 'First name', ['p1-1', 'p2-1']), topicOf('t2', 'Second name', ['p1-1', 'p2-1'])],
+        });
+
+        expect(screen.getByRole('region', { name: 'First name' })).toBeInTheDocument();
+        expect(screen.getByRole('region', { name: 'Second name' })).toBeInTheDocument();
+        expect(error).not.toHaveBeenCalled();
+    });
+
+    it('moves the focus to the same bullet position when a bullet of the second topic is removed', async () => {
+        const user = userEvent.setup();
+        const sources = [
+            sourceOf(1, 'Alpha', ALPHA),
+            sourceOf(2, 'Beta', BETA),
+            sourceOf(3, 'Gamma', 'https://gamma.test/g'),
+        ];
+        review({
+            sources,
+            combined: [
+                topicOf('t1', 'Caching', ['p1-1', 'p2-1']),
+                topicOf('t2', 'Inheritance', ['p2-2', 'p3-1', 'p1-1']),
+            ],
+        });
+        const card = screen.getByRole('region', { name: 'Inheritance' });
+
+        await user.click(within(card).getByRole('button', { name: 'Remove bullet 2 of Inheritance' }));
+
+        expect(screen.getByRole('status')).toHaveTextContent('Bullet removed');
+        expect(within(screen.getByRole('region', { name: 'Inheritance' })).getAllByRole('listitem')).toHaveLength(2);
+        expect(screen.getByRole('button', { name: 'Edit bullet 2 of Inheritance' })).toHaveFocus();
+    });
+
+    it('shows the status the run ended with', () => {
+        const sources = [sourceOf(1, 'Alpha', ALPHA), sourceOf(2, 'Beta', BETA)];
+        review({ sources, combined: [topicOf('t1', 'Caching', ['p1-1', 'p2-1'])], modelStatus: 'Model unavailable' });
+
+        expect(screen.getByText('Model unavailable')).toBeInTheDocument();
+    });
+
+    it('closes from the backdrop while picking tabs, not from the dialog itself', async () => {
+        browser.addTab({ url: ALPHA, title: 'Alpha' });
+        openDialog();
+        await screen.findByRole('checkbox', { name: /Alpha/ });
+        fireEvent.click(screen.getByRole('dialog'));
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        fireEvent.click(document.querySelector('.tabnotes-overlay')!);
+        expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('stays open when the backdrop is pressed during the review', () => {
+        const sources = [sourceOf(1, 'Alpha', ALPHA), sourceOf(2, 'Beta', BETA)];
+        review({ sources, combined: [topicOf('t1', 'Caching', ['p1-1', 'p2-1'])] });
+
+        fireEvent.click(document.querySelector('.tabnotes-overlay')!);
+
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('selects a duplicate tab that started unchecked', async () => {
+        browser.addTab({ url: ALPHA, title: 'Alpha' });
+        browser.addTab({ url: `${ALPHA}#section`, title: 'Alpha again' });
+        openDialog();
+        const duplicate = await screen.findByRole('checkbox', { name: /Alpha again/ });
+        expect(duplicate).not.toBeChecked();
+
+        fireEvent.click(duplicate);
+
+        expect(duplicate).toBeChecked();
     });
 });

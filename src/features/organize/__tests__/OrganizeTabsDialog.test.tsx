@@ -257,6 +257,37 @@ describe('OrganizeTabsDialog', () => {
         expect(useOrganizeStore.getState().phase).toBe('closed');
     });
 
+    it('labels an unnamed group generically and skips tab ids it has no data for', () => {
+        renderDialog();
+        setState({
+            phase: 'preview',
+            tabs,
+            windowId: 1,
+            proposal: proposal({
+                groups: [{ key: 'g1', name: '', color: 'red', tabIds: [101, 999, 102], enabled: true }],
+                ungroupedTabIds: [998, 103],
+            }),
+        });
+
+        expect(screen.getByRole('checkbox', { name: 'Create group this group' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Remove Tab 1 from this group' })).toBeInTheDocument();
+        expect(screen.getAllByRole('button', { name: /^Remove Tab/ })).toHaveLength(2);
+        expect(screen.getByText('Not grouped (2)')).toBeInTheDocument();
+        expect(document.querySelectorAll('.organize-ungrouped li')).toHaveLength(1);
+    });
+
+    it('replaces a favicon that fails to load with the default icon', () => {
+        renderDialog();
+        setState({ phase: 'preview', tabs, proposal: proposal(), windowId: 1 });
+        const img = document.querySelector('img.organize-favicon') as HTMLImageElement;
+        expect(img).toHaveAttribute('src', 'f.png');
+
+        fireEvent.error(img);
+
+        expect(document.querySelector('img.organize-favicon[src="f.png"]')).toBeNull();
+        expect(screen.getAllByText('🌐').length).toBeGreaterThan(0);
+    });
+
     it('starts from the Today quick action', () => {
         const start = vi
             .spyOn(useOrganizeStore.getState().actions, 'startOrganize')

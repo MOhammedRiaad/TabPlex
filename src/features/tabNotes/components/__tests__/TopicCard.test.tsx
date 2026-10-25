@@ -303,3 +303,67 @@ describe('TopicCard', () => {
         expect(screen.queryByRole('combobox', { name: 'Move bullet to' })).toBeNull();
     });
 });
+
+describe('TopicCard with incomplete data', () => {
+    const renderWith = (topic: Topic, sources: NoteSource[], edits: TopicEdits = noEdits(), pointList = points) =>
+        render(
+            <TopicCard
+                topic={topic}
+                topicIndex={0}
+                topics={[topic]}
+                points={pointList}
+                sources={sources}
+                editable
+                onOpen={vi.fn()}
+                edits={edits}
+            />
+        );
+
+    it('names a source without a title by its host, or as an untitled page', () => {
+        const noTitle: NoteSource = { ...alpha, title: '' };
+        const noTitleNoHost: NoteSource = { ...beta, title: '', url: 'not a url' };
+
+        renderWith(sharedTopic('words'), [noTitle, noTitleNoHost]);
+
+        expect(screen.getByRole('button', { name: 'Open source 1: example.com' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Open source 2: Untitled page' })).toBeInTheDocument();
+    });
+
+    it('shows no chip for a point whose source is not in the note', () => {
+        renderWith(sharedTopic('words'), [alpha]);
+
+        expect(screen.getByRole('button', { name: 'Open source 1: First page' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Open source 2/ })).toBeNull();
+    });
+
+    it('shows two bullets made of the same points', () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const topic = sharedTopic('words');
+        topic.bullets.push({ ...topic.bullets[0], id: 'b9', text: 'The same points, worded again.' });
+
+        renderWith(topic, [alpha, beta]);
+
+        expect(screen.getByText('Resolvers keep answers.')).toBeInTheDocument();
+        expect(screen.getByText('The same points, worded again.')).toBeInTheDocument();
+        expect(error).not.toHaveBeenCalled();
+    });
+
+    it('does not move a bullet when the placeholder option is chosen again', () => {
+        const edits = noEdits();
+        renderWith(busyTopic(), [alpha, beta], edits);
+
+        fireEvent.change(screen.getAllByRole('combobox', { name: 'Move bullet to' })[0], { target: { value: '' } });
+
+        expect(edits.moveBullet).not.toHaveBeenCalled();
+    });
+
+    it('quotes only the points of a conflict that still exist', () => {
+        const topic: Topic = { ...busyTopic(), conflicts: [{ pointIds: ['p1-1', 'ghost'], text: '' }] };
+
+        renderWith(topic, [alpha, beta]);
+
+        const conflict = document.querySelector('.tabnotes-conflict') as HTMLElement;
+        expect(conflict).toHaveTextContent('"Resolvers keep answers."');
+        expect(conflict).not.toHaveTextContent('ghost');
+    });
+});

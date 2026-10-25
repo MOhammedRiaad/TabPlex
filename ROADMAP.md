@@ -186,7 +186,7 @@ Spec: [docs/specs/PARK_AND_RESUME.md](docs/specs/PARK_AND_RESUME.md)
 ## Phase 12: Testing, CI & Automated Releases ✅
 
 - ✅ Vitest unit and component tests (36 files, 553 tests) with an in-memory Chrome mock
-- ✅ **85% coverage gate** (statements, branches, functions, lines) in CI
+- ✅ **95% coverage gate** (statements, branches, functions, lines) in CI
 - ✅ Playwright E2E against the built extension (Park & Resume flows, every view renders)
 - ✅ GitHub Actions: `ci.yml` (lint, typecheck, tests, build, E2E) and `release.yml`
 - ✅ semantic-release: versions and changelog from Conventional Commits on merge to `main`
@@ -338,7 +338,7 @@ Work order: ~~12~~ → ~~24~~ → ~~13 + 25~~ → 15 → 22 → 16 → 14 → 26
 
 - **TypeScript**: strict mode, zero type errors
 - **Lint**: 0 errors, 0 warnings (enforced)
-- **Unit tests**: 831 tests in 57 files, ≥ 85% coverage gate
+- **Unit tests**: 1874 tests in 104 files, ≥ 95% coverage gate
 - **E2E**: 22 Playwright tests in 5 specs against the built extension (Park & Resume, Organize tabs, New task from tabs, core views, layout), plus the store screenshot generator
 
 ### Architecture

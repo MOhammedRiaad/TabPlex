@@ -68,7 +68,7 @@ Follow this checklist to add a new "slice" of functionality (e.g., "Reminders") 
 ## 🧪 Testing
 
 - `npm test` / `npm run test:watch` — Vitest unit and component tests (jsdom, in-memory `chrome` mock, fake IndexedDB).
-- `npm run test:coverage` — fails below 85% for statements, branches, functions or lines. HTML report in `coverage/`.
+- `npm run test:coverage` — fails below 95% for statements, branches, functions or lines. HTML report in `coverage/`.
 - `npm run test:e2e` — Playwright loads `dist/` into Chromium and runs the Park & Resume flows; build first.
 - CI (`.github/workflows/ci.yml`) runs typecheck, lint, format, coverage and build, plus a separate E2E job. The release
   workflow runs the unit tests before publishing.

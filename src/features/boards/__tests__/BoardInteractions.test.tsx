@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import BoardView from '../BoardView';
 import BoardModal from '../components/BoardModal';
 import FolderDeleteModal from '../components/FolderDeleteModal';
@@ -17,6 +17,8 @@ vi.mock('@dnd-kit/core', async importOriginal => {
             dnd = props;
             return <actual.DndContext {...props} />;
         },
+        // The real overlay renders children only while dnd-kit tracks an active drag, which the captured props never start
+        DragOverlay: ({ children }: { children?: React.ReactNode }) => <div data-testid="drag-overlay">{children}</div>,
     };
 });
 
@@ -112,6 +114,90 @@ describe('board drag and drop', () => {
     });
 });
 
+describe('board drag edge cases', () => {
+    const tabsSnapshot = () =>
+        useBoardStore.getState().tabs.map(t => ({ id: t.id, folderId: t.folderId, order: t.order }));
+
+    beforeEach(() => {
+        useBoardStore.setState({
+            boards: [makeBoard({ id: 'b1' })],
+            folders: [makeFolder({ id: 'f1', name: 'A', boardId: 'b1' })],
+            tabs: [
+                makeTab({ id: 't1', title: 'One', url: 'https://one.dev', folderId: 'f1', order: 0 }),
+                makeTab({ id: 't2', title: 'Loose A', url: 'https://a.dev', folderId: '', order: 0 }),
+                makeTab({ id: 't3', title: 'Loose B', url: 'https://b.dev', folderId: '', order: 1 }),
+            ],
+            sessions: [],
+            history: [],
+        });
+        respondToMessages(() => undefined);
+    });
+
+    it('does not reorder two unfiled tabs dropped on each other', () => {
+        render(<BoardView />);
+        const before = tabsSnapshot();
+
+        drag({ id: 't2' }, { id: 't3' });
+
+        expect(tabsSnapshot()).toEqual(before);
+    });
+
+    it('moves a filed tab dropped on an unfiled tab to the top level', () => {
+        render(<BoardView />);
+
+        drag({ id: 't1' }, { id: 't2' });
+
+        expect(state().tabs.find(t => t.id === 't1')!.folderId).toBe('');
+        expect(screen.getByText('Tab moved to folder!')).toBeInTheDocument();
+    });
+
+    it('ignores a drop on something that is neither a tab nor a folder', () => {
+        render(<BoardView />);
+        const before = tabsSnapshot();
+
+        drag({ id: 't1' }, { id: 'nowhere' });
+
+        expect(tabsSnapshot()).toEqual(before);
+        expect(screen.queryByText('Tab moved to folder!')).not.toBeInTheDocument();
+    });
+
+    it('shows the dragged tab in the overlay until the drag ends', () => {
+        render(<BoardView />);
+        const overlay = screen.getByTestId('drag-overlay');
+        expect(overlay).toBeEmptyDOMElement();
+
+        act(() => dnd.onDragStart({ active: { id: 't1', data: { current: undefined } } }));
+        expect(within(overlay).getByText('One')).toBeInTheDocument();
+        expect(within(overlay).getByText('https://one.dev')).toBeInTheDocument();
+
+        act(() => dnd.onDragEnd({ active: { id: 't1', data: { current: undefined } }, over: null }));
+        expect(overlay).toBeEmptyDOMElement();
+    });
+
+    it.each([
+        ['with its favicon', 'h.png'],
+        ['with the default icon when it has no favicon', undefined],
+    ])('shows a dragged history item %s in the overlay', (_name, favicon) => {
+        render(<BoardView />);
+        const overlay = screen.getByTestId('drag-overlay');
+        const item = { id: 'h9', url: 'https://h.dev', title: 'Hist item', favicon };
+        const data = { current: { type: 'HistoryItem', item } };
+
+        act(() => dnd.onDragStart({ active: { id: 'history_h9', data } }));
+        expect(within(overlay).getByText('Hist item')).toBeInTheDocument();
+        const img = overlay.querySelector('img');
+        if (favicon) {
+            expect(img).toHaveAttribute('src', favicon);
+        } else {
+            expect(img).toBeNull();
+            expect(within(overlay).getByText('🌐')).toBeInTheDocument();
+        }
+
+        act(() => dnd.onDragEnd({ active: { id: 'history_h9', data }, over: null }));
+        expect(overlay).toBeEmptyDOMElement();
+    });
+});
+
 describe('BoardModal validation', () => {
     const setup = (props: Partial<React.ComponentProps<typeof BoardModal>> = {}) => {
         const onSubmit = vi.fn();
@@ -199,6 +285,86 @@ describe('BoardModal validation', () => {
         rerender(<BoardModal isOpen={false} mode="edit" type="tab" onSubmit={onSubmit} onClose={onClose} />);
         expect(document.querySelector('.board-modal-overlay')).toBeNull();
         expect(document.body.style.overflow).toBe('');
+    });
+});
+
+describe('BoardModal fallbacks and focus', () => {
+    const setup = (props: Partial<React.ComponentProps<typeof BoardModal>> = {}) => {
+        const onSubmit = vi.fn();
+        const onClose = vi.fn();
+        const onShowToast = vi.fn();
+        const utils = render(
+            <BoardModal
+                isOpen
+                mode="edit"
+                type="tab"
+                onSubmit={onSubmit}
+                onClose={onClose}
+                onShowToast={onShowToast}
+                {...props}
+            />
+        );
+        return { onSubmit, onClose, onShowToast, ...utils };
+    };
+
+    afterEach(() => vi.useRealTimers());
+
+    it('falls back to an empty name and the default colour for a folder without them', () => {
+        setup({ type: 'folder', folder: makeFolder({ name: '', color: undefined }) });
+
+        expect(byId('board-folder-name')).toHaveValue('');
+        expect(byId('board-folder-color')).toHaveValue('#3b82f6');
+    });
+
+    it('falls back to empty inputs for a tab without title or url', () => {
+        setup({ tab: makeTab({ title: '', url: '' }) });
+
+        expect(byId('board-tab-title')).toHaveValue('');
+        expect(byId('board-tab-url')).toHaveValue('');
+    });
+
+    it('keeps the empty create values when editing a tab but none is given', () => {
+        setup({ tab: undefined });
+
+        expect(byId('board-tab-title')).toHaveValue('');
+        expect(byId('board-tab-url')).toHaveValue('');
+        expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+    });
+
+    it('focuses the name input of a folder and the title input of a tab', () => {
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+        const { unmount } = setup({ type: 'folder', folder: makeFolder({ name: 'Work' }) });
+        act(() => {
+            vi.advanceTimersByTime(100);
+        });
+        expect(document.activeElement).toBe(byId('board-folder-name'));
+        unmount();
+
+        setup({ tab: makeTab({ title: 'Docs' }) });
+        act(() => {
+            vi.advanceTimersByTime(100);
+        });
+        expect(document.activeElement).toBe(byId('board-tab-title'));
+    });
+
+    it('does not close on a mousedown inside the dialog body', () => {
+        const { onClose } = setup({ tab: makeTab() });
+
+        fireEvent.mouseDown(document.querySelector('.board-modal-content')!);
+
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('reports a failed tab update', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const onSubmit = vi.fn(() => {
+            throw new Error('fail');
+        });
+        const { onShowToast } = setup({ tab: makeTab(), onSubmit });
+
+        fireEvent.submit(document.querySelector('form')!);
+
+        expect(onShowToast).toHaveBeenCalledWith('Failed to update tab. Please try again.', 'error');
     });
 });
 

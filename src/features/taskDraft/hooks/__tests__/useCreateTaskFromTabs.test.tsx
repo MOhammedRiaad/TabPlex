@@ -182,6 +182,58 @@ describe('useCreateTaskFromTabs', () => {
         expect(draft().phase).toBe('closed');
     });
 
+    it('start without a task in the reply falls back to the saved task, with and without tabs', async () => {
+        seedDraft();
+        const base = reply;
+        reply = m => (m.type === CONTEXT_MESSAGES.START ? { success: true } : base(m));
+        await run('createAndStart');
+
+        expect(log).toEqual(['ADD_TASK', CONTEXT_MESSAGES.START, CONTEXT_MESSAGES.ADD_TABS]);
+        expect((received[2].payload.task as Task).title).toBe('Compare pricing');
+        expect((received[2].payload.task as Task).context).toBeUndefined();
+
+        log.length = 0;
+        seedDraft({ checkedIds: [] });
+        await run('createAndStart');
+        expect(log).toEqual(['ADD_TASK', CONTEXT_MESSAGES.START]);
+        expect(toast()!.message).toBe('Started “Compare pricing” · 0 tabs grouped');
+    });
+
+    it('park without a task context in the reply reports zero tabs', async () => {
+        seedDraft();
+        const base = reply;
+        reply = m =>
+            m.type === CONTEXT_MESSAGES.PARK
+                ? { success: true, task: { ...(m.payload.task as Task), context: undefined } }
+                : base(m);
+        await run('createAndPark');
+
+        expect(toast()!.message).toBe('Parked “Compare pricing” · 0 tabs saved and closed');
+        expect(draft().phase).toBe('closed');
+    });
+
+    it('create & park does nothing without a title', async () => {
+        seedDraft({ title: '   ' });
+        await run('createAndPark');
+
+        expect(log).toEqual([]);
+        expect(draft().phase).toBe('ready');
+    });
+
+    it('reports a failure that is not an Error object by its text', async () => {
+        seedDraft();
+        const original = useBoardStore.getState().addTaskAndSync;
+        useBoardStore.setState({ addTaskAndSync: vi.fn().mockRejectedValue('plain failure') });
+        try {
+            await run('create');
+        } finally {
+            useBoardStore.setState({ addTaskAndSync: original });
+        }
+
+        expect(toast()).toMatchObject({ type: 'error', message: "Couldn't create the task: plain failure" });
+        expect(draft().phase).toBe('ready');
+    });
+
     it('does nothing without a title or while already creating', async () => {
         seedDraft({ title: '   ' });
         await run('create');

@@ -1012,3 +1012,51 @@ describe('validateCombine: answers of the real on-device model (two pages on inh
         expect(unchanged.bullets.map(bullet => bullet.pointIds)).toEqual([['p1-1'], ['p2-1']]);
     });
 });
+
+describe('aiTopics: malformed model answers and sessions', () => {
+    const TAGS = ['DNS caching', 'TTL', 'Caching DNS answers', 'Negative caching', 'CPU caches'];
+
+    it('leaves tag names alone, without a model call, when the session cannot be cloned', async () => {
+        const base = session();
+        const map = await canonicalTopics(base, TAGS, live());
+
+        expect(map.size).toBe(TAGS.length);
+        expect([...map.entries()].every(([tag, name]) => tag === name)).toBe(true);
+        expect(base.prompt).not.toHaveBeenCalled();
+    });
+
+    it('skips groups that are not objects or have no member list, and keeps the valid one', async () => {
+        const { base } = baseWith(() =>
+            answering(
+                json({
+                    groups: [7, null, { name: 'No members' }, { name: 'DNS caching', members: [1, 3] }],
+                })
+            )
+        );
+
+        const map = await canonicalTopics(base, TAGS, live());
+
+        expect(map.get('Caching DNS answers')).toBe('DNS caching');
+        expect(map.get('TTL')).toBe('TTL');
+    });
+
+    it('ignores labels that are not strings, and conflicts that are not objects', () => {
+        const raw = answer(
+            'DNS caching',
+            [
+                {
+                    text: 'The resolver caches every answer it receives, so repeat lookups skip the network.',
+                    from: ['a', 7, null, 'b'],
+                },
+            ],
+            [null, 'text', 3]
+        );
+
+        const result = validateCombine(raw, topicOf(DNS_POINTS), DNS_POINTS);
+
+        expect(result.combinedBy).toBe('ai');
+        expect(bulletPointIds(result)).toContainEqual(['p1-1', 'p3-1']);
+        expect(result.conflicts).toEqual([]);
+        expect(pointIdsOf(result)).toEqual(ALL_IDS);
+    });
+});

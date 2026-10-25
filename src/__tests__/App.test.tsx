@@ -111,6 +111,7 @@ describe('App', () => {
         ['Meeting', '#/notes'], // notes open the Notes view
         ['Inbox', '#/boards'], // folders open Boards
         ['Morning', '#/sessions'],
+        ['Example', '#/boards'], // saved tabs open Boards too
     ])('opens the right view for a "%s" search result', async (query, hash) => {
         render(<App />);
         await screen.findAllByText('Parked work', {}, { timeout: 3000 });
@@ -175,6 +176,44 @@ describe('App', () => {
         expect(screen.queryByRole('dialog', { name: 'Replace your data with this file?' })).toBeNull();
         fireEvent.change(input, { target: { files: [] } }); // dialog cancelled: nothing happens
         Object.defineProperty(window, 'location', { value: realLocation, configurable: true });
+    }, 20_000); // mounts the whole app and waits for a reload scheduled 1.5 s after the toast
+
+    it('opens at the Today view when the address is the root', async () => {
+        window.location.hash = '#/';
+        render(<App />);
+
+        await waitFor(() => expect(window.location.hash).toBe('#/today'));
+        expect((await screen.findAllByText('Parked work', {}, { timeout: 3000 })).length).toBeGreaterThan(0);
+    });
+
+    it('opens the view named by the address instead of the stored one', async () => {
+        window.location.hash = '#/notes';
+        render(<App />);
+
+        expect((await screen.findAllByText('Meeting notes', {}, { timeout: 10_000 })).length).toBeGreaterThan(0);
+        expect(window.location.hash).toBe('#/notes');
+        expect(useUIStore.getState().activeView).toBe('notes');
+    });
+
+    it.each([
+        ['an Error', new Error('disk is full'), 'Import failed. Your data was not changed. disk is full'],
+        ['a plain value', 'disk is full', 'Import failed. Your data was not changed.'],
+    ])('keeps the data and says so when applying an import fails with %s', async (_name, failure, message) => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.spyOn(db, 'clearAllData').mockRejectedValue(failure);
+        render(<App />);
+        await screen.findAllByText('Parked work', {}, { timeout: 3000 });
+        await go('#/settings');
+        await screen.findAllByText(/Close tabs when parking/, {}, { timeout: 10_000 });
+
+        const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+        const json = JSON.stringify({ version: '1.0.0', timestamp: '', data: { tasks: [makeTask({ id: 'imp' })] } });
+        fireEvent.change(input, { target: { files: [new File([json], 'backup.json')] } });
+        const dialog = await screen.findByRole('dialog', { name: 'Replace your data with this file?' });
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Replace my data' }));
+
+        expect(await screen.findByText(message)).toBeInTheDocument();
+        expect(screen.queryByRole('dialog', { name: 'Replace your data with this file?' })).toBeNull();
     });
 
     it('opens the park dialog from the header pill', async () => {

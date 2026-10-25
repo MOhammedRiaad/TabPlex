@@ -34,7 +34,7 @@ jobs:
             - run: npm run format:check
             - run: npm run build:privacy -- --check # landing-page/privacy.html matches PRIVACY.md
 
-            - name: Unit tests (85% coverage gate)
+            - name: Unit tests (95% coverage gate)
               run: npm run test:coverage
 
             - uses: actions/upload-artifact@v4

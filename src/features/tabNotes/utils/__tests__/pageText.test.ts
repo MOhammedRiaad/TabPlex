@@ -212,3 +212,49 @@ describe('cleanPage: language from the text', () => {
         expect(readsAsEnglish('const x = 1; let y = x * 2; return y; '.repeat(30))).toBe(false);
     });
 });
+
+describe('cleanPage: edge cases of long text', () => {
+    const block = (char: string, length: number) => para(char.repeat(length));
+
+    it('skips blocks that are only whitespace', () => {
+        const page = cleanPage(snapshot([para('   \n\t  '), enough()]), 'Page');
+
+        expect(page.sections[0].paragraphs).toEqual([expect.stringContaining('This sentence adds')]);
+    });
+
+    it('cuts a long run without sentence ends or letters into pieces', () => {
+        const page = cleanPage(snapshot([para('.'.repeat(PARAGRAPH_MAX_CHARS + 500)), enough()]), 'Page');
+
+        expect(page.sections[0].paragraphs[0]).toBe('.'.repeat(PARAGRAPH_MAX_CHARS));
+        expect(page.sections[0].paragraphs[1]).toBe('.'.repeat(500));
+    });
+
+    it('closes the paragraph being built before cutting a sentence that is too long', () => {
+        const long = 'x'.repeat(PARAGRAPH_MAX_CHARS + 500);
+        const page = cleanPage(snapshot([para(`Short opening sentence. ${long}`), enough()]), 'Page');
+
+        expect(page.sections[0].paragraphs.slice(0, 3)).toEqual([
+            'Short opening sentence.',
+            'x'.repeat(PARAGRAPH_MAX_CHARS),
+            'x'.repeat(500),
+        ]);
+    });
+
+    it('stops at the character limit when it is reached exactly, and reports truncation', () => {
+        const filled = ['a', 'b', 'c', 'd', 'e', 'f'].map(char => block(char, PARAGRAPH_MAX_CHARS));
+        const page = cleanPage(snapshot([...filled, para(`${'g'.repeat(100)} more text`)]), 'Page');
+
+        expect(page.chars).toBe(PAGE_TEXT_CHAR_LIMIT);
+        expect(page.sections[0].paragraphs).toHaveLength(6);
+        expect(page.truncated).toBe(true);
+    });
+
+    it('cuts a last block with no spaces at the character limit', () => {
+        const filled = ['a', 'b', 'c', 'd', 'e'].map(char => block(char, PARAGRAPH_MAX_CHARS));
+        const page = cleanPage(snapshot([...filled, block('f', 1000), block('z', 1500)]), 'Page');
+
+        expect(page.chars).toBe(PAGE_TEXT_CHAR_LIMIT);
+        expect(page.sections[0].paragraphs.slice(-1)[0]).toBe('z'.repeat(1000));
+        expect(page.truncated).toBe(true);
+    });
+});

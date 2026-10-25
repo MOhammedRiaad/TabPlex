@@ -705,3 +705,75 @@ describe('removePoint and removeTopic', () => {
         expect(listedIds(after)).toEqual(listedIds(topics));
     });
 });
+
+describe('topic edits with points the draft no longer lists', () => {
+    const known = (id: string, sourceRef: number, text = `Text of ${id}`): KeyPoint => ({
+        id,
+        sourceRef,
+        text,
+        topicHint: '',
+    });
+
+    it('separating by source keeps the bullet text for a point it cannot find, and drops that piece', () => {
+        const topics = [
+            topic({
+                id: 't1',
+                heading: 'Shared',
+                bullets: [bullet('b1', ['p1', 'ghost'], 'ai', 'Combined statement'), bullet('b2', ['p2'])],
+            }),
+        ];
+        const points = [known('p1', 1), known('p2', 2)];
+
+        const result = separateBySource(topics, 't1', points, []);
+
+        expect(result.map(item => [item.kind, item.sourceRef, item.heading])).toEqual([
+            ['source', 1, 'Topic 1'],
+            ['source', 2, 'Topic 2'],
+        ]);
+        expect(result[0].bullets.map(item => [item.text, item.pointIds])).toEqual([['Text of p1', ['p1']]]);
+    });
+
+    it('removing a source keeps the bullet text of a remaining point it cannot find', () => {
+        const topics = [
+            topic({
+                id: 't1',
+                heading: 'Shared',
+                bullets: [bullet('b1', ['a1', 'a2', 'ghost'], 'ai', 'Model wording')],
+            }),
+        ];
+        const points = [known('a1', 1), known('a2', 2)];
+
+        const result = removeSource(topics, 1, points, []);
+
+        const texts = allBullets(result).map(item => [item.text, item.pointIds]);
+        expect(texts).toEqual(
+            expect.arrayContaining([
+                ['Text of a2', ['a2']],
+                ['Model wording', ['ghost']],
+            ])
+        );
+    });
+
+    it('orders topics and bullets whose points have no known source after the ones that do', () => {
+        const topics = [
+            topic({
+                id: 'tx',
+                kind: 'source',
+                combinedBy: null,
+                heading: 'No ref',
+                bullets: [bullet('b9', ['ghost'])],
+            }),
+            topic({ id: 'ty', heading: 'Unknown points', bullets: [bullet('b8', ['ghost-2']), bullet('b7', ['p1'])] }),
+            topic({ id: 'tz', heading: 'Known', bullets: [bullet('b6', ['p1', 'p2'])] }),
+        ];
+
+        const result = normalizeTopics(topics, [known('p1', 1), known('p2', 2)]);
+
+        expect(result.map(item => [item.id, item.heading])).toEqual([
+            ['t1', 'Known'],
+            ['t2', 'Unknown points'],
+            ['t3', 'No ref'],
+        ]);
+        expect(result[1].bullets.map(item => item.pointIds)).toEqual([['p1'], ['ghost-2']]);
+    });
+});
