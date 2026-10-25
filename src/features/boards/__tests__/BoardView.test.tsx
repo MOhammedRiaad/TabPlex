@@ -185,6 +185,49 @@ describe('BoardView', () => {
         expect(state().tabs.find(t => t.id === 't4')).toBeUndefined();
     });
 
+    it('creates a top-level tab with tags from the header', () => {
+        render(<BoardView />);
+        fireEvent.click(screen.getByLabelText('Add tab'));
+        fireEvent.change(byId('board-tab-title'), { target: { value: 'Tagged' } });
+        fireEvent.change(byId('board-tab-url'), { target: { value: 'tagged.dev' } });
+        const tagInput = screen.getByLabelText('Add tag');
+        fireEvent.change(tagInput, { target: { value: 'q4' } });
+        fireEvent.keyDown(tagInput, { key: 'Enter' });
+        fireEvent.change(screen.getByLabelText('Add tag'), { target: { value: 'research' } });
+        fireEvent.keyDown(screen.getByLabelText('Add tag'), { key: 'Enter' });
+        fireEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+        const created = state().tabs.find(t => t.title === 'Tagged')!;
+        expect(created.folderId).toBe('');
+        expect(created.tags).toEqual(['q4', 'research']);
+    });
+
+    it('creates a tab without a tags list when none were entered', () => {
+        render(<BoardView />);
+        fireEvent.click(screen.getByLabelText('Add tab'));
+        fireEvent.change(byId('board-tab-title'), { target: { value: 'Plain' } });
+        fireEvent.change(byId('board-tab-url'), { target: { value: 'plain.dev' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+        expect(state().tabs.find(t => t.title === 'Plain')!.tags).toBeUndefined();
+    });
+
+    it('does not throw when opening a tab without the tabs API', () => {
+        render(<BoardView />);
+        Reflect.deleteProperty(fakeChrome(), 'tabs');
+
+        fireEvent.click(within(screen.getByLabelText('Tab: Loose tab')).getByText('Loose tab'));
+
+        expect(console.error).not.toHaveBeenCalled();
+    });
+
+    it('titles a board without a name as Default Board', () => {
+        useBoardStore.setState({ boards: [makeBoard({ id: 'b1', name: '' })] });
+        render(<BoardView />);
+
+        expect(screen.getByRole('heading', { name: 'Default Board' })).toBeInTheDocument();
+    });
+
     it('logs failures to open tabs', async () => {
         fakeChrome().tabs.create.mockRejectedValueOnce(new Error('blocked'));
         render(<BoardView />);
