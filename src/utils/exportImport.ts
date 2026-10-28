@@ -165,7 +165,11 @@ function pickTimerSettings(current: TimerSettings, fromFile: unknown): Partial<T
     const picked: Record<string, unknown> = {};
     if (typeof fromFile !== 'object' || fromFile === null) return picked;
     for (const [key, value] of Object.entries(fromFile)) {
-        if (!(key in current) || typeof value !== typeof current[key as keyof TimerSettings]) continue;
+        if (
+            !Object.prototype.hasOwnProperty.call(current, key) ||
+            typeof value !== typeof current[key as keyof TimerSettings]
+        )
+            continue;
         const limits = TIMER_LIMITS[key as keyof TimerSettings];
         if (limits && !(Number.isInteger(value) && (value as number) >= limits[0] && (value as number) <= limits[1])) {
             continue;

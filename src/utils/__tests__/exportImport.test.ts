@@ -391,6 +391,17 @@ describe('export / import', () => {
             expect((await chrome.storage.local.get(TRACK_ALL_TABS_KEY))[TRACK_ALL_TABS_KEY]).toBe(false);
         });
 
+        it('ignores an inherited "__proto__" key in the timer settings', async () => {
+            await wipeEverything();
+            const update = vi.spyOn(useTimerStore.getState(), 'updateSettings');
+            const timer = JSON.parse('{"workDuration": 40, "__proto__": {"workDuration": 99}}');
+            await importData(JSON.stringify({ version: EXPORT_VERSION, timestamp: '', data: {}, settings: { timer } }));
+            const call = update.mock.calls.find(c => 'workDuration' in c[0]);
+            expect(call?.[0]).toEqual({ workDuration: 40 });
+            expect(Object.getPrototypeOf(call?.[0])).toBe(Object.prototype);
+            update.mockRestore();
+        });
+
         it('applies only the timer settings the app knows, with the right type and sensible numbers', async () => {
             await wipeEverything();
             const timer = {
