@@ -614,3 +614,7 @@ is corrected above: the background copy lost the moved tabs because `BoardNode.h
 - **Wording (T4).** The Clear All Data row says that recording of opened pages is turned off. The Settings subtitle says
   TabPlex. Import preview warnings use the singular for 1 ("1 item had no creation date", "1 folder without a board was
   moved"). Other "TabBoard" strings (the welcome guide row, the route description) are out of scope.
+- **Delete-all fix (U1, Revision 3 note).** "Force delete is unchanged" was wrong for IndexedDB: `deleteFolder(id)` with
+  `moveTabs` false dropped the tabs from the page only, so they stayed in IndexedDB and came back as unfiled tabs after a
+  reload. The action (and `deleteFolderSilently`, same shared IndexedDB, idempotent deletes) now also deletes each of the
+  folder's tabs from IndexedDB, with no per-tab message; the single `DELETE_FOLDER` covers the background.
