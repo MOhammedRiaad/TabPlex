@@ -7,7 +7,7 @@ import { useTimerStore } from '../../../store/timerStore';
 import { useStorageSync } from '../../../hooks/useStorageSync';
 import * as db from '../../../utils/storage';
 import { fakeChrome } from '../../../test/chromeMock';
-import { makeBoard, makeTask } from '../../../test/factories';
+import { makeBoard, makeNote, makeTask } from '../../../test/factories';
 import { TRACK_ALL_TABS_KEY } from '../../../utils/tabTracking';
 
 const KEY = TRACK_ALL_TABS_KEY;
@@ -138,16 +138,37 @@ describe('clearEverything ordering and edge cases', () => {
 
     it('while the tab waits for its reload, a store change cannot bring old data back into IndexedDB', async () => {
         await db.addBoard(makeBoard({ id: 'old' }));
-        useBoardStore.setState({ boards: [makeBoard({ id: 'old' })], tasks: [makeTask({ id: 'old-task' })] });
+        await db.addTask(makeTask({ id: 'old-task' }));
+        await db.addNote(makeNote({ id: 'old-note' }));
+        useBoardStore.setState({
+            boards: [makeBoard({ id: 'old' })],
+            tasks: [makeTask({ id: 'old-task' })],
+            notes: [makeNote({ id: 'old-note' })],
+        });
         const { unmount } = renderHook(() => useStorageSync());
+        await waitFor(() => expect(useBoardStore.getState().boards).toHaveLength(1));
         await waitFor(() => expect(fakeChrome().runtime.onMessage.listeners.size).toBeGreaterThan(0));
 
         await clearEverything();
-        act(() => useBoardStore.setState({ notes: [] }));
+        // Every collection gets a new array, so every sync effect runs again against the (empty) store
+        act(() =>
+            useBoardStore.setState(s => ({
+                boards: [...s.boards],
+                folders: [...s.folders],
+                tabs: [...s.tabs],
+                tasks: [...s.tasks],
+                notes: [...s.notes],
+                sessions: [...s.sessions],
+            }))
+        );
         await new Promise(r => setTimeout(r, 50));
 
         expect(await db.getAllBoards()).toEqual([]);
         expect(await db.getAllTasks()).toEqual([]);
+        expect(await db.getAllNotes()).toEqual([]);
+        expect(await db.getAllFolders()).toEqual([]);
+        expect(await db.getAllTabs()).toEqual([]);
+        expect(await db.getAllSessions()).toEqual([]);
         unmount();
     });
 });

@@ -138,12 +138,23 @@ describe('clearEverything', () => {
                     () => undefined
                 );
             }
+            // New arrays for the other collections too, so their sync effects run against the emptied store
+            useBoardStore.setState(s => ({
+                folders: [...s.folders],
+                tabs: [...s.tabs],
+                tasks: [...s.tasks],
+                notes: [...s.notes],
+                sessions: [...s.sessions],
+            }));
         });
 
         await waitFor(async () => expect((await db.getAllBoards()).map(b => b.id)).toEqual(['default_board']));
+        await new Promise(r => setTimeout(r, 50));
         expect(await db.getAllTasks()).toEqual([]);
         expect(await db.getAllTabs()).toEqual([]);
         expect(await db.getAllFolders()).toEqual([]);
+        expect(await db.getAllNotes()).toEqual([]);
+        expect(await db.getAllSessions()).toEqual([]);
     });
 
     it('leaves the store as it was when a storage step fails, and sends nothing', async () => {

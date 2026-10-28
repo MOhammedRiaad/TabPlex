@@ -343,7 +343,10 @@ describe('AC6: timer settings are filtered', () => {
         );
         expect(settings.workDuration).toBe(30);
         expect('evil' in settings).toBe(false);
-        expect(({} as any).x).toBeUndefined();
+        // The file's "__proto__" must not become the prototype of the result, nor leak its keys into it
+        expect(Object.getPrototypeOf(settings)).toBe(Object.prototype);
+        expect(Object.prototype.hasOwnProperty.call(settings, 'x')).toBe(false);
+        expect(Object.prototype.hasOwnProperty.call(settings, 'constructor')).toBe(false);
         expect(Object.keys(settings).sort()).toEqual(Object.keys(defaults()).sort());
     });
 
