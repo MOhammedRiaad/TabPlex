@@ -246,7 +246,7 @@ test.describe('import of an old-format file', () => {
             await app.locator('input[type="file"]').setInputFiles(filePath);
             const dialog = app.getByRole('dialog', { name: 'Replace your data with this file?' });
             await expect(dialog.getByText(/had no creation date/).first()).toBeVisible();
-            await expect(dialog.getByText(/without a board were moved/)).toBeVisible();
+            await expect(dialog.getByText(/1 folder without a board was moved to/)).toBeVisible();
             const reloaded = app.waitForEvent('load');
             await dialog.getByRole('button', { name: 'Replace my data' }).click();
             await expect(app.getByText('Data imported successfully! Reloading...')).toBeVisible();
@@ -327,5 +327,118 @@ test.describe('folder delete broadcast', () => {
         expect(((await stored<Tab[]>(serviceWorker, 'tabboard_tabs')) ?? []).find(x => x.id === tab.id)?.folderId).toBe(
             ''
         );
+    });
+});
+
+test.describe('folder delete dialog with two TabPlex tabs', () => {
+    const t = now();
+    const board: Board = { id: 'default_board', name: 'My Board', createdAt: t, updatedAt: t };
+    const folder = (id: string, name: string, order: number): Folder => ({
+        id,
+        name,
+        boardId: board.id,
+        color: '#3b82f6',
+        order,
+        createdAt: t,
+    });
+    const tabIn = (id: string, folderId: string): Tab => ({
+        id,
+        title: `Title ${id}`,
+        url: `https://e2e.test/${id}`,
+        folderId,
+        tabId: null,
+        lastAccessed: t,
+        status: 'closed',
+        createdAt: t,
+    });
+
+    /** Folder A with two tabs and folder B with one, shown in two TabPlex tabs on Boards */
+    async function openTwoTabs(app: Page, context: import('@playwright/test').BrowserContext, extensionId: string) {
+        await seed(app, {
+            boards: [board],
+            folders: [folder('folder_a', 'Folder Alpha', 0), folder('folder_b', 'Folder Beta', 1)],
+            tabs: [tabIn('tab_a1', 'folder_a'), tabIn('tab_a2', 'folder_a'), tabIn('tab_b1', 'folder_b')],
+        });
+        await app.goto(appUrl(extensionId, 'boards'));
+        await app.reload();
+        const second = await context.newPage();
+        await second.goto(appUrl(extensionId, 'boards'));
+        for (const page of [app, second]) {
+            await expect(page.getByRole('button', { name: 'Folder: Folder Alpha' })).toContainText('2');
+            await expect(page.getByRole('button', { name: 'Folder: Folder Beta' })).toContainText('1');
+        }
+        return second;
+    }
+
+    async function openDeleteDialog(page: Page) {
+        const row = page.getByRole('button', { name: 'Folder: Folder Alpha' });
+        await row.hover();
+        await row.getByRole('button', { name: 'Delete folder' }).click();
+        await expect(page.getByRole('heading', { name: 'Delete Folder' })).toBeVisible();
+        return page.locator('.board-modal-content', { has: page.getByRole('heading', { name: 'Delete Folder' }) });
+    }
+
+    test('"Move tabs to another folder" keeps the tabs in the target folder everywhere', async ({
+        app,
+        context,
+        extensionId,
+        serviceWorker,
+    }) => {
+        const second = await openTwoTabs(app, context, extensionId);
+        const dialog = await openDeleteDialog(app);
+        await dialog.getByRole('combobox').selectOption({ label: 'Folder Beta' });
+        await dialog.getByRole('button', { name: 'Move & Delete Folder' }).click();
+
+        for (const page of [app, second]) {
+            await expect(page.getByText('Folder Alpha')).toHaveCount(0);
+            await expect(page.getByRole('button', { name: 'Folder: Folder Beta' })).toContainText('3');
+        }
+        // Both pages settle their IndexedDB and the background copy; then everything survives a reload
+        await expect
+            .poll(async () => (await idbAll<Tab>(second, 'tabs')).map(x => `${x.id}:${x.folderId}`).sort())
+            .toEqual(['tab_a1:folder_b', 'tab_a2:folder_b', 'tab_b1:folder_b']);
+        await expect
+            .poll(async () =>
+                ((await stored<Tab[]>(serviceWorker, 'tabboard_tabs')) ?? []).map(x => `${x.id}:${x.folderId}`).sort()
+            )
+            .toEqual(['tab_a1:folder_b', 'tab_a2:folder_b', 'tab_b1:folder_b']);
+        await Promise.all([app.reload(), second.reload()]);
+        for (const page of [app, second]) {
+            await expect(page.getByRole('button', { name: 'Folder: Folder Beta' })).toContainText('3');
+            await expect(page.getByText('Folder Alpha')).toHaveCount(0);
+        }
+        expect((await idbAll<Folder>(second, 'folders')).map(f => f.id)).toEqual(['folder_b']);
+    });
+
+    test('"Delete folder and all tabs" removes the tabs from every copy and they do not return', async ({
+        app,
+        context,
+        extensionId,
+        serviceWorker,
+    }) => {
+        const second = await openTwoTabs(app, context, extensionId);
+        const dialog = await openDeleteDialog(app);
+        await dialog.getByText('Delete folder and all tabs').click();
+        await dialog.getByRole('button', { name: 'Delete Everything' }).click();
+
+        for (const page of [app, second]) {
+            await expect(page.getByText('Folder Alpha')).toHaveCount(0);
+            await expect(page.getByRole('button', { name: 'Folder: Folder Beta' })).toContainText('1');
+        }
+        await expect.poll(async () => (await idbAll<Tab>(second, 'tabs')).map(x => x.id)).toEqual(['tab_b1']);
+        await expect
+            .poll(async () => ((await stored<Tab[]>(serviceWorker, 'tabboard_tabs')) ?? []).map(x => x.id))
+            .toEqual(['tab_b1']);
+
+        // After a reload of both pages the deleted tabs have not reappeared (for example as unfiled)
+        await Promise.all([app.reload(), second.reload()]);
+        for (const page of [app, second]) {
+            await expect(page.getByRole('button', { name: 'Folder: Folder Beta' })).toContainText('1');
+            await expect(page.getByText('Folder Alpha')).toHaveCount(0);
+            await expect(page.getByText('Title tab_a1')).toHaveCount(0);
+            await expect(page.getByText('Title tab_a2')).toHaveCount(0);
+        }
+        expect((await idbAll<Tab>(second, 'tabs')).map(x => x.id)).toEqual(['tab_b1']);
+        expect(((await stored<Tab[]>(serviceWorker, 'tabboard_tabs')) ?? []).map(x => x.id)).toEqual(['tab_b1']);
     });
 });
