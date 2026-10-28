@@ -169,7 +169,7 @@ describe('useStorageSync', () => {
         await db.addFolder(makeFolder({ id: 'f1' }));
         await db.addFolder(makeFolder({ id: 'f2' }));
         await db.addTab(makeTab({ id: 'moved', folderId: 'f1' }));
-        renderHook(() => useStorageSync());
+        const { unmount } = renderHook(() => useStorageSync());
         await waitFor(() => expect(state().tabs).toHaveLength(1));
 
         broadcast({ type: 'STORAGE_FOLDER_DELETED', payload: { id: 'f1', moveTabs: true, targetFolderId: 'f2' } });
@@ -181,6 +181,12 @@ describe('useStorageSync', () => {
         act(() => useBoardStore.setState({ tabs: [makeTab({ id: 'x', folderId: 'f2' })] }));
         broadcast({ type: 'STORAGE_FOLDER_DELETED', payload: { id: 'f2' } });
         expect(state().tabs).toEqual([]);
+
+        // The hook mirrors the store into IndexedDB in the background, so the stray tab 'x' lands there after this test.
+        // Wait for it and clear it here; otherwise it can land after the next test's clear and hydrate into that test.
+        unmount();
+        await waitFor(async () => expect((await db.getAllTabs()).map(t => t.id)).toEqual(['x']));
+        await db.clearAllData();
     });
 
     it('also listens to window messages, reloads after an import and cleans up', async () => {

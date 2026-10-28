@@ -181,6 +181,40 @@ describe('T1 regression: folder delete dialog keeps moved tabs', () => {
         second.unmount();
     });
 
+    it('after delete-all, a reload (hydrating from IndexedDB) does not bring the tabs back', async () => {
+        const dialog = openDialog('Source');
+        fireEvent.click(within(dialog).getByText('Delete folder and all tabs'));
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Delete Everything' }));
+        await waitFor(async () => expect(byId(await db.getAllTabs())).toEqual({ c: 'dst', d: 'oth' }));
+
+        // A fresh page: empty store, then the hook loads from IndexedDB
+        act(() => useBoardStore.setState({ boards: [], folders: [], tabs: [] }));
+        const fresh = renderHook(() => useStorageSync());
+        await waitFor(() => expect(state().tabs.length).toBeGreaterThan(0));
+        expect(
+            state()
+                .tabs.map(t => t.id)
+                .sort()
+        ).toEqual(['c', 'd']);
+        expect(state().folders.map(f => f.id)).not.toContain('src');
+        fresh.unmount();
+    });
+
+    it('deleteFolderSilently with a tab another window already deleted: no error, no messages, no loop', async () => {
+        await db.deleteTab('a'); // the other window got there first
+        fakeChrome().runtime.sendMessage.mockClear();
+        (console.error as ReturnType<typeof vi.fn>).mockClear();
+
+        act(() => state().deleteFolderSilently('src'));
+        act(() => state().deleteFolderSilently('src')); // duplicate delivery
+        expect(byId(state().tabs)).toEqual({ c: 'dst', d: 'oth' });
+        await waitFor(async () => expect(byId(await db.getAllTabs())).toEqual({ c: 'dst', d: 'oth' }));
+        expect((await db.getAllFolders()).map(f => f.id)).not.toContain('src');
+        await Promise.resolve();
+        expect(console.error).not.toHaveBeenCalled();
+        expect(sent()).toEqual([]);
+    });
+
     it('a rejected DELETE_FOLDER is logged, not thrown, and nothing is retried per tab', async () => {
         fakeChrome().runtime.sendMessage.mockImplementation((message: any) =>
             message.type === 'DELETE_FOLDER' ? Promise.reject(new Error('worker asleep')) : Promise.resolve({})
