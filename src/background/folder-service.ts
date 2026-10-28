@@ -8,11 +8,11 @@ interface DeleteFolderPayload {
     targetFolderId?: string;
 }
 
-/** The tabs of a folder that is going away: moved to another folder, or deleted with it */
 /** The target folder id, or '' (unfiled) for anything that is not a string */
 const targetOf = (payload: DeleteFolderPayload): string =>
     typeof payload.targetFolderId === 'string' ? payload.targetFolderId : '';
 
+/** The tabs of a folder that is going away: moved to another folder, or deleted with it */
 async function releaseFolderTabs(payload: DeleteFolderPayload, moveTabs: boolean): Promise<void> {
     const { id } = payload;
     const tabsInFolder = (await getAllTabs()).filter(tab => tab.folderId === id);

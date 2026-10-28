@@ -276,6 +276,8 @@ async function applyWithRollback(parsedData: ExportData, backupJson: string): Pr
     try {
         await applyImport(parsedData);
     } catch (error) {
+        // Known limit: when the current data has no recording setting and the failed file set it to false, this
+        // rollback cannot remove it again, so recording stays off. That is the privacy-safe direction.
         try {
             await applyImport(JSON.parse(backupJson) as ExportData);
         } catch (restoreError) {
