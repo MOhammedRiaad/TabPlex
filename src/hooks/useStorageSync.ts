@@ -381,10 +381,8 @@ export const useStorageSync = () => {
             }
         };
 
-        // Listen for messages from background script
-        window.addEventListener('message', handleStorageChange);
-
-        // Also listen for messages from extension runtime.
+        // Only chrome.runtime.onMessage drives sync: it is reachable by this extension's own contexts only.
+        // A window 'message' listener would accept messages from any embedded frame (e.g. a tldraw embed).
         // Return false: this listener never responds. Returning true kept every message channel open
         // until it timed out ("message port closed before a response was received").
         const handleRuntimeMessage = (message: unknown) => {
@@ -394,7 +392,6 @@ export const useStorageSync = () => {
         chrome.runtime.onMessage.addListener(handleRuntimeMessage);
 
         return () => {
-            window.removeEventListener('message', handleStorageChange);
             chrome.runtime.onMessage.removeListener(handleRuntimeMessage);
         };
         // Store actions are stable references: the listeners are registered once

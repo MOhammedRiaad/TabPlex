@@ -189,20 +189,47 @@ describe('useStorageSync', () => {
         await db.clearAllData();
     });
 
-    it('also listens to window messages, reloads after an import and cleans up', async () => {
+    it('applies runtime messages, reloads after an import and cleans up', async () => {
         const reload = vi.fn();
         Object.defineProperty(window, 'location', { value: { ...window.location, reload }, configurable: true });
         const { unmount } = renderHook(() => useStorageSync());
-        act(() => {
-            window.dispatchEvent(
-                new MessageEvent('message', { data: { type: 'STORAGE_NOTE_ADDED', payload: makeNote({ id: 'w' }) } })
-            );
-        });
+        broadcast({ type: 'STORAGE_NOTE_ADDED', payload: makeNote({ id: 'w' }) });
         expect(state().notes.map(n => n.id)).toEqual(['w']);
         broadcast({ type: 'STORAGE_DATA_IMPORTED' });
         expect(reload).toHaveBeenCalled();
         unmount();
         expect(fakeChrome().runtime.onMessage.listeners.size).toBe(0);
+    });
+
+    it('ignores window messages from pages or frames: no state change, reload or IndexedDB write', async () => {
+        const reload = vi.fn();
+        Object.defineProperty(window, 'location', { value: { ...window.location, reload }, configurable: true });
+        localStorage.setItem('pomodoro-storage', '{}');
+        const { unmount } = renderHook(() => useStorageSync());
+        await waitFor(() => expect(fakeChrome().runtime.onMessage.listeners.size).toBeGreaterThan(0));
+
+        const post = (data: unknown) =>
+            act(() => {
+                window.dispatchEvent(new MessageEvent('message', { data, origin: 'https://evil.example' }));
+            });
+        post({ type: 'STORAGE_DATA_CLEARED' });
+        post({ type: 'STORAGE_DATA_IMPORTED' });
+        post({ type: 'STORAGE_TAB_ADDED', payload: makeTab({ id: 'evil', url: 'javascript:alert(1)' }) });
+        post({ type: 'STORAGE_NOTE_ADDED', payload: makeNote({ id: 'evil' }) });
+        window.postMessage({ type: 'STORAGE_DATA_CLEARED' }, '*');
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(reload).not.toHaveBeenCalled();
+        expect(localStorage.getItem('pomodoro-storage')).toBe('{}');
+        expect(state().tabs).toEqual([]);
+        expect(state().notes).toEqual([]);
+        expect(await db.getAllTabs()).toEqual([]);
+        expect(await db.getAllNotes()).toEqual([]);
+
+        // The runtime path still works
+        broadcast({ type: 'STORAGE_NOTE_ADDED', payload: makeNote({ id: 'ok' }) });
+        expect(state().notes.map(n => n.id)).toEqual(['ok']);
+        unmount();
     });
 
     it("ignores tab updates for tabs this page doesn't have (the background tracks every browser tab)", async () => {
