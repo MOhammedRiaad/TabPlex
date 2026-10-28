@@ -578,6 +578,19 @@ describe('special cases', () => {
         ]);
     });
 
+    it('DELETE_FOLDER treats a target folder that is not a string as unfiled', async () => {
+        await chrome.storage.local.set({ tabboard_tabs: [makeTab({ id: 't1' })] });
+        call(handlers.folder, 'DELETE_FOLDER', { id: 'folder_1', moveTabs: true, targetFolderId: { evil: 1 } });
+        await flush();
+        expect((store().tabboard_tabs as any[])[0].folderId).toBe('');
+        const payloads = vi
+            .mocked(chrome.runtime.sendMessage)
+            .mock.calls.map(c => c[0] as unknown as { type: string; payload?: unknown })
+            .filter(m => m.type === 'STORAGE_FOLDER_DELETED')
+            .map(m => m.payload);
+        expect(payloads).toEqual([{ id: 'folder_1', moveTabs: true, targetFolderId: '' }]);
+    });
+
     it('UPDATE_HISTORY fails for unknown items', async () => {
         const { sendResponse } = call(handlers.history, 'UPDATE_HISTORY', { id: 'nope', updates: {} });
         await flush();
