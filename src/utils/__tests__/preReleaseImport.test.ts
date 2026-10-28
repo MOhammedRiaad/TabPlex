@@ -131,9 +131,7 @@ describe('AC5: createdAt', () => {
             [name]: [builders[name](), { ...(builders[name]() as object), id: 'two' }],
         });
         for (const item of (collections as any)[name]) expect(item.createdAt).toBe(EPOCH_ISO);
-        expect(warnings.filter(w => w.includes('no creation date'))).toEqual([
-            `${name}: 2 item(s) had no creation date`,
-        ]);
+        expect(warnings.filter(w => w.includes('no creation date'))).toEqual([`${name}: 2 items had no creation date`]);
     });
 
     it('null counts as missing, an existing date is kept, and an empty text is kept', () => {
@@ -145,7 +143,7 @@ describe('AC5: createdAt', () => {
             ],
         });
         expect(collections.tasks.map(t => t.createdAt)).toEqual([EPOCH_ISO, '2024-05-05T00:00:00.000Z', '']);
-        expect(warnings).toEqual(['tasks: 1 item(s) had no creation date']);
+        expect(warnings).toEqual(['tasks: 1 item had no creation date']);
     });
 
     it.each([[5], [true], [{}], [[]], [0]])('a createdAt of %j rejects the file and names the field', bad => {
@@ -231,7 +229,7 @@ describe('AC6: list and settings shapes', () => {
             ],
         });
         expect(collections.sessions.map(s => s.tabIds)).toEqual([[], [], ['t']]);
-        expect(warnings).toContain('sessions: 2 session(s) had no tab list');
+        expect(warnings).toContain('sessions: 2 sessions had no tab list');
     });
 
     it.each([
@@ -388,7 +386,7 @@ describe('AC7: folders without a board', () => {
             },
         ]);
         expect(collections.boards.map(b => b.id)).toEqual(['real', 'default_board']);
-        expect(warnings).toContain('folders: 4 folder(s) without a board were moved to "My Board"');
+        expect(warnings).toContain('folders: 4 folders without a board were moved to "My Board"');
     });
 
     it('works when the file has no boards at all', () => {
@@ -401,7 +399,7 @@ describe('AC7: folders without a board', () => {
         const { collections, warnings } = ok({ boards: [existing], folders: [makeFolder({ boardId: 'gone' })] });
         expect(collections.boards).toEqual([existing]);
         expect(collections.folders[0].boardId).toBe('default_board');
-        expect(warnings.some(w => w.includes('1 folder(s) without a board'))).toBe(true);
+        expect(warnings.some(w => w.includes('1 folder without a board'))).toBe(true);
     });
 
     it('does nothing and warns about nothing when every folder has its board', () => {
@@ -436,7 +434,7 @@ describe('AC7: folders without a board', () => {
         const { collections, warnings } = ok({ folders });
         expect(collections.folders.every(f => f.boardId === 'default_board')).toBe(true);
         expect(collections.boards).toHaveLength(1);
-        expect(warnings.join()).toContain('20000 folder(s)');
+        expect(warnings.join()).toContain('20000 folders');
     });
 
     it('the preview lists the repairs and importData stores a visible folder', async () => {
@@ -447,8 +445,8 @@ describe('AC7: folders without a board', () => {
         const summary = previewImport(text);
         expect(summary.warnings).toEqual(
             expect.arrayContaining([
-                'folders: 1 folder(s) without a board were moved to "My Board"',
-                'boards: 1 item(s) had no creation date',
+                'folders: 1 folder without a board was moved to "My Board"',
+                'boards: 1 item had no creation date',
             ])
         );
         expect(summary.counts.boards).toBe(2);

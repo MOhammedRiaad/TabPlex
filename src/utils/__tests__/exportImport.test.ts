@@ -268,8 +268,8 @@ describe('export / import', () => {
             );
             expect(summary.warnings).toEqual(
                 expect.arrayContaining([
-                    'boards: 1 item(s) had no creation date',
-                    'folders: 1 folder(s) without a board were moved to "My Board"',
+                    'boards: 1 item had no creation date',
+                    'folders: 1 folder without a board was moved to "My Board"',
                 ])
             );
             expect(summary.counts).toEqual({ boards: 2, folders: 1 });

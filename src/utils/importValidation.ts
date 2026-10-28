@@ -225,11 +225,19 @@ function sanitizeCollection(name: CollectionName, value: unknown, warnings: stri
     });
 
     if (byId.size < value.length && errors.length === 0) {
-        warnings.push(`${name}: ${value.length - byId.size} repeated item(s) merged`);
+        const repeated = value.length - byId.size;
+        warnings.push(`${name}: ${repeated} repeated ${plural(repeated, 'item')} merged`);
     }
-    if (blankedUrls > 0) warnings.push(`${name}: ${blankedUrls} link(s) with an unsafe address were emptied`);
-    if (undated > 0) warnings.push(`${name}: ${undated} item(s) had no creation date`);
-    if (withoutTabList > 0) warnings.push(`sessions: ${withoutTabList} session(s) had no tab list`);
+    if (blankedUrls > 0) {
+        const verb = blankedUrls === 1 ? 'was' : 'were';
+        warnings.push(`${name}: ${blankedUrls} ${plural(blankedUrls, 'link')} with an unsafe address ${verb} emptied`);
+    }
+    if (undated > 0) {
+        warnings.push(`${name}: ${undated} ${plural(undated, 'item')} had no creation date`);
+    }
+    if (withoutTabList > 0) {
+        warnings.push(`sessions: ${withoutTabList} ${plural(withoutTabList, 'session')} had no tab list`);
+    }
     return [...byId.values()];
 }
 
@@ -274,7 +282,13 @@ function attachOrphanFolders(collections: ImportCollections, warnings: string[])
             { id: DEFAULT_BOARD_ID, name: 'My Board', color: '#3b82f6', createdAt: now, updatedAt: now },
         ];
     }
-    warnings.push(`folders: ${moved} folder(s) without a board were moved to "My Board"`);
+    const verb = moved === 1 ? 'was' : 'were';
+    warnings.push(`folders: ${moved} ${plural(moved, 'folder')} without a board ${verb} moved to "My Board"`);
+}
+
+/** "1 item" / "2 items" for the warnings shown in the import preview */
+function plural(count: number, noun: string): string {
+    return count === 1 ? noun : `${noun}s`;
 }
 
 /** Problems with the shape of the settings and canvas settings of an export file (not the collections) */

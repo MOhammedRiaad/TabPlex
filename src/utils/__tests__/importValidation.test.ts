@@ -74,6 +74,21 @@ describe('sanitizeCollections', () => {
         expect(warnings).toHaveLength(3);
     });
 
+    it('words the link and repeated-item warnings in the singular and the plural', () => {
+        const unsafe = (id: string) => makeTab({ id, url: 'javascript:1', favicon: '' });
+        const one = ok({ tabs: [unsafe('a')], notes: [makeNote({ id: 'n' }), makeNote({ id: 'n' })] }).warnings;
+        expect(one).toContain('tabs: 1 link with an unsafe address was emptied');
+        expect(one).toContain('notes: 1 repeated item merged');
+
+        const many = ok({
+            tabs: [unsafe('a'), unsafe('b')],
+            notes: [makeNote({ id: 'n' }), makeNote({ id: 'n' }), makeNote({ id: 'n' })],
+        }).warnings;
+        expect(many).toContain('tabs: 2 links with an unsafe address were emptied');
+        expect(many).toContain('notes: 2 repeated items merged');
+        expect([...one, ...many].join()).not.toContain('(s)');
+    });
+
     it('merges repeated ids, keeping the last, and keeps only canvas objects', () => {
         const { collections, canvases, warnings } = ok({
             notes: [makeNote({ id: 'n', content: 'first' }), makeNote({ id: 'n', content: 'last' })],
@@ -118,13 +133,13 @@ describe('sanitizeCollections: dates, lists, text and orphan folders', () => {
         const dateWarnings = warnings.filter(w => w.includes('no creation date'));
         expect(dateWarnings.sort()).toEqual(
             [
-                'boards: 2 item(s) had no creation date',
-                'folders: 1 item(s) had no creation date',
-                'tabs: 1 item(s) had no creation date',
-                'tasks: 1 item(s) had no creation date',
-                'notes: 1 item(s) had no creation date',
-                'sessions: 1 item(s) had no creation date',
-                'history: 1 item(s) had no creation date',
+                'boards: 2 items had no creation date',
+                'folders: 1 item had no creation date',
+                'tabs: 1 item had no creation date',
+                'tasks: 1 item had no creation date',
+                'notes: 1 item had no creation date',
+                'sessions: 1 item had no creation date',
+                'history: 1 item had no creation date',
             ].sort()
         );
     });
@@ -213,7 +228,7 @@ describe('sanitizeCollections: dates, lists, text and orphan folders', () => {
             tabs: [{ id: 't' }],
         });
         expect(collections.sessions[0].tabIds).toEqual([]);
-        expect(warnings).toContain('sessions: 1 session(s) had no tab list');
+        expect(warnings).toContain('sessions: 1 session had no tab list');
         expect(collections.tabs[0]).toMatchObject({ title: '', url: '' });
     });
 
@@ -232,7 +247,7 @@ describe('sanitizeCollections: dates, lists, text and orphan folders', () => {
         const created = collections.boards.filter(b => b.id === 'default_board');
         expect(created).toEqual([expect.objectContaining({ name: 'My Board', color: '#3b82f6' })]);
         expect(new Date(created[0].createdAt).getTime()).toBeGreaterThanOrEqual(before);
-        expect(warnings).toContain('folders: 2 folder(s) without a board were moved to "My Board"');
+        expect(warnings).toContain('folders: 2 folders without a board were moved to "My Board"');
         expect(collections.tabs.map(t => t.folderId)).toEqual(['', 'nowhere']);
     });
 

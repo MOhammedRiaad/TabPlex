@@ -109,7 +109,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
         <div className="settings-view">
             <div className="settings-header">
                 <h2>Settings</h2>
-                <p className="settings-subtitle">Manage your TabBoard preferences and data</p>
+                <p className="settings-subtitle">Manage your TabPlex preferences and data</p>
             </div>
 
             <div className="settings-content">
@@ -193,7 +193,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                         <div className="setting-item danger">
                             <div className="setting-info">
                                 <h4>Clear All Data</h4>
-                                <p>Permanently delete all your data (cannot be undone)</p>
+                                <p>
+                                    Permanently delete all your data (cannot be undone). Recording of the pages you open
+                                    is turned off.
+                                </p>
                             </div>
                             <button className="setting-action-btn danger" onClick={handleClearData}>
                                 🗑️ Clear Data
