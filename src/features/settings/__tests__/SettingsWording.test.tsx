@@ -24,12 +24,12 @@ describe('Settings wording', () => {
         expect(document.body.textContent).not.toContain('TabBoard preferences');
     });
 
-    it('the Clear All Data row states the deletion and that page recording is turned off', () => {
+    it('the Clear All Data row states the deletion and that page recording will be turned off', () => {
         renderSettings();
         const row = screen.getByRole('heading', { name: 'Clear All Data' }).closest('.setting-item') as HTMLElement;
         const text = (row.querySelector('p')?.textContent ?? '').replace(/\s+/g, ' ').trim();
         expect(text).toBe(
-            'Permanently delete all your data (cannot be undone). Recording of the pages you open is turned off.'
+            'Permanently delete all your data (cannot be undone). Recording of the pages you open will be turned off.'
         );
         expect(row.querySelector('button')).toHaveTextContent('Clear Data');
     });

@@ -32,13 +32,13 @@ describe('SettingsView', () => {
     });
     afterEach(() => vi.useRealTimers());
 
-    it('uses the TabPlex name in the subtitle and tells in the Clear All Data row that recording is turned off', () => {
+    it('uses the TabPlex name in the subtitle and tells in the Clear All Data row that recording will be turned off', () => {
         renderSettings();
         expect(screen.getByText('Manage your TabPlex preferences and data')).toBeInTheDocument();
         expect(screen.queryByText(/TabBoard preferences/)).toBeNull();
         const row = screen.getByRole('heading', { name: 'Clear All Data' }).closest('.setting-item') as HTMLElement;
         expect(row).toHaveTextContent(/cannot be undone/);
-        expect(row).toHaveTextContent(/Recording of the pages you open is turned off/);
+        expect(row).toHaveTextContent(/Recording of the pages you open will be turned off/);
     });
 
     it('saves the greeting name as typed and removes it when cleared', () => {

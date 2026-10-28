@@ -195,7 +195,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                                 <h4>Clear All Data</h4>
                                 <p>
                                     Permanently delete all your data (cannot be undone). Recording of the pages you open
-                                    is turned off.
+                                    will be turned off.
                                 </p>
                             </div>
                             <button className="setting-action-btn danger" onClick={handleClearData}>

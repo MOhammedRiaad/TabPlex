@@ -1,12 +1,12 @@
 # Spec: Pre-release fixes, PR 1 (release blockers)
 
-|             |                                                                                                                                                    |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | Implemented on `feature/pre-release-fixes` (2026-10-25); waiting for the browser tester, the human check and the reviews. Q1 and Q2 approved at G2 |
-| **Owner**   | Mohamed                                                                                                                                            |
-| **Created** | 2026-10-25                                                                                                                                         |
-| **Branch**  | `feature/pre-release-fixes`, cut from `develop` @ `9cd9a39` (PR #67 is already merged)                                                             |
-| **Source**  | Mohamed's pre-release audit of `develop` against `main` (`v1.3.0`, `82fb732`), corrected by `.claude/work/pre-release-fixes/03-challenge.md`       |
+|             |                                                                                                                                                                         |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**  | Implemented on `feature/pre-release-fixes`; browser-tested (Chrome 156, Edge 157) and human-verified 2026-10-28 (`07-human-signoff.md`, pass). Q1 and Q2 approved at G2 |
+| **Owner**   | Mohamed                                                                                                                                                                 |
+| **Created** | 2026-10-25                                                                                                                                                              |
+| **Branch**  | `feature/pre-release-fixes`, cut from `develop` @ `9cd9a39` (PR #67 is already merged)                                                                                  |
+| **Source**  | Mohamed's pre-release audit of `develop` against `main` (`v1.3.0`, `82fb732`), corrected by `.claude/work/pre-release-fixes/03-challenge.md`                            |
 
 The audit is split into three PRs (challenge C14). This spec is **PR 1**: the fixes that should land before `develop`
 goes to `main`. PR 2 (recorded pages reaching the UI) and PR 3 (message sender check, error toasts, markdown and
@@ -224,7 +224,7 @@ output is what the background receives.
    when there are no errors. With `boardIds = new Set(boards.map(b => b.id))`, every folder whose `boardId` is not a
    non-empty string in `boardIds` gets `boardId: 'default_board'`. If any were moved and `default_board` is not in
    `boardIds`, append
-   `{ id: 'default_board', name: 'My Board', color: '#3b82f6', createdAt: EPOCH_ISO, updatedAt: EPOCH_ISO }` (same id, name and color as `BoardView.tsx:65-71` and `saveToBoards.ts:9`). Warning:
+   `{ id: 'default_board', name: 'My Board', color: '#3b82f6', createdAt/updatedAt: the import time, not `EPOCH_ISO` (C5) }` (same id, name and color as `BoardView.tsx:65-71` and `saveToBoards.ts:9`). Warning:
    `folders: ${n} folder(s) without a board were moved to "My Board"`. O(n) with the `Set`.
 4. **Settings shape**, new export `checkSettingsShape(file: Record<string, unknown>): string[]` that returns errors:
    `settings` (if present) is an object; `settings.extension`, `settings.page` and `settings.timer` (if present) are
@@ -382,12 +382,21 @@ Echo-loop check:
 - `src/features/settings/utils/clearEverything.ts`: `clearEverything()` (§5.2).
 - `src/features/settings/__tests__/clearEverything.test.ts`.
 - `e2e/cross-tab-sync.spec.ts`: the two cross-tab tests (§11).
+- `e2e/data-lifecycle.spec.ts`: Clear All Data, import, Infer and folder delete through the UI (two TabPlex tabs).
+- Unit tests for T1/U1 and the review rounds: `src/features/boards/__tests__/FolderMoveDelete.test.tsx`,
+  `FolderDeleteRegression.test.tsx`, `src/background/__tests__/preReleaseFixes.test.ts`,
+  `src/utils/__tests__/preReleaseImport.test.ts`, `importWarningsPlural.test.ts`,
+  `src/hooks/__tests__/useStorageSyncPreRelease.test.tsx`, `src/features/settings/__tests__/clearEverythingOrder.test.tsx`,
+  `SettingsWording.test.tsx`.
 
 ### Modify
 
 - `src/background/folder-service.ts`: broadcast payload (§5.1).
 - `src/hooks/useStorageSync.ts`: `STORAGE_FOLDER_DELETED` arguments, `STORAGE_DATA_CLEARED`, safe board sort.
 - `src/features/settings/SettingsView.tsx`: `handleClearData` calls `clearEverything`.
+- `src/features/boards/components/BoardNode.tsx`, `BoardList.tsx`, `BoardView.tsx`, `src/store/slices/board/boardSlice.ts`:
+  the folder delete dialog sends one `DELETE_FOLDER` with `moveTabs` and `targetFolderId`, and "delete folder and all
+  tabs" also removes the tabs from IndexedDB (T1/U1, Revision 2).
 - `src/utils/exportImport.ts`: tracking key kept, `checkSettingsShape`, `pickTimerSettings`, `applyWithRollback`,
   `restoreImportBackup` rollback.
 - `src/utils/importValidation.ts`: `createdAt`, list rules, `attachOrphanFolders`, `checkSettingsShape`.
@@ -488,11 +497,21 @@ The release PR `develop` → `main` goes out only after this PR is merged. PR 2 
 - [x] The §8 docs are updated, `landing-page/privacy.html` is regenerated, and no doc still claims automatic session
       inference or the infer alarm (`git grep -n -i "automatic.*inference\|tabplex-infer-sessions"` finds only this spec,
       the legacy `clear` line in `session-service.ts` and its test).
-- [ ] The browser tester's checks in Chrome and Edge pass, and `07-human-signoff.md` records the human check.
+- [x] The browser tester's checks in Chrome and Edge pass, and `07-human-signoff.md` records the human check (pass, 2026-10-28).
 - [x] Commits follow §12. The PR targets `develop`; the branch is deleted after the merge.
 - [x] §13 Q1 and Q2 are answered and the spec reflects the answers.
 
 ## 15. Follow-ups (separate cycles, not in this PR)
+
+### Known issues / follow-ups (found in the browser test; all pre-existing)
+
+- **T2:** the timer shows 25:00 after importing timer settings (an imported duration does not update `timeLeft`).
+- **T3:** Infer makes sessions from TabPlex's own pages (`chrome-extension://` history), with 0 tabs each.
+- **T5:** a rejected import is logged with `console.error`, which shows as an error in `chrome://extensions`.
+- **R2-1:** the folder delete dialog ignores Escape.
+- **S1-adjacent:** the `window` `message` listener in `useStorageSync` was removed (security S1); only
+  `chrome.runtime.onMessage` drives sync. The unvalidated `STORAGE_*` payloads are still applied as they arrive from the
+  background; validating them is a possible hardening step.
 
 ### PR 2: recorded pages reach the UI (own spec, for example `RECORDED_TABS_SYNC.md`)
 
