@@ -3,7 +3,6 @@ import { useSortable } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Folder, Tab } from '../../../types';
-import { useBoardStore } from '../../../store/boardStore';
 import BoardModal from './BoardModal';
 import { TagList } from '../../ui/components/TagInput';
 import FolderDeleteModal from './FolderDeleteModal';
@@ -16,7 +15,7 @@ interface BoardNodeProps {
     tabs?: Tab[];
     onUpdateFolder?: (id: string, changes: { name?: string; color?: string; boardId?: string }) => void;
     onUpdateTab?: (id: string, changes: { title?: string; url?: string; folderId?: string; tags?: string[] }) => void;
-    onDeleteFolder?: (id: string) => void;
+    onDeleteFolder?: (id: string, moveTabs?: boolean, targetFolderId?: string) => void;
     onDeleteTab?: (id: string) => void;
     onOpenTab?: (url: string) => void;
     onCreateTab?: (data: { title: string; url: string; folderId?: string; tags?: string[] }) => void;
@@ -42,8 +41,6 @@ const BoardNode: React.FC<BoardNodeProps> = ({
     const [showAddTabModal, setShowAddTabModal] = useState(false);
     const [faviconUrl, setFaviconUrl] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
-
-    const { moveAllTabsToFolder } = useBoardStore();
 
     const isFolder = !!folder;
     const folderTabs = isFolder && folder ? tabs.filter(t => t.folderId === folder.id) : [];
@@ -149,10 +146,8 @@ const BoardNode: React.FC<BoardNodeProps> = ({
 
     const handleMoveAndDelete = (targetFolderId: string) => {
         if (folder && onDeleteFolder) {
-            // Move all tabs to the target folder
-            moveAllTabsToFolder(folder.id, targetFolderId);
-            // Delete the folder
-            onDeleteFolder(folder.id);
+            // One DELETE_FOLDER { moveTabs, targetFolderId }: the background moves its copy of the tabs itself
+            onDeleteFolder(folder.id, true, targetFolderId);
             onShowToast?.(`Moved ${folderTabs.length} tabs and deleted folder "${folder.name}"`, 'success');
         }
     };

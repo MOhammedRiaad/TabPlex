@@ -183,8 +183,8 @@ const BoardView: React.FC = () => {
     );
 
     const handleDeleteFolder = useCallback(
-        (id: string) => {
-            deleteFolder(id);
+        (id: string, moveTabs = false, targetFolderId = '') => {
+            deleteFolder(id, moveTabs, targetFolderId);
             showToast('Folder deleted successfully!', 'success');
         },
         [deleteFolder, showToast]

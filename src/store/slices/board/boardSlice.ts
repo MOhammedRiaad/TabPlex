@@ -5,6 +5,7 @@ import {
     addFolder as addFolderToDB,
     updateFolder as updateFolderInDB,
     deleteFolder as deleteFolderFromDB,
+    updateTab as updateTabInDB,
 } from '../../../utils/storage';
 import { Board, Folder } from '../../../types';
 import { BoardSlice, BoardStoreCreator } from './types';
@@ -132,6 +133,12 @@ export const createBoardSlice: BoardStoreCreator<BoardSlice> = (set, get) => ({
     },
 
     deleteFolder: (id, moveTabs = false, targetFolderId = '') => {
+        // The background moves its own copy on DELETE_FOLDER { moveTabs }; IndexedDB is the UI's copy, so it is written here
+        if (moveTabs) {
+            get()
+                .tabs.filter(tab => tab.folderId === id)
+                .forEach(tab => updateTabInDB({ ...tab, folderId: targetFolderId }).catch(console.error));
+        }
         set(state => ({
             folders: state.folders.filter(folder => folder.id !== id),
             tabs: moveTabs
