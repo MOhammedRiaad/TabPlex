@@ -66,7 +66,8 @@ export const createBoardSlice: BoardStoreCreator<BoardSlice> = (set, get) => ({
             if (options.moveTo) {
                 updateFolder(folder.id, { boardId: options.moveTo });
             } else {
-                // deleteFolder drops tabs from the page only; delete each one so IndexedDB and the background agree
+                // deleteFolder already deletes the folder's tabs from IndexedDB and the background; the per-tab
+                // deleteTab calls stay so each tab also gets its own DELETE_TAB / STORAGE_TAB_DELETED
                 for (const tab of tabs.filter(t => t.folderId === folder.id)) deleteTab(tab.id);
                 deleteFolder(folder.id);
             }
