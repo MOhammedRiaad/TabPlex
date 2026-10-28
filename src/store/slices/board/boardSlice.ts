@@ -6,9 +6,13 @@ import {
     updateFolder as updateFolderInDB,
     deleteFolder as deleteFolderFromDB,
     updateTab as updateTabInDB,
+    deleteTab as deleteTabFromDB,
 } from '../../../utils/storage';
-import { Board, Folder } from '../../../types';
+import { Board, Folder, Tab } from '../../../types';
 import { BoardSlice, BoardStoreCreator } from './types';
+
+const deleteFolderTabsFromDB = (tabs: Tab[], folderId: string) =>
+    tabs.filter(tab => tab.folderId === folderId).forEach(tab => deleteTabFromDB(tab.id).catch(console.error));
 
 export const createBoardSlice: BoardStoreCreator<BoardSlice> = (set, get) => ({
     boards: [],
@@ -138,6 +142,9 @@ export const createBoardSlice: BoardStoreCreator<BoardSlice> = (set, get) => ({
             get()
                 .tabs.filter(tab => tab.folderId === id)
                 .forEach(tab => updateTabInDB({ ...tab, folderId: targetFolderId }).catch(console.error));
+        } else {
+            // No per-tab messages: the single DELETE_FOLDER below removes them from the background copy
+            deleteFolderTabsFromDB(get().tabs, id);
         }
         set(state => ({
             folders: state.folders.filter(folder => folder.id !== id),
@@ -157,6 +164,8 @@ export const createBoardSlice: BoardStoreCreator<BoardSlice> = (set, get) => ({
     },
 
     deleteFolderSilently: (id, moveTabs = false, targetFolderId = '') => {
+        // IndexedDB deletes are idempotent, so a tab already removed by another window is not an error
+        if (!moveTabs) deleteFolderTabsFromDB(get().tabs, id);
         set(state => ({
             folders: state.folders.filter(folder => folder.id !== id),
             tabs: moveTabs

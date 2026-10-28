@@ -81,8 +81,8 @@ describe('T1 regression: folder delete dialog keeps moved tabs', () => {
         expect(sentOfType('DELETE_TAB')).toHaveLength(0);
     });
 
-    // PRODUCT BUG U1 (expected to FAIL today): the store action drops the tabs from the page only, so IndexedDB keeps them
-    it.fails('the plain "Delete folder and all tabs" path still deletes the tabs everywhere (U1)', async () => {
+    // U1: the store action must delete the tabs from IndexedDB too, not only from the page
+    it('the plain "Delete folder and all tabs" path still deletes the tabs everywhere (U1)', async () => {
         const dialog = openDialog('Source');
         fireEvent.click(within(dialog).getByText('Delete folder and all tabs'));
         fireEvent.click(within(dialog).getByRole('button', { name: 'Delete Everything' }));
