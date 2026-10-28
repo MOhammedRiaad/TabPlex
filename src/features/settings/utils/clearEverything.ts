@@ -1,5 +1,5 @@
 import { useBoardStore } from '../../../store/boardStore';
-import { useTimerStore } from '../../../store/timerStore';
+import { resetTimerStore } from '../../../store/timerStore';
 import { clearAllData } from '../../../utils/storage';
 import { TRACK_ALL_TABS_KEY } from '../../../utils/tabTracking';
 
@@ -29,8 +29,7 @@ export async function clearEverything(): Promise<void> {
     // Stops this tab's sync effects from writing the old items back during the delay before its reload
     useBoardStore.setState({ boards: [], folders: [], tabs: [], tasks: [], notes: [], sessions: [] });
     // A running Pomodoro persists to localStorage every second: stop it and drop what it stored
-    useTimerStore.setState(useTimerStore.getInitialState(), true);
-    useTimerStore.persist.clearStorage();
+    resetTimerStore();
 
     // Chrome does not deliver this to the sender; the background ignores STORAGE_* messages
     await chrome.runtime.sendMessage({ type: 'STORAGE_DATA_CLEARED' }).catch(() => undefined);

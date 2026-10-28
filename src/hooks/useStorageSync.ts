@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useBoardStore } from '../store/boardStore';
-import { useTimerStore } from '../store/timerStore';
+import { resetTimerStore } from '../store/timerStore';
 import { reconcileTasksWithBackground } from '../utils/taskContext';
 import { isImportInThisTab } from '../utils/exportImport';
 import {
@@ -367,8 +367,9 @@ export const useStorageSync = () => {
 
                     case 'STORAGE_DATA_CLEARED':
                         // Another TabPlex tab deleted everything: reload so this tab can't write its old data back.
-                        // A running Pomodoro would otherwise store its state again before the reload.
-                        useTimerStore.persist.clearStorage();
+                        // A running Pomodoro would otherwise store its state again before the reload,
+                        // so stop it first (the same reset as the tab that cleared).
+                        resetTimerStore();
                         window.location.reload();
                         break;
 

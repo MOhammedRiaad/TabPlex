@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useStorageSync } from '../useStorageSync';
 import { useBoardStore } from '../../store/boardStore';
+import { useTimerStore } from '../../store/timerStore';
 import * as db from '../../utils/storage';
 import { fakeChrome } from '../../test/chromeMock';
 import { makeBoard, makeContext, makeFolder, makeNote, makeSession, makeTab, makeTask } from '../../test/factories';
@@ -250,11 +251,14 @@ describe('useStorageSync', () => {
         const reload = vi.fn();
         Object.defineProperty(window, 'location', { value: { ...window.location, reload }, configurable: true });
         const { unmount } = renderHook(() => useStorageSync());
-        localStorage.setItem('pomodoro-storage', '{}');
+        useTimerStore.setState({ isRunning: true, completedSessions: 3, linkedTaskId: 'task_1' });
+        expect(localStorage.getItem('pomodoro-storage')).toContain('task_1');
 
         broadcast({ type: 'STORAGE_DATA_CLEARED' });
 
         expect(reload).toHaveBeenCalledTimes(1);
+        expect(useTimerStore.getState()).toMatchObject({ isRunning: false, completedSessions: 0, linkedTaskId: null });
+        // Nothing wrote the running state back after the reset
         expect(localStorage.getItem('pomodoro-storage')).toBeNull();
         unmount();
     });
