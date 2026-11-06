@@ -7,7 +7,8 @@ import { join } from 'node:path';
 const ASSETS = 'dist/assets';
 const KB = 1024;
 const DEFAULT_BUDGET = 500 * KB;
-const BUDGETS = [{ pattern: /^TldrawContainer[-.]/, budget: 1800 * KB }];
+// tldraw 5 added its translation layer (react-intl, ICU): the canvas chunk went from about 1650 kB to 1830 kB.
+const BUDGETS = [{ pattern: /^TldrawContainer[-.]/, budget: 1900 * KB }];
 
 let files;
 try {
