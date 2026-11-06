@@ -22,6 +22,8 @@ export interface AiSession {
     readonly inputQuota?: number;
     measureContextUsage?(input: string, options?: PromptOptions): Promise<number>;
     measureInputUsage?(input: string, options?: PromptOptions): Promise<number>;
+    /** A new session with the same system prompt and no history: one clean context per independent task */
+    clone?(options?: { signal?: AbortSignal }): Promise<AiSession>;
     destroy(): void;
 }
 

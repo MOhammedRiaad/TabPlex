@@ -15,7 +15,7 @@ interface CommandPaletteProps {
     isOpen: boolean;
     onClose: () => void;
     onNavigate: (
-        view: 'boards' | 'history' | 'sessions' | 'today' | 'analytics' | 'canvas' | 'bookmarks' | 'settings'
+        view: 'boards' | 'history' | 'sessions' | 'today' | 'analytics' | 'canvas' | 'bookmarks' | 'notes' | 'settings'
     ) => void;
 }
 
@@ -210,6 +210,17 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                 name: 'Organize open tabs',
                 icon: '✨',
                 action: () => startOrganize(),
+                category: 'action' as const,
+            },
+            {
+                id: 'summarize-tabs',
+                name: 'Summarize open tabs into a note',
+                icon: '✨',
+                // Navigates first; the dialog is mounted in App, so it opens over the Notes view
+                action: () => {
+                    onNavigate('notes');
+                    useUIStore.getState().actions.openTabNotesDialog();
+                },
                 category: 'action' as const,
             },
             // Action commands

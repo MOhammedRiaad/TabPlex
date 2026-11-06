@@ -184,3 +184,12 @@ export const useTimerStore = create<TimerState>()(
         }
     )
 );
+
+/**
+ * Stops a running Pomodoro, resets it to its initial state and drops what it stored in localStorage.
+ * A running timer persists on every tick, so the reset must come before the storage is cleared.
+ */
+export function resetTimerStore(): void {
+    useTimerStore.setState(useTimerStore.getInitialState(), true);
+    useTimerStore.persist.clearStorage();
+}

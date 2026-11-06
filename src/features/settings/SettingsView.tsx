@@ -1,12 +1,15 @@
 import React, { useState, useCallback } from 'react';
 import { useTheme } from '../../hooks/useTheme';
-import { clearAllData } from '../../utils/storage';
+import { clearEverything } from './utils/clearEverything';
 import ThemeToggle from '../ui/components/ThemeToggle';
 import Toast from '../bookmarks/components/Toast';
 import { useParkResumeSettings } from '../tasks/hooks/useParkResumeSettings';
 import AiSummarySetting from './components/AiSummarySetting';
 import AiFeaturesSetting from '../ai/components/AiFeaturesSetting';
 import BoardStyleSetting from './components/BoardStyleSetting';
+import TabTrackingSetting from './components/TabTrackingSetting';
+import StorageUsage from './components/StorageUsage';
+import RestoreBackupSetting from './components/RestoreBackupSetting';
 import { DISPLAY_NAME_KEY, DISPLAY_NAME_MAX, saveDisplayName } from './utils/displayName';
 import './SettingsView.css';
 
@@ -38,14 +41,14 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
     }, []);
 
     const handleClearData = async () => {
-        // Made function async
-        if (window.confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+        if (
+            window.confirm(
+                'Are you sure you want to clear all data? This action cannot be undone. ' +
+                    'Recording of the pages you open will be turned off.'
+            )
+        ) {
             try {
-                localStorage.clear();
-                if (typeof chrome !== 'undefined' && chrome.storage) {
-                    await chrome.storage.local.clear(); // Await chrome storage clear
-                }
-                await clearAllData(); // Call clearAllData
+                await clearEverything();
                 showToast('All data cleared. Reloading...', 'success');
                 setTimeout(() => window.location.reload(), 1500);
             } catch (error) {
@@ -106,7 +109,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
         <div className="settings-view">
             <div className="settings-header">
                 <h2>Settings</h2>
-                <p className="settings-subtitle">Manage your TabBoard preferences and data</p>
+                <p className="settings-subtitle">Manage your TabPlex preferences and data</p>
             </div>
 
             <div className="settings-content">
@@ -185,10 +188,15 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                             />
                         </div>
 
+                        <RestoreBackupSetting />
+
                         <div className="setting-item danger">
                             <div className="setting-info">
                                 <h4>Clear All Data</h4>
-                                <p>Permanently delete all your data (cannot be undone)</p>
+                                <p>
+                                    Permanently delete all your data (cannot be undone). Recording of the pages you open
+                                    will be turned off.
+                                </p>
                             </div>
                             <button className="setting-action-btn danger" onClick={handleClearData}>
                                 🗑️ Clear Data
@@ -288,6 +296,18 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onExport, onImportClick, on
                     </h3>
                     <div className="section-content">
                         <AiFeaturesSetting />
+                    </div>
+                </section>
+
+                {/* Tab tracking and storage Section */}
+                <section className="settings-section">
+                    <h3 className="section-title">
+                        <span className="section-icon">🗂</span>
+                        Tab tracking &amp; storage
+                    </h3>
+                    <div className="section-content">
+                        <TabTrackingSetting />
+                        <StorageUsage />
                     </div>
                 </section>
 

@@ -14,7 +14,19 @@
         "type": "module"
     },
     "action": {},
-    "permissions": ["tabs", "tabGroups", "history", "sessions", "storage", "notifications", "bookmarks", "favicon"],
+    "permissions": [
+        "tabs",
+        "alarms",
+        "tabGroups",
+        "history",
+        "sessions",
+        "storage",
+        "notifications",
+        "bookmarks",
+        "favicon",
+        "scripting"
+    ],
+    "optional_host_permissions": ["http://*/*", "https://*/*"],
 
     "commands": {
         "_execute_action": {
@@ -22,11 +34,5 @@
                 "default": "Ctrl+Shift+T"
             }
         }
-    },
-    "web_accessible_resources": [
-        {
-            "resources": ["onboarding.html", "onboarding.css", "onboarding.js", "index.html", "assets/*"],
-            "matches": ["<all_urls>"]
-        }
-    ]
+    }
 }

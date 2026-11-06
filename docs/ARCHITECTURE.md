@@ -51,7 +51,7 @@ The background service worker acts as the "Engine" of the extension. It handles 
 
 ### 3a. On-device AI (`src/features/ai`)
 
-Chrome's built-in AI (Gemini Nano) runs on the device; nothing is sent to a server. `promptApi.ts` wraps the Prompt API (availability, session creation inside the user's click, schema-constrained JSON with validation, timeouts, fitting tabs into the context window). AI runs in the UI page only, and every AI feature has a non-AI fallback (e.g. Organize tabs groups by site). Nothing in `src/background` imports this module.
+Built-in AI (Gemini Nano in Chrome) runs on the device; nothing is sent to a server. `promptApi.ts` wraps the Prompt API (availability, session creation inside the user's click, schema-constrained JSON with validation, timeouts, fitting tabs into the context window). AI runs in the UI page only, and every AI feature has a non-AI fallback (e.g. Organize tabs groups by site). Nothing in `src/background` imports this module.
 
 ### 4. Data Layer (`src/utils/storage.ts`)
 

@@ -67,5 +67,5 @@ Notes:
 
 - Checked in Brave's headless mode through Playwright with a fresh profile. Brave Shields don't apply to extension
   pages; a hands-on pass in a normal Brave window (section 3) is still worth doing once.
-- Settings → On-device AI says "This device can't run Chrome's built-in AI": in Brave it's the browser, not the device.
+- Settings → On-device AI says "This device can't run your browser's built-in AI": in Brave it's the browser, not the device.
   Accurate enough; reword if users ask.

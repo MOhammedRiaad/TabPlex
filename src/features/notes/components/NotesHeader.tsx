@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUIActions } from '../../ui/store/uiStore';
 import '../NotesView.css';
 
 interface NotesHeaderProps {
@@ -27,6 +28,7 @@ const NotesHeader: React.FC<NotesHeaderProps> = ({
     tagOptions = [],
 }) => {
     const navigate = useNavigate();
+    const { openTabNotesDialog } = useUIActions();
 
     return (
         <div className="notes-view-header">
@@ -47,6 +49,10 @@ const NotesHeader: React.FC<NotesHeaderProps> = ({
                 </div>
 
                 <div className="notes-view-actions">
+                    {/* Always shown: without AI the dialog makes a quick view (spec D-T11) */}
+                    <button type="button" className="notes-summarize-btn" onClick={() => openTabNotesDialog()}>
+                        ✨ Summarize open tabs
+                    </button>
                     {onTagFilterChange && (tagOptions.length > 0 || tagFilter) && (
                         <label className="notes-tag-filter">
                             Tag:

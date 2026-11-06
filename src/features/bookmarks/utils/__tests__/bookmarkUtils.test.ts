@@ -204,6 +204,56 @@ describe('sortUtils', () => {
         expect(sortBookmarksByDomain(odd).map(b => b.id)).toEqual(['c', 'd', 'b', 'a', 'h', 'g', 'e', 'f']);
     });
 
+    it('sorts undated items by name, an untitled one first, for date added and date modified', () => {
+        const undated = [bm('named', { title: 'Named' }), bm('blank', { title: '' })];
+        expect(sortBookmarksByDateAdded(undated).map(b => b.id)).toEqual(['blank', 'named']);
+        expect(sortBookmarksByDateModified(undated).map(b => b.id)).toEqual(['blank', 'named']);
+        expect(sortBookmarksByDateAdded([...undated].reverse()).map(b => b.id)).toEqual(['blank', 'named']);
+        expect(sortBookmarksByDateModified([...undated].reverse()).map(b => b.id)).toEqual(['blank', 'named']);
+    });
+
+    it('sorts folders by name with an untitled folder last', () => {
+        const folders = [bm('blank', { title: '', children: [] }), bm('docs', { title: 'Docs', children: [] })];
+        expect(sortBookmarksByDomain(folders).map(b => b.id)).toEqual(['docs', 'blank']);
+        expect(sortBookmarksByDomain([...folders].reverse()).map(b => b.id)).toEqual(['docs', 'blank']);
+    });
+
+    it('sorts bookmarks whose url has no domain by title, an untitled one last', () => {
+        const blankUrl = [bm('blank', { title: '', url: '   ' }), bm('named', { title: 'Named', url: '   ' })];
+        expect(sortBookmarksByDomain(blankUrl).map(b => b.id)).toEqual(['named', 'blank']);
+        expect(sortBookmarksByDomain([...blankUrl].reverse()).map(b => b.id)).toEqual(['named', 'blank']);
+        const both = [bm('b', { title: 'Beta', url: '   ' }), bm('a', { title: 'Alpha', url: '   ' })];
+        expect(sortBookmarksByDomain(both).map(b => b.id)).toEqual(['a', 'b']);
+    });
+
+    it('puts a bookmark with an empty domain after one with a real domain', () => {
+        const mixed = [bm('empty', { title: 'E', url: '   ' }), bm('real', { title: 'R', url: 'https://a.com' })];
+        expect(sortBookmarksByDomain(mixed).map(b => b.id)).toEqual(['real', 'empty']);
+        expect(sortBookmarksByDomain([...mixed].reverse()).map(b => b.id)).toEqual(['real', 'empty']);
+    });
+
+    it('orders distinct domains in both directions regardless of input order', () => {
+        const input = [
+            bm('c', { title: 'c', url: 'https://c.com' }),
+            bm('b', { title: 'b', url: 'https://b.com' }),
+            bm('a', { title: 'a', url: 'https://a.com' }),
+        ];
+        expect(sortBookmarksByDomain(input, 'asc').map(b => b.id)).toEqual(['a', 'b', 'c']);
+        expect(sortBookmarksByDomain(input, 'desc').map(b => b.id)).toEqual(['c', 'b', 'a']);
+        expect(sortBookmarksByDomain([...input].reverse(), 'asc').map(b => b.id)).toEqual(['a', 'b', 'c']);
+        expect(sortBookmarksByDomain([...input].reverse(), 'desc').map(b => b.id)).toEqual(['c', 'b', 'a']);
+    });
+
+    it('orders same-domain bookmarks by title, keeping equal blank titles stable', () => {
+        const blanks = [bm('x', { title: '', url: 'https://q.com/1' }), bm('y', { title: '', url: 'https://q.com/2' })];
+        expect(sortBookmarksByDomain(blanks).map(b => b.id)).toEqual(['x', 'y']);
+        const titled = [
+            bm('z', { title: 'Zed', url: 'https://q.com/1' }),
+            bm('m', { title: 'Mid', url: 'https://q.com/2' }),
+        ];
+        expect(sortBookmarksByDomain(titled).map(b => b.id)).toEqual(['m', 'z']);
+    });
+
     it('sorts children of the Chrome root folders only', () => {
         const root = [
             bm('0', {

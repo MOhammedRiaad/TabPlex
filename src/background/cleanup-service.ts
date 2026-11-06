@@ -1,27 +1,17 @@
-import { getAllTabs, deleteTab } from './storage';
+import { pruneTabs } from './tab-retention';
+import { CLEANUP_ALARM, CLEANUP_PERIOD_MINUTES } from '../utils/tabTracking';
 
-// Periodically clean up closed tabs (remove them after a certain period)
-setInterval(
-    async () => {
-        const allTabs = await getAllTabs();
-        const now = new Date();
-        const cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+// Service workers sleep after ~30 s, so a setInterval never reaches a day: use an alarm, which wakes the worker.
+// Alarms survive worker restarts, so it is only created when missing. A browser that was closed at the due time
+// fires the alarm at the next start; onStartup covers a browser that starts after being off for days.
+chrome.alarms.get(CLEANUP_ALARM).then(existing => {
+    if (!existing) return chrome.alarms.create(CLEANUP_ALARM, { periodInMinutes: CLEANUP_PERIOD_MINUTES });
+});
 
-        for (const tab of allTabs) {
-            if (tab.status === 'closed') {
-                const tabDate = new Date(tab.lastAccessed);
-                if (tabDate < cutoffDate) {
-                    // Remove tabs that have been closed for more than 30 days
-                    await deleteTab(tab.id);
+chrome.alarms.onAlarm.addListener(alarm => {
+    if (alarm.name === CLEANUP_ALARM) pruneTabs().catch(error => console.warn('Tab cleanup failed:', error));
+});
 
-                    // Notify the side panel about the deletion
-                    chrome.runtime.sendMessage({
-                        type: 'STORAGE_TAB_DELETED',
-                        payload: { id: tab.id },
-                    });
-                }
-            }
-        }
-    },
-    24 * 60 * 60 * 1000
-); // Run cleanup daily
+chrome.runtime.onStartup.addListener(() => {
+    pruneTabs().catch(error => console.warn('Tab cleanup failed:', error));
+});

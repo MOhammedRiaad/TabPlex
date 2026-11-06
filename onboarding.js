@@ -37,27 +37,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (getStartedBtn) {
         getStartedBtn.addEventListener('click', () => {
-            // Open TabBoard extension
-            if (typeof chrome !== 'undefined' && chrome.runtime) {
-                chrome.runtime.sendMessage({ type: 'OPEN_TABBOARD' }, () => {
-                    // Handle response or errors
-                    if (chrome.runtime.lastError) {
-                        console.error('Error opening TabBoard:', chrome.runtime.lastError);
-                        // Fallback: try to open the extension URL directly
-                        const extensionUrl = chrome.runtime.getURL('index.html');
-                        window.location.href = extensionUrl;
-                    } else {
-                        // Close the onboarding tab after opening TabBoard
-                        setTimeout(() => {
-                            window.close();
-                        }, 500);
-                    }
-                });
-            } else {
-                // Fallback: try to open the extension URL
-                const extensionUrl = chrome.runtime.getURL('index.html');
-                window.location.href = extensionUrl;
-            }
+            // Ask the background to open TabPlex; if it can't, open the app in this tab instead
+            const openInThisTab = () => {
+                window.location.href = chrome.runtime.getURL('index.html');
+            };
+            chrome.runtime.sendMessage({ type: 'OPEN_TABBOARD' }, response => {
+                if (chrome.runtime.lastError || !response || response.error) {
+                    console.error('Error opening TabPlex:', chrome.runtime.lastError || (response && response.error));
+                    openInThisTab();
+                } else {
+                    // Close the onboarding tab after opening TabPlex
+                    setTimeout(() => {
+                        window.close();
+                    }, 500);
+                }
+            });
         });
     }
 

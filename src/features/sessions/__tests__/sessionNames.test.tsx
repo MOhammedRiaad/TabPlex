@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     SESSION_NAME_SCHEMA,
@@ -10,7 +10,7 @@ import {
 import SessionCard from '../../ui/components/SessionCard';
 import SessionsView from '../SessionsView';
 import { useBoardStore } from '../../../store/boardStore';
-import { respondToMessages } from '../../../test/chromeMock';
+import { fakeChrome, FakeTab, respondToMessages } from '../../../test/chromeMock';
 import { makeSession, makeTab } from '../../../test/factories';
 import { AiSession } from '../../ai/utils/promptApi';
 
@@ -152,6 +152,65 @@ describe('SessionsView naming', () => {
             })
         );
         await waitFor(() => expect(session.destroy).toHaveBeenCalled());
+    });
+
+    it('names tabs that have no id or title from their url, and offers the model only web tabs', async () => {
+        const { session } = stubModel();
+        const received = respondToMessages(m => (m.type === 'GET_SESSIONS' ? [] : { success: true }));
+        fakeChrome().tabs.query.mockImplementationOnce(async () => [{ url: 'https://a.test' }, {}] as FakeTab[]);
+        render(<SessionsView />);
+        await waitFor(() => expect(screen.getByText(/Start Session from Current Tabs/)).toBeEnabled());
+        await act(async () => {
+            await new Promise(r => setTimeout(r, 0));
+        });
+        fireEvent.click(screen.getByText('Start Session from Current Tabs'));
+
+        await waitFor(() => expect(received.some(m => m.type === 'UPDATE_SESSION')).toBe(true));
+        expect(session.prompt.mock.calls[0][0]).toContain('- https://a.test (a.test)');
+        expect(useBoardStore.getState().tabs.map(t => t.tabId)).toEqual([null, null]);
+    });
+
+    it('releases the model when reading the current tabs fails', async () => {
+        const { session } = stubModel();
+        respondToMessages(m => (m.type === 'GET_SESSIONS' ? [] : { success: true }));
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        fakeChrome().tabs.query.mockRejectedValueOnce(new Error('no tabs'));
+        render(<SessionsView />);
+        await waitFor(() => expect(screen.getByText(/Start Session from Current Tabs/)).toBeEnabled());
+        await act(async () => {
+            await new Promise(r => setTimeout(r, 0));
+        });
+        fireEvent.click(screen.getByText('Start Session from Current Tabs'));
+
+        await waitFor(() => expect(session.destroy).toHaveBeenCalled());
+        expect(console.error).toHaveBeenCalledWith('Error creating session from current tabs:', expect.any(Error));
+    });
+
+    it('suggests a name for a session with the model and saves it on Enter', async () => {
+        const { session } = stubModel();
+        const received = respondToMessages(m =>
+            m.type === 'GET_SESSIONS' ? [makeSession({ id: 's1', name: 'Old name', tabIds: ['x'] })] : { success: true }
+        );
+        useBoardStore.setState({ tabs: [makeTab({ id: 'x', title: 'Stripe', url: 'https://stripe.com/p' })] });
+        render(<SessionsView />);
+        const card = (await screen.findByText('Old name')).closest('article')!;
+        await act(async () => {
+            await new Promise(r => setTimeout(r, 0));
+        });
+        fireEvent.click(within(card).getByLabelText('Toggle actions menu'));
+        fireEvent.click(within(card).getByRole('menuitem', { name: /Suggest a name/ }));
+
+        await waitFor(() => expect(within(card).getByLabelText('Session name')).toHaveValue('Q4 Pricing Research'));
+        await waitFor(() => expect(session.destroy).toHaveBeenCalled());
+        expect(received.some(m => m.type === 'UPDATE_SESSION')).toBe(false);
+
+        fireEvent.keyDown(within(card).getByLabelText('Session name'), { key: 'Enter' });
+        await waitFor(() =>
+            expect(received.find(m => m.type === 'UPDATE_SESSION')?.payload).toEqual({
+                id: 's1',
+                name: 'Q4 Pricing Research',
+            })
+        );
     });
 
     it('without AI, keeps the readable name and offers only Rename', async () => {

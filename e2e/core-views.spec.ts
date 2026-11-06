@@ -356,6 +356,11 @@ test.describe('Settings', () => {
         // …is replaced by the backup, in both copies
         await openView(app, 'settings');
         await app.locator('input[type="file"]').setInputFiles(file);
+        // The file is shown first; the data is replaced only when the user confirms
+        const dialog = app.getByRole('dialog', { name: 'Replace your data with this file?' });
+        await expect(dialog.getByLabel('What the file contains')).toContainText('task');
+        expect((await inPage<Task>(app, 'tasks')).map(t => t.id)).toContain('task_later');
+        await dialog.getByRole('button', { name: 'Replace my data' }).click();
         await expect
             .poll(async () => (await inPage<Task>(app, 'tasks')).map(t => t.id).sort(), { timeout: 15_000 })
             .toEqual(['task_keep']);

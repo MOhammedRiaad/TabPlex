@@ -72,16 +72,6 @@ export const createTabSlice: BoardStoreCreator<TabSlice> = (set, get) => ({
         saveAndSync(moved);
     },
 
-    moveAllTabsToFolder: (sourceFolderId, targetFolderId) => {
-        const moved = get()
-            .tabs.filter(t => t.folderId === sourceFolderId)
-            .map(t => ({ ...t, folderId: targetFolderId }));
-        if (moved.length === 0) return;
-        const byId = new Map(moved.map(t => [t.id, t]));
-        set(state => ({ tabs: state.tabs.map(t => byId.get(t.id) ?? t) }));
-        moved.forEach(saveAndSync);
-    },
-
     reorderTab: (tabId, newIndex, folderId) => {
         const state = get();
         const folderTabs = state.tabs

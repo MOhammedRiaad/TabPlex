@@ -27,7 +27,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 - **Board & Folder System**: Organize tabs into visual boards with customizable folders
 - **Several boards**: Keep separate boards (work, home, a side project); switch, create, rename or delete them from the Boards header. Deleting a board moves its folders to another board or deletes them, and TabPlex remembers the board you last used
 - **Drag & Drop**: Intuitive drag-and-drop interface for moving tabs between folders
-- **Smart Tab Management**: Automatically capture and organize browser tabs
+- **Smart Tab Management**: Capture and organize browser tabs. Recording every page you open is opt-in (Settings → Tab tracking & storage)
 - **Local-First Storage**: All data stored locally with no cloud dependency
 
 ### ✅ Task Management
@@ -36,19 +36,20 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 - **Kanban-Style Workflow**: To Do, Doing, Done columns for visual progress tracking
 - **Rich Task Details**: Add descriptions, checklists, due dates, and priority levels
 - **Pinning**: Pin a task or note (📌) to keep it at the top of its column or list, on Today too
-- **Session names**: Sessions saved from your tabs get a readable name (`github.com, docs.google.com +3 more · Mon 5 Oct`), or a short on-device AI name when Chrome's built-in AI is available; rename any session or ask for a suggestion
+- **Session names**: Sessions saved from your tabs get a readable name (`github.com, docs.google.com +3 more · Mon 5 Oct`), or a short on-device AI name when built-in AI is available; rename any session or ask for a suggestion
 - **Export**: Copy or download a task (details, checklist, tabs, where you left off) as Markdown, or a board as Markdown or CSV, from the task card, the Boards header or the command palette
 - **Tags**: Tag tasks, notes and saved tabs (`#q4`, `#research`), filter the Tasks and Notes views by tag, and find tagged items with search
 - **Task-Tab Linking**: Associate web resources with specific tasks
-- **Park & Resume**: Each task keeps its own tabs. Start a task to open them in a named Chrome tab group, park it with a "where I left off" note to close them, and resume later in one click — everything stays on your device. Optional: start a Pomodoro with the task, on-device AI summaries of parked work (Chrome's built-in AI), and a notification that offers to add a page you open to the parked task whose tabs are on the same site (Settings → Park & Resume, off by default)
-- **On-device AI**: Chrome's built-in AI (Gemini Nano) runs on your computer, never in the cloud. Settings → On-device AI shows whether your device supports it and turns AI features on or off; every feature still works without it
+- **Park & Resume**: Each task keeps its own tabs. Start a task to open them in a named Chrome tab group, park it with a "where I left off" note to close them, and resume later in one click — everything stays on your device. Optional: start a Pomodoro with the task, on-device AI summaries of parked work (your browser's built-in AI), and a notification that offers to add a page you open to the parked task whose tabs are on the same site (Settings → Park & Resume, off by default)
+- **On-device AI**: your browser's built-in AI (Gemini Nano in Chrome) runs on your computer, never in the cloud. Settings → On-device AI shows whether your device supports it and turns AI features on or off; every feature still works without it
 - **Organize tabs**: One click on Today (or "Organize open tabs" in the command palette) suggests Chrome tab groups for your loose tabs, by what you're working on with on-device AI, or by site without it. Rename, recolour or drop tabs in a preview, then create the groups; Undo or Save to Boards afterwards. Pinned tabs and existing groups (including your active task) are never touched
 - **✨ New task from tabs**: drafts a task (title, priority, steps) from the tabs you pick, on-device. Start it from the Tasks view, the command palette ("New task from open tabs") or **Make a task** on a group you just organized; edit the draft, then **Create task** or **▶ Create & start** to group those tabs under the task right away, or **⏸ Create & park** to save them to the task and close them for later. Without on-device AI you get a suggested title and fill in the rest
 
 ### 📝 Note-Taking
 
 - **Markdown Support**: Rich text formatting with markdown editor
-- **✨ AI note helpers**: In the note editor, summarize a note, turn its to-dos into tasks, proofread it, or rewrite it shorter, clearer or more formal, with Chrome's built-in AI on your device. Every result is previewed first, and Undo restores the note. Hidden when on-device AI isn't available
+- **✨ Summarize open tabs**: In Notes (or the command palette), pick the tabs you're studying from and TabPlex reads each page on your device and saves one note with a few key points per page and a link to every source. Your browser asks for access to only the sites you pick. With your browser's built-in AI the points are written by the model; without it you get a quick view made of sentences taken from the page. Pages that cover the same topic are combined under one heading, with a link to every page that said it, and anything only one page says stays in its own section. You can rename topics, edit points, move them between topics and remove a source before saving. Your browser's AI only groups and rewords: TabPlex works out which page each point came from, and keeps the original points when the AI's answer doesn't match them
+- **✨ AI note helpers**: In the note editor, summarize a note, turn its to-dos into tasks, proofread it, or rewrite it shorter, clearer or more formal, with your browser's built-in AI on your device. Every result is previewed first, and Undo restores the note. Hidden when on-device AI isn't available
 - **Context-Aware Notes**: Link notes to specific boards, folders, or tabs
 - **Quick Capture**: Fast note creation from any view
 
@@ -56,7 +57,7 @@ A powerful Chrome extension to organize browser tabs, tasks, and work context in
 
 - **Pomodoro Timer**: Built-in focus timer with customizable work/break intervals
 - **Task Focus Tracking**: Track focus sessions per task
-- **Session Management**: Automatic session inference based on browsing patterns
+- **Session Management**: Infer sessions from your recent browser history when you click Infer in Sessions
 - **Browser History Integration**: Import and organize browser history
 
 ### 📊 Analytics & Insights
@@ -180,7 +181,7 @@ The application uses Zustand with a modular slice architecture:
 - **Chrome:** coming to the Chrome Web Store. Until then, download `tabplex-vX.Y.Z.zip` from the [latest GitHub release](https://github.com/MOhammedRiaad/TabPlex/releases), unzip it, open `chrome://extensions`, turn on **Developer mode** and click **Load unpacked** on the unzipped folder.
 - **Brave:** works (checked with Brave 1.96 on 2026-10-05: the full end-to-end suite passes). Install it the same way as Chrome; once TabPlex is on the Chrome Web Store, Brave installs it from there.
 
-On Edge and Brave, the on-device AI features may not be available (Brave reports Chrome's built-in AI as unavailable); TabPlex then groups tabs by site, suggests task titles without AI, and hides the note helpers.
+On Edge and Brave, the on-device AI features may not be available (Brave reports built-in AI as unavailable); TabPlex then groups tabs by site, suggests task titles without AI, and hides the note helpers. "Summarize open tabs" makes a quick view without AI.
 
 ### For Developers
 
@@ -234,7 +235,7 @@ npm run preview      # Preview production build
 
 1. **Create Your First Board**: Click "Add Board" to create a workspace
 2. **Add Folders**: Organize your tabs into folders by topic or project
-3. **Capture Tabs**: Manually add current tabs or let TabPlex auto-capture
+3. **Capture Tabs**: Manually add current tabs, or turn on "Record every page I open" in Settings
 4. **Create Tasks**: Use the Today view to manage your daily tasks
 5. **Track Focus**: Use the Pomodoro timer to track focus sessions
 
@@ -282,7 +283,12 @@ npm run preview      # Preview production build
 
 - Click the import button
 - Select your previously exported JSON file
-- All data will be restored
+- All data will be restored. A file made with TabPlex 1.3.0 or earlier has no "Record every page I open" setting, so that setting stays as it is
+
+**Clear All Data**
+
+- Settings → Data Management → Clear All Data deletes all your TabPlex data (boards, tabs, tasks, notes, sessions, history, canvases, settings and the backup from your last import) except the optional tldraw canvas, which keeps its own storage until you uninstall
+- It also turns "Record every page I open" off
 
 ## 🔒 Privacy Policy
 
@@ -319,6 +325,8 @@ TabPlex requests the following Chrome permissions:
 - **`sessions`**: To restore recently closed tabs and windows
 - **`bookmarks`**: To manage and organize your browser bookmarks (read/write access)
 - **`favicon`**: To show website icons from Chrome's own local icon cache (no third-party icon service)
+- **`alarms`**: To run a daily cleanup of old closed tabs in TabPlex's own list (nothing is read or sent)
+- **`scripting`** and **optional site access**: To read the text of the pages you pick in "Summarize open tabs". Nothing is granted at install: your browser asks, naming only the sites of the tabs you picked, and you can remove access in Settings → On-device AI → Page access
 
 **Important**: These permissions are used solely for the extension's functionality. We never transmit your data anywhere.
 
@@ -370,7 +378,7 @@ Contributions are welcome! Please follow these guidelines:
 
 ```bash
 npm test               # unit + component tests (Vitest)
-npm run test:coverage  # same, with the 85% coverage gate CI enforces
+npm run test:coverage  # same, with the 95% coverage gate CI enforces
 npm run build && npm run test:e2e   # end-to-end tests in Chromium (Playwright)
 ```
 

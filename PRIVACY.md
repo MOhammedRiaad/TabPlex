@@ -32,6 +32,7 @@ TabPlex stores the following data **exclusively on your local device**:
     - Note content (text/markdown)
     - Creation and modification timestamps
     - Associated board/folder/tab references
+    - Study notes you create with "Summarize open tabs": the key points you keep and a link to each page (never the page's full text)
 
 4. **Browsing Sessions**
     - Session start and end times
@@ -59,6 +60,8 @@ All data is stored using:
 
 - **IndexedDB**: Browser's local database (for structured data)
 - **chrome.storage.local**: Chrome's local storage API (for settings and sync)
+- **localStorage**: the page's own storage (for the theme, the timer, your name for the Today greeting and a few view preferences)
+- **chrome.storage.session**: memory only, emptied when the browser closes. Used by parked-task suggestions to remember which tabs were already offered (tab numbers, no addresses) and when the last suggestion was shown
 
 **Important**: This data never leaves your device. There are no servers, no cloud storage, and no data transmission.
 
@@ -84,7 +87,7 @@ TabPlex requests the following permissions to function:
 
 4. **`history`**
     - **Purpose**: Allow you to import browser history
-    - **Usage**: Only when you click "Load Recent History"
+    - **Usage**: Only when you click "Load Recent History" in History or "Infer Sessions from History" in Sessions
     - **Data Access**: Browser history (only when requested)
 
 5. **`notifications`**
@@ -107,12 +110,27 @@ TabPlex requests the following permissions to function:
     - **Usage**: Icons come from Chrome's own local favicon cache (`chrome-extension://…/_favicon/`)
     - **Data Access**: None leaves your device; no third-party icon service is contacted
 
-**No website access**: TabPlex requests no host permissions. It cannot read or change the content of the web pages you visit; it only sees tab titles and addresses through the `tabs` permission.
+9. **`scripting`**
+    - **Purpose**: Read the text of pages you pick in "Summarize open tabs"
+    - **Usage**: Only when you pick tabs in that dialog and click Summarize or Make quick view
+    - **Data Access**: The visible text of the picked pages in your open tabs. It never changes a page. It does not read form fields, passwords or text you are typing
+
+10. **Optional site access** (`optional_host_permissions` for `http://` and `https://` sites)
+    - **Purpose**: Let you allow TabPlex to read the sites of the tabs you pick for "Summarize open tabs"
+    - **Usage**: Not granted at install. Your browser asks when you pick tabs for a summary, and names only those sites. Remove it any time in Settings → On-device AI → Page access, or in your browser's extension settings
+    - **Data Access**: Only the sites you allowed, and only when you click Summarize or Make quick view
+
+11. **`alarms`**
+    - **Purpose**: Run a small cleanup once a day, even though the extension's background worker sleeps between uses
+    - **Usage**: Removes closed tabs TabPlex recorded more than 30 days ago and keeps the recorded list under 2,000 tabs
+    - **Data Access**: None. It only deletes old entries from TabPlex's own list on your device
+
+**Website access**: TabPlex has no site access when you install it, and it never reads, injects into or changes a page in the background. It reads a page only after you pick that tab in "Summarize open tabs" and your browser has granted access to that site. Otherwise it only sees tab titles and addresses through the `tabs` permission.
 
 ### How Permissions Are Used
 
-- **No Background Tracking**: TabPlex does not monitor your browsing
-- **Explicit Actions Only**: Data is only captured when you explicitly add tabs or import history
+- **No Background Tracking**: TabPlex does not monitor your browsing. New installs record only the tabs you put on a board or in a task. "Record every page I open" in Settings → Tab tracking & storage is off by default and keeps its list on your device. If you installed TabPlex before this setting existed, recording stays on until you turn it off there or use Clear All Data
+- **Explicit Actions Only**: Data is only captured when you explicitly add tabs or import history, or while "Record every page I open" is on
 - **No Analytics**: We do not track how you use the extension
 - **No Telemetry**: No usage statistics are collected
 
@@ -143,22 +161,24 @@ TabPlex requests the following permissions to function:
 
 ### On-device AI summaries (optional, off by default)
 
-If you turn on **On-device AI summaries** in Settings, TabPlex uses Chrome's built-in Summarizer API to write a one-line summary when you park a task. The model (Gemini Nano) runs inside Chrome on your computer:
+If you turn on **On-device AI summaries** in Settings, TabPlex uses your browser's built-in Summarizer API to write a one-line summary when you park a task. The model (Gemini Nano) runs inside your browser on your computer:
 
 - The input is the task title and description, your note, and the titles and addresses (host and path only, without query strings) of the parked tabs
 - Nothing is sent to TabPlex, Google or any other server by this feature
-- Chrome downloads the model once, directly from Google, the first time you turn the setting on; that download is managed by Chrome and contains none of your data
+- Your browser downloads the model once, directly from its provider, the first time you turn the setting on; that download is managed by the browser and contains none of your data
 - The summary is stored locally with the task and can be removed by parking again or deleting the task
 
 ### On-device AI features (optional)
 
-"Organize tabs", "New task from tabs", session names and the note helpers can use Chrome's built-in AI model (Gemini Nano), which runs on your computer:
+"Organize tabs", "New task from tabs", session names, the note helpers and "Summarize open tabs" can use the browser's built-in AI model (Gemini Nano in Chrome), which runs on your computer:
 
 - TabPlex sends it the titles and addresses (host and path only, without query strings) of the tabs you choose, and any hint you type
 - The note helpers (✨ AI in the note editor) send it the text of the note you're editing, only when you pick a helper
+- "Summarize open tabs" sends it the text of the pages you pick, one page at a time, only when you click Summarize. Page text is held in memory while it is summarized and is not stored. Only the key points you keep are saved, in a note, with a link to each page
+- To combine pages that cover the same topic, "Summarize open tabs" then sends the model the short key points it already made (not the page text) so it can name matching topics and rewrite the points of one topic into a single statement. TabPlex checks every statement against the points it came from, works out which pages each statement comes from itself, and keeps the original points when the answer doesn't match
 - The model's answer stays in your browser, and nothing changes until you confirm it
 - No tab or note data is sent to TabPlex, Google or any other server by these features
-- Without the model (another browser, or a device that can't run it) the features use simple local rules instead
+- Without the model (another browser, or a device that can't run it) the features use simple local rules instead. "Summarize open tabs" then makes a quick view (sentences taken from the page) and groups them by shared words, still on your device
 - Turn them off in Settings → On-device AI
 
 ## Your Data Rights
@@ -167,13 +187,13 @@ If you turn on **On-device AI summaries** in Settings, TabPlex uses Chrome's bui
 
 - **Access**: View all your data within the extension
 - **Export**: Download all data as JSON file
-- **Delete**: Remove all data by uninstalling the extension
+- **Delete**: Remove all data with Settings → Data Management → Clear All Data (see Data Deletion below) or by uninstalling the extension
 - **Modify**: Edit or delete individual items anytime
 
 ### Data Portability
 
 - Export feature creates a JSON backup of your boards, tabs, tasks, notes, sessions, history, canvases and settings (the optional tldraw canvas is not included yet)
-- Import feature restores data from backup
+- Import feature restores data from backup. A file made before "Record every page I open" existed (TabPlex 1.3.0 and earlier) leaves that setting as it is
 - No vendor lock-in - your data is yours
 
 ### Data Deletion
@@ -181,8 +201,9 @@ If you turn on **On-device AI summaries** in Settings, TabPlex uses Chrome's bui
 To completely remove all TabPlex data:
 
 1. **Option 1**: Uninstall the extension from Chrome
-2. **Option 2**: Clear browser data for the extension
-3. **Option 3**: Use Chrome's "Clear browsing data" for site data
+2. **Option 2**: Settings → Data Management → Clear All Data deletes your boards, folders, tabs, tasks, notes, sessions, history, canvases and settings, including the backup kept from your last import, and turns "Record every page I open" off. The optional tldraw canvas keeps its own storage: remove it by uninstalling (Option 1)
+3. **Option 3**: Clear browser data for the extension
+4. **Option 4**: Use Chrome's "Clear browsing data" for site data
 
 ## Children's Privacy
 

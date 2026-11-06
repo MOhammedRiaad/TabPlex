@@ -63,6 +63,17 @@ describe('CommandPalette', () => {
         expect(start).toHaveBeenCalled();
     });
 
+    it('"Summarize open tabs into a note" goes to Notes and opens the dialog', () => {
+        useUIStore.setState({ tabNotesDialogOpen: false });
+        const onNavigate = vi.fn();
+        const onClose = vi.fn();
+        render(<CommandPalette isOpen onClose={onClose} onNavigate={onNavigate} />);
+        fireEvent.click(screen.getByText('Summarize open tabs into a note'));
+        expect(onNavigate).toHaveBeenCalledWith('notes');
+        expect(useUIStore.getState().tabNotesDialogOpen).toBe(true);
+        expect(onClose).toHaveBeenCalled();
+    });
+
     it('opens "New task from open tabs" right after "Create New Task"', () => {
         const open = vi.spyOn(useTaskDraftStore.getState().actions, 'open').mockImplementation(() => undefined);
         render(<CommandPalette isOpen onClose={vi.fn()} onNavigate={vi.fn()} />);

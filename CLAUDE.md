@@ -27,7 +27,7 @@ npm run release:dry   # preview the next semantic-release version + notes
 npm run typecheck     # tsc for src/ and e2e/
 npm test              # vitest (unit + component tests, jsdom)
 npm run test:watch
-npm run test:coverage # vitest + v8 coverage; fails under 85% statements/branches/functions/lines
+npm run test:coverage # vitest + v8 coverage; fails under 95% statements/branches/functions/lines
 npm run test:e2e      # playwright: loads the built dist/ into Chromium (run npm run build first)
 ```
 
@@ -42,7 +42,7 @@ npm run test:e2e      # playwright: loads the built dist/ into Chromium (run npm
 - Build data with `src/test/factories.ts` (`makeTask`, `makeContext`, `makeBoard`, `makeTab`, `makeNote`…).
 - Background modules register listeners at import: `vi.resetModules()` then `await import(...)` per test, and drive timers
   with `vi.useFakeTimers()` (busy guard 300 ms, snapshot debounce).
-- Coverage gate is 85% on logic and key UI. Excluded (see `vitest.config.ts`): types, entry files, and pure-visual canvas
+- Coverage gate is 95% on logic and key UI. Excluded (see `vitest.config.ts`): types, entry files, and pure-visual canvas
   code (`canvas/components`, `canvas/tools`, `canvas/utils/render.ts`, tldraw, `utils/export.ts`) — covered by E2E instead.
   Don't add exclusions to dodge the gate; write the test.
 - E2E (`e2e/`): `fixtures.ts` launches Chromium with the extension, serves fake sites at `https://e2e.test/<name>`, and
@@ -108,17 +108,26 @@ Message handlers that respond asynchronously must `return true` and guard agains
 
 ## Project skills (`.claude/skills/`)
 
-| Skill              | Use when                                                                               |
-| ------------------ | -------------------------------------------------------------------------------------- |
-| `verify`           | Before declaring any change done — typecheck, lint, format, tests + coverage, build    |
-| `write-tests`      | Adding a feature or fix, coverage under 85%, or writing unit/E2E tests                 |
-| `add-data-entity`  | Adding a new persisted domain (e.g. reminders) end to end                              |
-| `add-message-sync` | Adding/changing a UI ↔ background message or cross-tab sync                            |
-| `add-view`         | Adding a new page/route to the app                                                     |
-| `debug-extension`  | Something works in dev but not in the loaded extension, data not syncing, SW errors    |
-| `release`          | Shipping a version: how the automated GitHub release works, dry runs, Web Store upload |
-| `commit`           | Writing a commit that passes commitlint/husky                                          |
-| `built-in-ai`      | Anything using Chrome's built-in AI (Prompt API, Summarizer): Organize tabs, summaries |
+| Skill              | Use when                                                                                     |
+| ------------------ | -------------------------------------------------------------------------------------------- |
+| `verify`           | Before declaring any change done — typecheck, lint, format, tests + coverage, build          |
+| `write-tests`      | Adding a feature or fix, coverage under 95%, or writing unit/E2E tests                       |
+| `add-data-entity`  | Adding a new persisted domain (e.g. reminders) end to end                                    |
+| `add-message-sync` | Adding/changing a UI ↔ background message or cross-tab sync                                  |
+| `add-view`         | Adding a new page/route to the app                                                           |
+| `debug-extension`  | Something works in dev but not in the loaded extension, data not syncing, SW errors          |
+| `release`          | Shipping a version: how the automated GitHub release works, dry runs, Web Store upload       |
+| `commit`           | Writing a commit that passes commitlint/husky                                                |
+| `built-in-ai`      | Anything using the browser's built-in AI (Prompt API, Summarizer): Organize tabs, summaries  |
+| `cycle`            | Shipping a feature end to end with the agent team below (idea → spec → build → reviews → PR) |
+
+## Project agents (`.claude/agents/`)
+
+Feature work runs through `/cycle`, which orchestrates specialist subagents. Details and rationale: `docs/AGENTIC_WORKFLOW.md`.
+
+`product-owner` (opus) → `architect` (opus, writes `docs/specs/`) → `spec-challenger` (opus) → _human approves spec_ → `frontend-engineer` (sonnet) → `unit-test-writer` (sonnet) → `e2e-test-writer` (sonnet) → `browser-tester` (opus, real Chrome + Edge via DevTools MCP) → **_human verifies in their own browser_** → `spec-reviewer` → `security-reviewer` → `code-reviewer` → `privacy-reviewer` (all opus) → _human approves_ → `pr-creator` (sonnet, PR into `develop`).
+
+Handoffs are files in `.claude/work/<slug>/` (git-ignored); each report ends with `VERDICT: PASS|FIX|REVISE`. Fix loops are capped at 2 rounds, then escalate to the user. Reviewers, test writers and the tester never edit product code; only the engineer does. No PR without a recorded human signoff (`07-human-signoff.md`).
 
 ## Chrome tooling for agents
 

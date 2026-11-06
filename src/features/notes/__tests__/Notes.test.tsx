@@ -3,12 +3,31 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import NotesView from '../NotesView';
+import { parseMarkdownToHtml } from '../components/NoteCard';
 import MarkdownEditor, { parseMarkdown } from '../../ui/components/MarkdownEditor';
 import { escapeHtml, renderMarkdownLinks } from '../../../utils/markdown';
 import { useBoardStore } from '../../../store/boardStore';
 import { makeNote } from '../../../test/factories';
 
 const state = () => useBoardStore.getState();
+
+describe('note card markdown', () => {
+    it('shows list lines as bullets instead of raw dashes', () => {
+        const html = parseMarkdownToHtml(['- one', '* two', '+ three', 'plain - text'].join('\n'));
+        expect(html).toBe('• one<br />• two<br />• three<br />plain - text');
+    });
+
+    it('keeps emphasis working next to bullets, and checkboxes with or without a dash', () => {
+        expect(parseMarkdownToHtml('- **bold** and *it*')).toBe('• <strong>bold</strong> and <em>it</em>');
+        expect(parseMarkdownToHtml(['[x] done', '- [ ] todo', '- [x] also'].join('\n'))).toBe(
+            '☑ done<br />☐ todo<br />☑ also'
+        );
+    });
+
+    it('still escapes HTML inside a bullet', () => {
+        expect(parseMarkdownToHtml('- <img src=x onerror=alert(1)>')).toBe('• &lt;img src=x onerror=alert(1)&gt;');
+    });
+});
 
 describe('markdown rendering', () => {
     it('escapes HTML, including quotes', () => {

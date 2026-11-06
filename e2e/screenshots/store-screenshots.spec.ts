@@ -1,12 +1,13 @@
 // Generates the landing-page and Chrome Web Store screenshots from the real built extension with demo data.
 // Run: npm run build && npm run screenshots  (not part of `npm run test:e2e`)
-// Output: store-assets/screenshots/*.png (1280×800) and landing-page/images/*.png
+// Output: store-assets/screenshots/*.png (1280×800); the landing page gets the same files in landing-page/images/
+// (light and -dark, which the page swaps with prefers-color-scheme)
 // Needs a network connection: tabs that TabPlex reopens itself (Resume) bypass Playwright's request interception,
 // so the Park dialog shows the real sites' page titles.
-import { mkdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { BrowserContext, Locator, Page } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 import { expect, test } from '../fixtures';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -162,29 +163,9 @@ function demoData() {
 /** Store screenshot: exactly 1280×800 at 1× (the Web Store requires that size) */
 async function shoot(page: Page, name: string) {
     await page.waitForTimeout(400); // let animations settle
-    await page.screenshot({ path: path.join(STORE_DIR, `${name}.png`) });
-}
-
-/**
- * Landing-page image at 2× pixel density, cropped to what the section is about, so it stays sharp on high-DPI
- * screens and readable in a ~500px column. `target` is an element, or a region of the 1280×800 window.
- */
-async function landingShot(
-    page: Page,
-    name: string,
-    target: Locator | { x: number; y: number; width: number; height: number }
-) {
-    const box = 'screenshot' in target ? await target.boundingBox() : target;
-    if (!box) throw new Error(`${name}: nothing to capture`);
-    // Capture through CDP: Playwright's screenshot() would reset the device scale factor to the context's 1×
-    const cdp = await page.context().newCDPSession(page);
-    await cdp.send('Emulation.setDeviceMetricsOverride', { ...SIZE, deviceScaleFactor: 2, mobile: false });
-    await page.waitForTimeout(400);
-    const { data } = await cdp.send('Page.captureScreenshot', { format: 'png', clip: { ...box, scale: 1 } });
-    await writeFile(path.join(LANDING_DIR, `${name}.png`), Buffer.from(data, 'base64'));
-    await cdp.send('Emulation.clearDeviceMetricsOverride');
-    await cdp.detach();
-    await page.setViewportSize(SIZE);
+    const file = path.join(STORE_DIR, `${name}.png`);
+    await page.screenshot({ path: file });
+    await copyFile(file, path.join(LANDING_DIR, `${name}.png`));
 }
 
 const openView = (page: Page, route: string) => page.goto(page.url().replace(/#\/.*$/, `#/${route}`));
@@ -193,6 +174,7 @@ test.describe.configure({ mode: 'serial' });
 
 test.beforeAll(async () => {
     await mkdir(STORE_DIR, { recursive: true });
+    await mkdir(LANDING_DIR, { recursive: true });
 });
 
 for (const scheme of ['light', 'dark'] as const) {
@@ -218,7 +200,6 @@ for (const scheme of ['light', 'dark'] as const) {
         await app.reload();
         await expect(app.getByText('Pick up where you left off')).toBeVisible();
         await shoot(app, `1-today${suffix}`);
-        if (scheme === 'light') await landingShot(app, '1-today', { x: 0, y: 0, ...SIZE });
 
         // 2. Park & Resume: resume the parked task, then open the Park dialog
         await openView(app, 'tasks');
@@ -242,7 +223,6 @@ for (const scheme of ['light', 'dark'] as const) {
         await app.locator('.active-context-park').click();
         await app.getByLabel('Where did you leave off?').fill('Comparing Stripe vs Paddle fees, stopped at EU VAT');
         await shoot(app, `2-park-resume${suffix}`);
-        if (scheme === 'light') await landingShot(app, '2-park-resume', app.locator('.park-dialog'));
         // Park it for real: otherwise the next pages would join the active task's group
         await app.getByLabel('Where did you leave off?').press('Enter');
         await expect(app.locator('.active-context-pill')).toHaveCount(0);
@@ -282,7 +262,6 @@ for (const scheme of ['light', 'dark'] as const) {
         await app.getByRole('button', { name: /Organize tabs/ }).click();
         await expect(app.getByText('✨ Suggested by on-device AI')).toBeVisible();
         await shoot(app, `3-organize-tabs${suffix}`);
-        if (scheme === 'light') await landingShot(app, '3-organize-tabs', app.locator('.organize-dialog'));
         await app.keyboard.press('Escape');
 
         // 4. Boards
@@ -291,8 +270,6 @@ for (const scheme of ['light', 'dark'] as const) {
         await app.getByRole('button', { name: 'Folder: Research' }).click();
         await app.getByRole('button', { name: 'Folder: Lisbon trip' }).click();
         await shoot(app, `4-boards${suffix}`);
-        // One folder column with its tabs: readable at the landing page's column width
-        if (scheme === 'light') await landingShot(app, '4-boards', { x: 32, y: 316, width: 616, height: 296 });
 
         // 5. Settings: on-device AI and local data
         await openView(app, 'settings');

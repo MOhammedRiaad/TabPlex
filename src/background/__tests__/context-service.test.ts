@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { installChromeMock, ChromeMock, EXTENSION_BASE } from '../../test/chromeMock';
+import { installChromeMock, ChromeMock, EXTENSION_BASE, FakeTab, fakeChrome } from '../../test/chromeMock';
 import { makeContext, makeTask } from '../../test/factories';
 import { Task } from '../../types';
 import {
@@ -613,6 +613,206 @@ describe('context-service', () => {
             await chrome.tabs.create({ url: 'https://fail.dev/' });
             await settle(2000);
             expect(console.warn).toHaveBeenCalledWith('Auto-add tab to context failed', expect.any(Error));
+        });
+    });
+
+    describe('fallbacks for tabs without ids, urls or timestamps', () => {
+        const liveTab = (id: number) => mock.browser.tabs.get(id)!;
+        const groupOf = (task: Task) => task.context!.chromeGroupId!;
+
+        async function startActive(context = makeContext()) {
+            const started = (await send(CONTEXT_MESSAGES.START, { task: makeTask({ context }) })).task!;
+            await settle();
+            return started;
+        }
+
+        it('uses the UI copy and keeps the stored context when neither copy has an update time', async () => {
+            await seed(makeTask({ title: 'Stored', updatedAt: undefined, context: makeContext() }));
+            const fromUi = makeTask({ title: 'From UI', updatedAt: undefined, context: undefined });
+
+            const res = await send(CONTEXT_MESSAGES.START, { task: fromUi });
+
+            expect(res.task!.title).toBe('From UI');
+            expect(res.task!.context!.tabs.map(t => t.url)).toEqual(['https://a.example/', 'https://b.example/']);
+        });
+
+        it('captures a tab that only has a pending url, titled by that url', async () => {
+            const tab = mock.browser.addTab({ url: 'https://pending.dev/' });
+            liveTab(tab.id).pendingUrl = 'https://pending.dev/';
+            liveTab(tab.id).url = undefined;
+            liveTab(tab.id).title = undefined;
+
+            const res = await send(CONTEXT_MESSAGES.ADD_TABS, { task: makeTask(), chromeTabIds: [tab.id] });
+
+            expect(res.task!.context!.tabs).toEqual([{ url: 'https://pending.dev/', title: 'https://pending.dev/' }]);
+        });
+
+        it('ungroups a live tab that only has a pending url when it is removed from the task', async () => {
+            const started = await startActive();
+            const [first] = mock.browser.groupTabs(groupOf(started));
+            liveTab(first.id).pendingUrl = first.url;
+            liveTab(first.id).url = undefined;
+
+            await send(CONTEXT_MESSAGES.REMOVE_TAB, { task: started, url: 'https://a.example/' });
+
+            expect(liveTab(first.id).groupId).toBe(-1);
+        });
+
+        it('forgets the group when its only tab is removed from the task', async () => {
+            const started = await startActive(makeContext({ tabs: [{ url: 'https://a.example/', title: 'A' }] }));
+
+            const res = await send(CONTEXT_MESSAGES.REMOVE_TAB, { task: started, url: 'https://a.example/' });
+
+            expect(res.task!.context!.chromeGroupId).toBeNull();
+            expect(res.task!.context!.tabs).toEqual([]);
+        });
+
+        it('closes tabs of a task without a window id without asking which tabs remain in the window', async () => {
+            const started = await startActive();
+            const stored = storedTask();
+            await seed({ ...stored, context: { ...stored.context!, windowId: undefined } });
+            fakeChrome().tabs.query.mockClear();
+
+            const res = await send(CONTEXT_MESSAGES.PARK, { task: started, closeTabs: true });
+
+            expect(res.task!.context!.state).toBe('parked');
+            expect(fakeChrome().tabs.query).not.toHaveBeenCalledWith({ windowId: expect.anything() });
+            expect([...mock.browser.tabs.values()].filter(t => t.url?.startsWith('https'))).toEqual([]);
+        });
+
+        it('only closes live group tabs that have an id, reading the url from the pending url', async () => {
+            const started = await startActive();
+            const [a, b] = mock.browser.groupTabs(groupOf(started));
+            fakeChrome().tabs.query.mockImplementationOnce(
+                async () => [{}, { id: a.id, pendingUrl: 'https://a.example/' }, { id: b.id }] as FakeTab[]
+            );
+
+            const res = await send(CONTEXT_MESSAGES.PARK, { task: started, closeTabs: true });
+
+            expect(fakeChrome().tabs.remove).toHaveBeenCalledWith([a.id, b.id]);
+            expect(res.task!.context!.tabs).toEqual([{ url: 'https://a.example/', title: 'https://a.example/' }]);
+        });
+
+        it('closes a Create & park tab by its pending url and leaves one that has no url at all', async () => {
+            mock.browser.addTab({ url: `${EXTENSION_BASE}index.html` });
+            const a = mock.browser.addTab({ url: 'https://a.example/' });
+            const b = mock.browser.addTab({ url: 'https://b.example/' });
+            const task = makeTask({ context: makeContext({ state: 'idle' }) });
+            await seed(task);
+            const original = fakeChrome().tabs.get.getMockImplementation()!;
+            fakeChrome().tabs.get.mockImplementation(async (id: number) => {
+                if (id === a.id) return { id: a.id, windowId: a.windowId, pendingUrl: 'https://a.example/' } as FakeTab;
+                if (id === b.id) return { id: b.id, windowId: b.windowId } as FakeTab;
+                return original(id);
+            });
+
+            await send(CONTEXT_MESSAGES.PARK, { task, closeTabs: true, chromeTabIds: [a.id, b.id] });
+
+            expect(mock.browser.tabs.has(a.id)).toBe(false);
+            expect(mock.browser.tabs.has(b.id)).toBe(true);
+        });
+
+        it('does not focus anything when an active task has an empty live group', async () => {
+            const started = await startActive();
+            fakeChrome().tabs.update.mockClear();
+            fakeChrome().tabs.query.mockImplementationOnce(async () => []);
+
+            const res = await send(CONTEXT_MESSAGES.RESUME, { task: started });
+
+            expect(res.success).toBe(true);
+            expect(fakeChrome().tabs.update).not.toHaveBeenCalled();
+            expect(activeId()).toBe(started.id);
+        });
+
+        it('focuses the first tab but not a window when that tab has no window id', async () => {
+            const started = await startActive();
+            const [first] = mock.browser.groupTabs(groupOf(started));
+            fakeChrome().windows.update.mockClear();
+            fakeChrome().tabs.query.mockImplementationOnce(async () => [{ id: first.id }] as FakeTab[]);
+
+            const res = await send(CONTEXT_MESSAGES.RESUME, { task: started });
+
+            expect(res.success).toBe(true);
+            expect(fakeChrome().tabs.update).toHaveBeenCalledWith(first.id, { active: true });
+            expect(fakeChrome().windows.update).not.toHaveBeenCalled();
+        });
+
+        it('starts without a group when the browser returns tabs without ids', async () => {
+            fakeChrome().tabs.create.mockImplementationOnce(async () => ({}) as FakeTab);
+
+            const res = await send(CONTEXT_MESSAGES.START, {
+                task: makeTask({ context: makeContext({ tabs: [{ url: 'https://a.example/', title: 'A' }] }) }),
+            });
+
+            expect(res.task!.context!.chromeGroupId).toBeNull();
+            expect(fakeChrome().tabs.group).not.toHaveBeenCalled();
+            expect(storedTask().context!.state).toBe('active');
+        });
+
+        it('takes explicit tabs for a task while another active task has no group', async () => {
+            const loose = mock.browser.addTab({ url: 'https://loose.dev/' });
+            await send(CONTEXT_MESSAGES.START, { task: makeTask({ id: 'task_2', title: 'Other task' }) });
+
+            const res = await send(CONTEXT_MESSAGES.ADD_TABS, { task: makeTask(), chromeTabIds: [loose.id] });
+
+            expect(res.task!.context!.tabs.map(t => t.url)).toEqual(['https://loose.dev/']);
+        });
+
+        it('does not ungroup anything when the deleted active task has an empty group', async () => {
+            const started = await startActive();
+            fakeChrome().tabs.ungroup.mockClear();
+            fakeChrome().tabs.query.mockImplementationOnce(async () => []);
+
+            await service.releaseContextForDeletedTask(started.id);
+
+            expect(fakeChrome().tabs.ungroup).not.toHaveBeenCalled();
+            expect(activeId()).toBeUndefined();
+        });
+
+        it('does not group new tabs when the stored active id points at a parked task', async () => {
+            await seed(makeTask({ context: makeContext({ state: 'parked' }) }));
+            await chrome.storage.local.set({ [ACTIVE_CONTEXT_KEY]: 'task_1' });
+
+            const tab = await chrome.tabs.create({ url: 'https://new.dev/' });
+            await settle(2000);
+
+            expect(mock.browser.tabs.get(tab.id!)!.groupId).toBe(-1);
+            expect(mock.browser.groups.size).toBe(0);
+        });
+
+        it('groups a new tab whose event carries neither url nor pending url', async () => {
+            const started = await startActive();
+            const tab = mock.browser.addTab({ url: 'https://late.dev/' });
+
+            mock.browser.events.tabCreated.emit({ id: tab.id, windowId: tab.windowId, pinned: false });
+            await settle(2000);
+
+            expect(liveTab(tab.id).groupId).toBe(groupOf(started));
+        });
+
+        it('postpones the snapshot while our own tab work is running, then saves it', async () => {
+            const started = await startActive();
+            const groupId = groupOf(started);
+            const [first] = mock.browser.groupTabs(groupId);
+            const extra = mock.browser.addTab({ url: 'https://extra.dev/' });
+            // A slow grouping call that raises no tab events, so nothing else reschedules the snapshot
+            fakeChrome().tabs.group.mockImplementationOnce(
+                () => new Promise<number>(resolve => setTimeout(() => resolve(groupId), 300))
+            );
+            mock.browser.events.tabMoved.emit(first.id, {}); // schedules the snapshot for +1500 ms
+            await settle(1400);
+            const adding = send(CONTEXT_MESSAGES.ADD_TABS, { task: started, chromeTabIds: [extra.id] });
+
+            await settle(200); // the snapshot is due now, but we are busy
+            await settle(200);
+            await adding;
+            liveTab(first.id).title = 'Renamed A';
+
+            await settle(800);
+            expect(storedTask().context!.tabs[0].title).toBe('https://a.example/');
+
+            await settle(1500);
+            expect(storedTask().context!.tabs[0].title).toBe('Renamed A');
         });
     });
 

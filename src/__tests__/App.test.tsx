@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
 import { useBoardStore } from '../store/boardStore';
@@ -6,6 +6,11 @@ import { useUIStore } from '../features/ui/store/uiStore';
 import * as db from '../utils/storage';
 import { respondToMessages } from '../test/chromeMock';
 import { makeBoard, makeContext, makeFolder, makeNote, makeSession, makeTab, makeTask } from '../test/factories';
+
+// These tests mount whole screens. On a busy machine (parallel test files, CI) they take several times longer than on a
+// quiet one, so the default 5 s test limit and 1 s waitFor limit fail them at random. Same checks, more patience.
+vi.setConfig({ testTimeout: 30_000 });
+configure({ asyncUtilTimeout: 5000 });
 
 // Canvas engines draw on <canvas>/WebGL and are covered by the E2E suite
 vi.mock('../features/canvas/components/CanvasContainer', () => ({ default: () => <div>custom canvas</div> }));
@@ -111,6 +116,7 @@ describe('App', () => {
         ['Meeting', '#/notes'], // notes open the Notes view
         ['Inbox', '#/boards'], // folders open Boards
         ['Morning', '#/sessions'],
+        ['Example', '#/boards'], // saved tabs open Boards too
     ])('opens the right view for a "%s" search result', async (query, hash) => {
         render(<App />);
         await screen.findAllByText('Parked work', {}, { timeout: 3000 });
@@ -159,14 +165,60 @@ describe('App', () => {
         const input = document.querySelector('input[type="file"]') as HTMLInputElement;
         const json = JSON.stringify({ version: '1.0.0', timestamp: '', data: { tasks: [makeTask({ id: 'imp' })] } });
         fireEvent.change(input, { target: { files: [new File([json], 'backup.json')] } });
+        // Nothing is replaced until the user confirms what the file holds
+        const dialog = await screen.findByRole('dialog', { name: 'Replace your data with this file?' });
+        expect(within(dialog).getByText('backup.json')).toBeInTheDocument();
+        expect(within(dialog).getByLabelText('What the file contains')).toHaveTextContent('1 task');
+        expect(reload).not.toHaveBeenCalled();
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Replace my data' }));
         expect(await screen.findByText('Data imported successfully! Reloading...')).toBeInTheDocument();
+        expect(screen.queryByRole('dialog', { name: 'Replace your data with this file?' })).toBeNull();
         await waitFor(() => expect(reload).toHaveBeenCalledTimes(1), { timeout: 5000 }); // reload is scheduled 1.5 s after the toast;
         expect((await db.getAllTasks()).map(t => t.id)).toEqual(['imp']);
 
         fireEvent.change(input, { target: { files: [new File(['not json'], 'bad.json')] } });
-        expect(await screen.findByText('Import failed. Please check the file format.')).toBeInTheDocument();
+        expect(await screen.findByText('Import failed. The file is not valid JSON')).toBeInTheDocument();
+        expect(screen.queryByRole('dialog', { name: 'Replace your data with this file?' })).toBeNull();
         fireEvent.change(input, { target: { files: [] } }); // dialog cancelled: nothing happens
         Object.defineProperty(window, 'location', { value: realLocation, configurable: true });
+    }, 20_000); // mounts the whole app and waits for a reload scheduled 1.5 s after the toast
+
+    it('opens at the Today view when the address is the root', async () => {
+        window.location.hash = '#/';
+        render(<App />);
+
+        await waitFor(() => expect(window.location.hash).toBe('#/today'));
+        expect((await screen.findAllByText('Parked work', {}, { timeout: 3000 })).length).toBeGreaterThan(0);
+    });
+
+    it('opens the view named by the address instead of the stored one', async () => {
+        window.location.hash = '#/notes';
+        render(<App />);
+
+        expect((await screen.findAllByText('Meeting notes', {}, { timeout: 10_000 })).length).toBeGreaterThan(0);
+        expect(window.location.hash).toBe('#/notes');
+        expect(useUIStore.getState().activeView).toBe('notes');
+    });
+
+    it.each([
+        ['an Error', new Error('disk is full'), 'Import failed. Your data was not changed. disk is full'],
+        ['a plain value', 'disk is full', 'Import failed. Your data was not changed.'],
+    ])('keeps the data and says so when applying an import fails with %s', async (_name, failure, message) => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.spyOn(db, 'clearAllData').mockRejectedValue(failure);
+        render(<App />);
+        await screen.findAllByText('Parked work', {}, { timeout: 3000 });
+        await go('#/settings');
+        await screen.findAllByText(/Close tabs when parking/, {}, { timeout: 10_000 });
+
+        const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+        const json = JSON.stringify({ version: '1.0.0', timestamp: '', data: { tasks: [makeTask({ id: 'imp' })] } });
+        fireEvent.change(input, { target: { files: [new File([json], 'backup.json')] } });
+        const dialog = await screen.findByRole('dialog', { name: 'Replace your data with this file?' });
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Replace my data' }));
+
+        expect(await screen.findByText(message)).toBeInTheDocument();
+        expect(screen.queryByRole('dialog', { name: 'Replace your data with this file?' })).toBeNull();
     });
 
     it('opens the park dialog from the header pill', async () => {

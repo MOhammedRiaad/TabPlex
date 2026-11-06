@@ -1,5 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AnalyticsDashboard from '../AnalyticsDashboard';
 import ContextStatsWidget from '../components/ContextStatsWidget';
 import { useBoardStore } from '../../../store/boardStore';
@@ -61,6 +61,62 @@ describe('AnalyticsDashboard', () => {
         expect(focus.getByText('1.3 hrs')).toBeInTheDocument(); // 75 min
         expect(focus.getByText('25 mins')).toBeInTheDocument();
         expect(within(section(/Task Progress/)).getByText('25%')).toBeInTheDocument();
+    });
+
+    describe('weekly activity', () => {
+        const NOW = new Date(2026, 9, 10, 12, 0, 0);
+        const daysAgo = (days: number) => new Date(2026, 9, 10 - days, 10, 0, 0).toISOString();
+        const titlesOf = (kind: 'tabs' | 'tasks' | 'sessions') =>
+            Array.from(document.querySelectorAll('.activity-bar.' + kind)).map(bar => bar.getAttribute('title'));
+
+        beforeEach(() => {
+            vi.useFakeTimers({ toFake: ['Date'] });
+            vi.setSystemTime(NOW);
+        });
+        afterEach(() => vi.useRealTimers());
+
+        it('counts tabs, completed tasks and sessions on the day they happened, within the last seven days', () => {
+            useBoardStore.setState({
+                tabs: [
+                    makeTab({ id: 'a', createdAt: daysAgo(0) }),
+                    makeTab({ id: 'b', createdAt: daysAgo(0) }),
+                    makeTab({ id: 'c', createdAt: daysAgo(3) }),
+                    makeTab({ id: 'd', createdAt: daysAgo(10) }),
+                ],
+                tasks: [
+                    makeTask({ id: 't1', status: 'done', completedAt: daysAgo(1), updatedAt: daysAgo(0) }),
+                    makeTask({ id: 't2', status: 'done', updatedAt: daysAgo(0) }),
+                    makeTask({ id: 't3', status: 'todo', updatedAt: daysAgo(0) }),
+                ],
+                sessions: [
+                    makeSession({ id: 's1', startTime: daysAgo(0) }),
+                    makeSession({ id: 's2', startTime: daysAgo(2) }),
+                    makeSession({ id: 's3', startTime: daysAgo(9) }),
+                ],
+            });
+
+            render(<AnalyticsDashboard />);
+
+            expect(titlesOf('tabs')).toEqual(['0 tabs', '0 tabs', '0 tabs', '1 tabs', '0 tabs', '0 tabs', '2 tabs']);
+            expect(titlesOf('tasks')).toEqual([
+                '0 tasks',
+                '0 tasks',
+                '0 tasks',
+                '0 tasks',
+                '0 tasks',
+                '1 tasks',
+                '1 tasks',
+            ]);
+            expect(titlesOf('sessions')).toEqual([
+                '0 sessions',
+                '0 sessions',
+                '0 sessions',
+                '0 sessions',
+                '1 sessions',
+                '0 sessions',
+                '1 sessions',
+            ]);
+        });
     });
 
     it('averages the duration of ended sessions', () => {

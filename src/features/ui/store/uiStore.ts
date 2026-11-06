@@ -68,6 +68,8 @@ interface UIState {
     newTaskDialogOpen: boolean;
     /** Board shown in the Boards view (per TabPlex tab, remembered in localStorage); null = the first board */
     activeBoardId: string | null;
+    /** "Summarize open tabs" dialog (Notes button, command palette); rendered once, in App */
+    tabNotesDialogOpen: boolean;
     actions: {
         setActiveView: (view: ViewType) => void;
         setCommandPaletteOpen: (isOpen: boolean) => void;
@@ -79,6 +81,8 @@ interface UIState {
         openNewTaskDialog: () => void;
         closeNewTaskDialog: () => void;
         setActiveBoard: (id: string | null) => void;
+        openTabNotesDialog: () => void;
+        closeTabNotesDialog: () => void;
     };
 }
 
@@ -101,6 +105,7 @@ export const useUIStore = create<UIState>(set => ({
     parkDialogTaskId: null,
     newTaskDialogOpen: false,
     activeBoardId: readActiveBoard(),
+    tabNotesDialogOpen: false,
     actions: {
         setActiveView: view => {
             localStorage.setItem('tabboard-active-view', view);
@@ -123,6 +128,8 @@ export const useUIStore = create<UIState>(set => ({
             }
             set({ activeBoardId: id });
         },
+        openTabNotesDialog: () => set({ tabNotesDialogOpen: true }),
+        closeTabNotesDialog: () => set({ tabNotesDialogOpen: false }),
     },
 }));
 

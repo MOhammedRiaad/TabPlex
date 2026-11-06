@@ -107,7 +107,7 @@ New `ParkedContexts` section above `TodayTasks`, shown only when at least one ta
 - The manifest background is now `"type": "module"`. Code shared by the UI and the service worker (`src/utils/taskContext.ts`) becomes a shared chunk that a classic service worker can't import.
 - **Pomodoro link** (setting, off by default): Start/Resume links the timer to the task and starts a work session; Park pauses it.
 - **Analytics** (§8) come from a capped per-task event log (`context.events`: start / resume / park with tab counts and `closedTabs`), shown as the "Park & Resume · last 7 days" widget.
-- **AI summary** (§7) is created in the Park dialog's click handler (Chrome requires user activation), generated after the park, and attached with `TASK_CONTEXT_SET_SUMMARY` only if `parkedAt` still matches. Input is host + path only (no query strings). Tested with a stubbed `Summarizer`; verify on a real device with Chrome's built-in AI.
+- **AI summary** (§7) is created in the Park dialog's click handler (Chrome requires user activation), generated after the park, and attached with `TASK_CONTEXT_SET_SUMMARY` only if `parkedAt` still matches. Input is host + path only (no query strings). Tested with a stubbed `Summarizer`; verify on a real device with built-in AI.
 
 ## 5. Data model
 

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>DNS caching explained</title>
+    </head>
+    <body>
+        <main>
+            <article>
+                <h1>DNS caching explained</h1>
+                <p>
+                    DNS caching keeps the answers a resolver has already received so that a repeated lookup for the same
+                    name does not need another round trip across the internet. Caching happens in several places at
+                    once: the browser, the operating system, the home router and the recursive resolver run by an
+                    internet provider.
+                </p>
+                <h2>Where answers are stored</h2>
+                <p>
+                    When a resolver receives an answer, it stores the record in memory together with the time it
+                    arrived. The next client that asks for the same name gets the stored answer at once, which makes
+                    most page loads start faster. A busy resolver can answer thousands of such questions every second
+                    from its cache alone.
+                </p>
+                <h2>Why caching matters</h2>
+                <p>
+                    An uncached lookup can take tens of milliseconds, and a single web page may need dozens of lookups
+                    for its images, scripts and fonts. Caching removes most of that waiting. It also protects
+                    authoritative servers from answering the same question again and again.
+                </p>
+            </article>
+        </main>
+    </body>
+</html>

@@ -76,6 +76,36 @@ describe('taskToMarkdown', () => {
     });
 });
 
+describe('taskToMarkdown: incomplete data', () => {
+    it('skips linked tab ids that are not among the saved tabs', () => {
+        const task = makeTask({ title: 'Linked', tabIds: ['missing', 't1'] });
+        const saved = [makeTab({ id: 't1', title: 'Alpha', url: 'https://a.dev' })];
+
+        const md = taskToMarkdown(task, saved, NOW);
+
+        expect(md).toContain('## Tabs\n\n- [Alpha](https://a.dev)');
+        expect(md).not.toContain('missing');
+    });
+
+    it('writes the note alone, or the summary alone, under "Where I left off"', () => {
+        const noteOnly = taskToMarkdown(
+            makeTask({ context: makeContext({ tabs: [], resumeNote: 'Stopped at VAT', aiSummary: undefined }) }),
+            [],
+            NOW
+        );
+        const summaryOnly = taskToMarkdown(
+            makeTask({ context: makeContext({ tabs: [], resumeNote: '  ', aiSummary: 'Reading about VAT.' }) }),
+            [],
+            NOW
+        );
+
+        expect(noteOnly).toContain('## Where I left off\n\n> Stopped at VAT\n');
+        expect(noteOnly).not.toContain('_Reading');
+        expect(summaryOnly).toContain('## Where I left off\n\n_Reading about VAT._\n');
+        expect(summaryOnly).not.toContain('> ');
+    });
+});
+
 describe('board exports', () => {
     const board = makeBoard({ id: 'b1', name: 'Work' });
     const folders = [
@@ -138,6 +168,29 @@ describe('board exports', () => {
         expect(lines[lines.length - 1]).toBe('');
         expect(csvField('-1')).toBe("'-1");
         expect(csvField('multi\nline')).toBe('"multi\nline"');
+    });
+});
+
+describe('board exports: folders and tabs without an order', () => {
+    it('sorts them by name after the ones that have an order', () => {
+        const board = makeBoard({ id: 'b1', name: 'Work' });
+        const folders = [
+            makeFolder({ id: 'f3', name: 'Zeta', boardId: 'b1', order: undefined }),
+            makeFolder({ id: 'f2', name: 'Alpha', boardId: 'b1', order: undefined }),
+            makeFolder({ id: 'f1', name: 'Ordered', boardId: 'b1', order: 5 }),
+        ];
+        const tabs = [
+            makeTab({ id: 't2', title: 'Beta', url: 'https://b.dev', folderId: 'f1', order: undefined }),
+            makeTab({ id: 't1', title: 'Alpha', url: 'https://a.dev', folderId: 'f1', order: undefined }),
+            makeTab({ id: 't0', title: 'First', url: 'https://f.dev', folderId: 'f1', order: 1 }),
+        ];
+
+        const md = boardToMarkdown(board, folders, tabs, NOW);
+
+        expect(md.indexOf('## Ordered')).toBeLessThan(md.indexOf('## Alpha'));
+        expect(md.indexOf('## Alpha')).toBeLessThan(md.indexOf('## Zeta'));
+        const listed = md.split('\n').filter(line => line.startsWith('- ['));
+        expect(listed).toEqual(['- [First](https://f.dev)', '- [Alpha](https://a.dev)', '- [Beta](https://b.dev)']);
     });
 });
 
