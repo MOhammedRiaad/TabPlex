@@ -1,5 +1,55 @@
 # Changelog
 
+## [1.4.0](https://github.com/MOhammedRiaad/TabPlex/compare/v1.3.0...v1.4.0) (2026-11-06)
+
+### ✨ Features
+
+* **landing:** rebuild the landing page with a live Park & Resume demo ([f67eb8d](https://github.com/MOhammedRiaad/TabPlex/commit/f67eb8d445cca76c5a85b448d718f87f5e82fd20))
+* **notes:** add on-device topic naming and combining with checked citations ([eb6251b](https://github.com/MOhammedRiaad/TabPlex/commit/eb6251bada720b116084aa4e76d38888c56d47c8))
+* **notes:** add optional page access and page reading ([d9df31d](https://github.com/MOhammedRiaad/TabPlex/commit/d9df31d573b21dd57ff55aa0bc0fff76180a599e))
+* **notes:** add pure edit functions for combined topics ([70a4134](https://github.com/MOhammedRiaad/TabPlex/commit/70a413404be508c8ded24c447d77f2530c7666e2))
+* **notes:** add the study note builder and tab run store ([b4cb419](https://github.com/MOhammedRiaad/TabPlex/commit/b4cb4196ca85afb522190af419eccb5c1dfccabd))
+* **notes:** add the Summarize open tabs dialog ([a31337b](https://github.com/MOhammedRiaad/TabPlex/commit/a31337befd693cc5928584a45a3f896b33f7e1d5))
+* **notes:** combine overlapping tabs in the study note without AI ([d086055](https://github.com/MOhammedRiaad/TabPlex/commit/d086055104c93f6591d30df5563945230104bf4c))
+* **notes:** combine shared topics with the on-device model ([f25166e](https://github.com/MOhammedRiaad/TabPlex/commit/f25166e49b48b01e8e5549990ce6fdc26fb7ab66))
+* **notes:** edit, move and split combined topics in the review ([485babf](https://github.com/MOhammedRiaad/TabPlex/commit/485babfd00376947c0724113428b1c0b595dff99))
+* **notes:** extract key points from tabs with a quick-view fallback ([4eedba3](https://github.com/MOhammedRiaad/TabPlex/commit/4eedba3f17194535ec9736066ecfef2797187cfe))
+* **notes:** group overlapping tab points by topic without AI ([7c8ed96](https://github.com/MOhammedRiaad/TabPlex/commit/7c8ed96eb1d5b11b3181284a5c4d745d652ced25))
+* **notes:** say why a page fell back to the quick view ([c614800](https://github.com/MOhammedRiaad/TabPlex/commit/c6148006969b826b7ca8fd299aabdded64f8fffb))
+* **notes:** write more descriptive points in tab summaries ([65a7d4a](https://github.com/MOhammedRiaad/TabPlex/commit/65a7d4a10a6ef018a197a0365a5b2f25f29a88af))
+* **settings:** restore the data kept before the last import, and watch dependency advisories ([8bd6fe3](https://github.com/MOhammedRiaad/TabPlex/commit/8bd6fe32cb8d26f45e181e9f2f44b6c34b918680))
+* **settings:** show what an import will replace before it does ([0928333](https://github.com/MOhammedRiaad/TabPlex/commit/0928333adc0cad1e7919538cdd4534a8914cab75))
+
+### 🐛 Bug Fixes
+
+* **background:** decide moveTabs once for the folder delete and its broadcast ([27f09a9](https://github.com/MOhammedRiaad/TabPlex/commit/27f09a9f64d83b92bc514310995b15964a40b603))
+* **background:** infer sessions on an alarm instead of a timer the worker loses ([a282fd4](https://github.com/MOhammedRiaad/TabPlex/commit/a282fd42abfcf5c6f6c462c6cec664ceff510c51))
+* **background:** open the app from onboarding and stop faking success on timeouts ([2785479](https://github.com/MOhammedRiaad/TabPlex/commit/2785479dedc78d062e33e9e8091c928451cacaa3))
+* **background:** run the tab cleanup on an alarm and let users opt in to recording every page ([8e7f0ad](https://github.com/MOhammedRiaad/TabPlex/commit/8e7f0addf2917ee2ee7ea4313cf9aed7e88664dd))
+* **background:** stop inferring sessions in the background ([b63eeef](https://github.com/MOhammedRiaad/TabPlex/commit/b63eeef3a59bdca44d129ba63b1d03584cccbf1b))
+* **background:** treat a non-string DELETE_FOLDER target as unfiled ([7674722](https://github.com/MOhammedRiaad/TabPlex/commit/76747227d7edf8356db08635307e0b0ca38c6576))
+* **boards:** delete a folder's tabs from IndexedDB when deleting folder and all tabs ([3988345](https://github.com/MOhammedRiaad/TabPlex/commit/39883456f4197fd0653d9c4c90d079e19a9583de))
+* **boards:** move tabs with one DELETE_FOLDER when a folder is deleted from the dialog ([2421e7c](https://github.com/MOhammedRiaad/TabPlex/commit/2421e7c43294cbb84360fbbddb36c6d081d6bd18))
+* **import:** fill missing dates, check list fields and attach folders without a board ([95ce840](https://github.com/MOhammedRiaad/TabPlex/commit/95ce840c6a1f863d7f70daba0c0ff968670f90c4))
+* **import:** keep the current page recording setting when the file has none ([aff74c8](https://github.com/MOhammedRiaad/TabPlex/commit/aff74c888484514c9192e9f8e70add47e3c7bcff))
+* **import:** only accept own timer setting keys when importing ([edc6211](https://github.com/MOhammedRiaad/TabPlex/commit/edc621186921826363e1e6ee9dca5aad73f1bb4a))
+* **import:** put the data back when restoring the backup fails ([01a0938](https://github.com/MOhammedRiaad/TabPlex/commit/01a093897fd618f509c43129eb26bbacc77a9bf7))
+* **notes:** ground points on numbers only for pages not in English ([c65754f](https://github.com/MOhammedRiaad/TabPlex/commit/c65754f86bb2d950d00b2d167c68546356fc4540))
+* **notes:** keep a long note inside its card ([4b02d47](https://github.com/MOhammedRiaad/TabPlex/commit/4b02d47b37ee693841d9dd6d7aa95b74fbc22a0e))
+* **notes:** show bullets in note cards, drop cut-off points, detect language from text ([9a8a9ee](https://github.com/MOhammedRiaad/TabPlex/commit/9a8a9ee658b4fd1f763cc57ba9f8eed84f89eea2))
+* **notes:** treat frozen tabs as asleep instead of waiting for them ([eb36cc0](https://github.com/MOhammedRiaad/TabPlex/commit/eb36cc00898dcf8a269e13c91e2fe852b18a1b56))
+* **security:** harden import, markdown links and extension exposure ([1128d4e](https://github.com/MOhammedRiaad/TabPlex/commit/1128d4e96538d391e0d14cc3d3e87ebe058215f3))
+* **settings:** clearer Clear All Data text, TabPlex subtitle and singular import warnings ([8300fd9](https://github.com/MOhammedRiaad/TabPlex/commit/8300fd95e6a1dc79435886de395d2abc88868734))
+* **settings:** keep page recording off after Clear All Data and reload other TabPlex tabs ([4473734](https://github.com/MOhammedRiaad/TabPlex/commit/447373475b4767220dde29211452513ce678839c))
+* **sync:** keep moved tabs in other TabPlex tabs when a folder is deleted ([11898b0](https://github.com/MOhammedRiaad/TabPlex/commit/11898b0c321387d881a991c14b226224efb9b910))
+* **sync:** remove the window message listener so embedded frames cannot drive storage sync ([9f26584](https://github.com/MOhammedRiaad/TabPlex/commit/9f2658473242d37856d59ac4be10ffd8b2683817))
+* **sync:** stop a running Pomodoro in tabs that receive Clear All Data ([e2085e2](https://github.com/MOhammedRiaad/TabPlex/commit/e2085e2d6a8c15ad79581303ee31b1b790920c3d))
+
+### ♻️ Refactoring
+
+* **background:** answer messages through one respondWith helper ([8822642](https://github.com/MOhammedRiaad/TabPlex/commit/8822642f2aa1254891efe770773ea5bf808f33e8))
+* **store:** remove unused moveAllTabsToFolder ([a0b2e37](https://github.com/MOhammedRiaad/TabPlex/commit/a0b2e37838cd30e42433b58c9bf1fa933b24e986))
+
 ## [1.3.0](https://github.com/MOhammedRiaad/TabPlex/compare/v1.2.0...v1.3.0) (2026-10-20)
 
 ### ✨ Features
