@@ -23,7 +23,7 @@ jobs:
               with:
                   fetch-depth: 0 # semantic-release needs the full history and tags
 
-            - uses: actions/setup-node@v6
+            - uses: actions/setup-node@v7
               with:
                   node-version: 22
                   cache: npm
