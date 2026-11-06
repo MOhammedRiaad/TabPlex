@@ -283,7 +283,12 @@ npm run preview      # Preview production build
 
 - Click the import button
 - Select your previously exported JSON file
-- All data will be restored
+- All data will be restored. A file made with TabPlex 1.3.0 or earlier has no "Record every page I open" setting, so that setting stays as it is
+
+**Clear All Data**
+
+- Settings → Data Management → Clear All Data deletes all your TabPlex data (boards, tabs, tasks, notes, sessions, history, canvases, settings and the backup from your last import) except the optional tldraw canvas, which keeps its own storage until you uninstall
+- It also turns "Record every page I open" off
 
 ## 🔒 Privacy Policy
 
