@@ -28,9 +28,7 @@ export interface ActionItem {
 }
 
 export type NoteAiResult =
-    | { kind: 'summary'; text: string }
-    | { kind: 'tasks'; items: ActionItem[] }
-    | { kind: 'text'; text: string };
+    { kind: 'summary'; text: string } | { kind: 'tasks'; items: ActionItem[] } | { kind: 'text'; text: string };
 
 /** Fewer characters than this and the helpers have nothing to work with */
 export const NOTE_AI_MIN_CHARS = 20;

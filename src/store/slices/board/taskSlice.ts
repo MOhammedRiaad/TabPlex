@@ -32,8 +32,7 @@ export const createTaskSlice: BoardStoreCreator<TaskSlice> = (set, get) => {
         addTaskAndSync: async task => {
             const newTask = insertTask(task);
             const response = (await chrome.runtime.sendMessage({ type: 'ADD_TASK', payload: newTask })) as
-                | ExtensionResponse
-                | undefined;
+                ExtensionResponse | undefined;
             if (response?.error) throw new Error(response.error);
             return newTask;
         },
