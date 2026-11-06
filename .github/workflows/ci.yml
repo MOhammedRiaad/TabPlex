@@ -36,7 +36,7 @@ jobs:
             - name: Unit tests (95% coverage gate)
               run: npm run test:coverage
 
-            - uses: actions/upload-artifact@v4
+            - uses: actions/upload-artifact@v7
               if: always()
               with:
                   name: coverage-${{ github.sha }}
@@ -49,7 +49,7 @@ jobs:
             - name: Package (artifact for testing)
               run: node scripts/package-extension.mjs
 
-            - uses: actions/upload-artifact@v4
+            - uses: actions/upload-artifact@v7
               with:
                   name: tabplex-${{ github.sha }}
                   path: release/*.zip
@@ -74,7 +74,7 @@ jobs:
             - name: End-to-end tests (real extension in Chromium)
               run: npm run test:e2e
 
-            - uses: actions/upload-artifact@v4
+            - uses: actions/upload-artifact@v7
               if: failure()
               with:
                   name: playwright-report-${{ github.sha }}
