@@ -21,7 +21,7 @@ const html = `<!DOCTYPE html>
     <meta name="description"
         content="TabPlex privacy policy: the tab manager keeps your tabs, tasks and notes in your browser. No account, no servers, no tracking.">
     <meta name="robots" content="index, follow">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#161c28">
     <link rel="canonical" href="https://mohammedriaad.github.io/TabPlex/privacy.html">
     <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
     <link rel="icon" type="image/png" sizes="128x128" href="images/icon-128.png">
@@ -35,39 +35,39 @@ const html = `<!DOCTYPE html>
     <meta property="og:image" content="https://mohammedriaad.github.io/TabPlex/images/1-today.png">
     <meta name="twitter:card" content="summary">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap"
-        rel="stylesheet">
+    <link rel="preload" href="fonts/bricolage-normal-500-800.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="fonts/atkinson-normal-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <nav class="navbar glass">
-        <div class="container nav-container">
-            <a href="index.html" class="logo">
-                <div class="logo-icon">T</div>
-                <span>TabPlex</span>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+        <div class="container site-header-inner">
+            <a href="index.html" class="wordmark">
+                <img src="images/icon-128.png" width="32" height="32" alt="">
+                TabPlex
             </a>
-            <div class="nav-links">
+            <nav class="site-nav" aria-label="Main">
                 <a href="index.html#features">Features</a>
                 <a href="index.html#privacy">Privacy</a>
-            </div>
+                <a href="index.html#faq">FAQ</a>
+            </nav>
         </div>
-    </nav>
+    </header>
 
-    <main class="container legal">
+    <main id="main" class="container legal">
 ${body}
     </main>
 
-    <footer class="footer">
-        <div class="container footer-bottom">
+    <footer class="site-footer">
+        <div class="container site-footer-inner">
             <p>&copy; 2026 TabPlex</p>
-            <div class="socials">
+            <nav aria-label="Footer">
                 <a href="index.html">Home</a>
                 <a href="https://github.com/MOhammedRiaad/TabPlex">GitHub</a>
-            </div>
+            </nav>
         </div>
     </footer>
 </body>
