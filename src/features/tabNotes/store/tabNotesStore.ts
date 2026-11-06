@@ -412,9 +412,12 @@ export const useTabNotesStore = create<TabNotesState>((set, get) => {
         actions: {
             start: (tabs, useAi) => {
                 if (get().status === 'running') return;
-                const entries = tabs.map(
-                    (tab, index): RunTab => ({ ref: index + 1, tab, state: 'waiting', message: '' })
-                );
+                const entries = tabs.map((tab, index): RunTab => ({
+                    ref: index + 1,
+                    tab,
+                    state: 'waiting',
+                    message: '',
+                }));
                 set({ ...RESET, tabs: entries });
                 execute(entries, useAi, true);
             },
