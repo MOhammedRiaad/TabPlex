@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
 import { useBoardStore } from '../store/boardStore';
@@ -6,6 +6,11 @@ import { useUIStore } from '../features/ui/store/uiStore';
 import * as db from '../utils/storage';
 import { respondToMessages } from '../test/chromeMock';
 import { makeBoard, makeContext, makeFolder, makeNote, makeSession, makeTab, makeTask } from '../test/factories';
+
+// These tests mount whole screens. On a busy machine (parallel test files, CI) they take several times longer than on a
+// quiet one, so the default 5 s test limit and 1 s waitFor limit fail them at random. Same checks, more patience.
+vi.setConfig({ testTimeout: 30_000 });
+configure({ asyncUtilTimeout: 5000 });
 
 // Canvas engines draw on <canvas>/WebGL and are covered by the E2E suite
 vi.mock('../features/canvas/components/CanvasContainer', () => ({ default: () => <div>custom canvas</div> }));

@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // The service worker sleeps after about 30 seconds, so a setInterval in it never reaches a period of minutes or
-// days. Periodic work belongs in a chrome.alarms alarm (see cleanup-service.ts and session-service.ts).
+// days. Periodic work belongs in a chrome.alarms alarm (see cleanup-service.ts).
 describe('background code', () => {
     const dir = resolve(__dirname, '..');
     const files = readdirSync(dir).filter(name => name.endsWith('.ts'));

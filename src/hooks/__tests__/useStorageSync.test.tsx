@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useStorageSync } from '../useStorageSync';
 import { useBoardStore } from '../../store/boardStore';
+import { useTimerStore } from '../../store/timerStore';
 import * as db from '../../utils/storage';
 import { fakeChrome } from '../../test/chromeMock';
 import { makeBoard, makeContext, makeFolder, makeNote, makeSession, makeTab, makeTask } from '../../test/factories';
@@ -165,20 +166,71 @@ describe('useStorageSync', () => {
         expect(sent.filter((t: string) => t.startsWith('UPDATE_') || t.startsWith('ADD_'))).toEqual([]);
     });
 
-    it('also listens to window messages, reloads after an import and cleans up', async () => {
+    it('keeps the tabs of a deleted folder when the other tab moved them, also in IndexedDB', async () => {
+        await db.addFolder(makeFolder({ id: 'f1' }));
+        await db.addFolder(makeFolder({ id: 'f2' }));
+        await db.addTab(makeTab({ id: 'moved', folderId: 'f1' }));
+        const { unmount } = renderHook(() => useStorageSync());
+        await waitFor(() => expect(state().tabs).toHaveLength(1));
+
+        broadcast({ type: 'STORAGE_FOLDER_DELETED', payload: { id: 'f1', moveTabs: true, targetFolderId: 'f2' } });
+        expect(state().tabs).toEqual([expect.objectContaining({ id: 'moved', folderId: 'f2' })]);
+        await waitFor(async () => expect((await db.getAllTabs()).map(t => t.folderId)).toEqual(['f2']));
+        expect((await db.getAllFolders()).map(f => f.id)).toEqual(['f2']);
+
+        // A payload with only an id (older background) still drops them
+        act(() => useBoardStore.setState({ tabs: [makeTab({ id: 'x', folderId: 'f2' })] }));
+        broadcast({ type: 'STORAGE_FOLDER_DELETED', payload: { id: 'f2' } });
+        expect(state().tabs).toEqual([]);
+
+        // The hook mirrors the store into IndexedDB in the background, so the stray tab 'x' lands there after this test.
+        // Wait for it and clear it here; otherwise it can land after the next test's clear and hydrate into that test.
+        unmount();
+        await waitFor(async () => expect((await db.getAllTabs()).map(t => t.id)).toEqual(['x']));
+        await db.clearAllData();
+    });
+
+    it('applies runtime messages, reloads after an import and cleans up', async () => {
         const reload = vi.fn();
         Object.defineProperty(window, 'location', { value: { ...window.location, reload }, configurable: true });
         const { unmount } = renderHook(() => useStorageSync());
-        act(() => {
-            window.dispatchEvent(
-                new MessageEvent('message', { data: { type: 'STORAGE_NOTE_ADDED', payload: makeNote({ id: 'w' }) } })
-            );
-        });
+        broadcast({ type: 'STORAGE_NOTE_ADDED', payload: makeNote({ id: 'w' }) });
         expect(state().notes.map(n => n.id)).toEqual(['w']);
         broadcast({ type: 'STORAGE_DATA_IMPORTED' });
         expect(reload).toHaveBeenCalled();
         unmount();
         expect(fakeChrome().runtime.onMessage.listeners.size).toBe(0);
+    });
+
+    it('ignores window messages from pages or frames: no state change, reload or IndexedDB write', async () => {
+        const reload = vi.fn();
+        Object.defineProperty(window, 'location', { value: { ...window.location, reload }, configurable: true });
+        localStorage.setItem('pomodoro-storage', '{}');
+        const { unmount } = renderHook(() => useStorageSync());
+        await waitFor(() => expect(fakeChrome().runtime.onMessage.listeners.size).toBeGreaterThan(0));
+
+        const post = (data: unknown) =>
+            act(() => {
+                window.dispatchEvent(new MessageEvent('message', { data, origin: 'https://evil.example' }));
+            });
+        post({ type: 'STORAGE_DATA_CLEARED' });
+        post({ type: 'STORAGE_DATA_IMPORTED' });
+        post({ type: 'STORAGE_TAB_ADDED', payload: makeTab({ id: 'evil', url: 'javascript:alert(1)' }) });
+        post({ type: 'STORAGE_NOTE_ADDED', payload: makeNote({ id: 'evil' }) });
+        window.postMessage({ type: 'STORAGE_DATA_CLEARED' }, '*');
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(reload).not.toHaveBeenCalled();
+        expect(localStorage.getItem('pomodoro-storage')).toBe('{}');
+        expect(state().tabs).toEqual([]);
+        expect(state().notes).toEqual([]);
+        expect(await db.getAllTabs()).toEqual([]);
+        expect(await db.getAllNotes()).toEqual([]);
+
+        // The runtime path still works
+        broadcast({ type: 'STORAGE_NOTE_ADDED', payload: makeNote({ id: 'ok' }) });
+        expect(state().notes.map(n => n.id)).toEqual(['ok']);
+        unmount();
     });
 
     it("ignores tab updates for tabs this page doesn't have (the background tracks every browser tab)", async () => {
@@ -195,6 +247,22 @@ describe('useStorageSync', () => {
         expect(state().tabs).toEqual([expect.objectContaining({ id: 'saved', title: 'Renamed' })]);
     });
 
+    it('reloads when another tab cleared all data, after dropping the stored timer state', async () => {
+        const reload = vi.fn();
+        Object.defineProperty(window, 'location', { value: { ...window.location, reload }, configurable: true });
+        const { unmount } = renderHook(() => useStorageSync());
+        useTimerStore.setState({ isRunning: true, completedSessions: 3, linkedTaskId: 'task_1' });
+        expect(localStorage.getItem('pomodoro-storage')).toContain('task_1');
+
+        broadcast({ type: 'STORAGE_DATA_CLEARED' });
+
+        expect(reload).toHaveBeenCalledTimes(1);
+        expect(useTimerStore.getState()).toMatchObject({ isRunning: false, completedSessions: 0, linkedTaskId: null });
+        // Nothing wrote the running state back after the reset
+        expect(localStorage.getItem('pomodoro-storage')).toBeNull();
+        unmount();
+    });
+
     it('lets the importing tab reload on its own, after showing its toast', async () => {
         const reload = vi.fn();
         Object.defineProperty(window, 'location', { value: { ...window.location, reload }, configurable: true });
@@ -208,5 +276,18 @@ describe('useStorageSync', () => {
         broadcast({ type: 'STORAGE_DATA_IMPORTED' });
         expect(reload).toHaveBeenCalledTimes(1);
         unmount();
+    });
+
+    it('loads when a stored board has no creation date, listing it first', async () => {
+        await db.addBoard({ ...makeBoard({ id: 'undated' }), createdAt: undefined } as unknown as ReturnType<
+            typeof makeBoard
+        >);
+        await db.addBoard(makeBoard({ id: 'dated', createdAt: '2020-01-01T00:00:00.000Z' }));
+        await db.addTask(makeTask());
+
+        renderHook(() => useStorageSync());
+
+        await waitFor(() => expect(state().boards.map(b => b.id)).toEqual(['undated', 'dated']));
+        expect(state().tasks).toHaveLength(1);
     });
 });

@@ -29,7 +29,6 @@ export interface TabSlice {
     deleteTab: (id: string) => void;
     deleteTabSilently: (id: string) => void;
     moveTab: (tabId: string, newFolderId: string) => void;
-    moveAllTabsToFolder: (sourceFolderId: string, targetFolderId: string) => void;
     reorderTab: (tabId: string, newIndex: number, folderId: string) => void;
 }
 

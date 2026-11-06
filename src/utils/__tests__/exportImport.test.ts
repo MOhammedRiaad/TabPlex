@@ -18,6 +18,7 @@ import { useTimerStore } from '../../store/timerStore';
 import { BACKGROUND_TASKS_KEY } from '../taskContext';
 import * as db from '../storage';
 import { MAX_IMPORT_CHARS } from '../importValidation';
+import { TRACK_ALL_TABS_KEY } from '../tabTracking';
 import { makeFolder, makeTab, makeTask } from '../../test/factories';
 import { fakeChrome, respondToMessages } from '../../test/chromeMock';
 
@@ -81,7 +82,9 @@ describe('export / import', () => {
         const imported = sent.find(m => m.type === 'IMPORT_ALL_DATA');
         expect(imported?.payload?.tasks.map(t => (t as { id: string }).id)).toEqual(['restored']);
         expect(imported?.payload?.folders).toHaveLength(1);
-        expect(imported?.payload?.boards).toEqual([]);
+        // The folder's board is not in the file: it is attached to a synthesized default board
+        expect(imported?.payload?.boards).toEqual([expect.objectContaining({ id: 'default_board', name: 'My Board' })]);
+        expect(imported?.payload?.folders[0]).toMatchObject({ boardId: 'default_board' });
         expect(imported?.payload?.history).toEqual(history);
     });
 
@@ -198,6 +201,35 @@ describe('export / import', () => {
             expect(await getImportBackupDate()).not.toBeNull();
         });
 
+        it('puts the data from before the restore back when writing it fails, and keeps the backup', async () => {
+            await db.addTask(makeTask({ id: 'before' }));
+            await importData(file({ tasks: [makeTask({ id: 'after' })] }));
+            markImportInThisTab(false);
+            const backup = (await chrome.storage.local.get(IMPORT_BACKUP_KEY))[IMPORT_BACKUP_KEY];
+
+            // The background refuses the first write (the restore) and accepts the second (putting 'after' back)
+            let writes = 0;
+            respondToMessages(m => (m.type === 'IMPORT_ALL_DATA' && writes++ === 0 ? { error: 'down' } : undefined));
+            await expect(restoreImportBackup()).rejects.toThrow('down');
+
+            expect((await db.getAllTasks()).map(t => t.id)).toEqual(['after']);
+            expect(isImportInThisTab()).toBe(false);
+            expect((await chrome.storage.local.get(IMPORT_BACKUP_KEY))[IMPORT_BACKUP_KEY]).toBe(backup);
+        });
+
+        it('throws the original error and logs when the rollback fails too', async () => {
+            await db.addTask(makeTask({ id: 'before' }));
+            await importData(file({ tasks: [makeTask({ id: 'after' })] }));
+            markImportInThisTab(false);
+
+            respondToMessages(m => (m.type === 'IMPORT_ALL_DATA' ? { error: 'down' } : undefined));
+            await expect(restoreImportBackup()).rejects.toThrow('The background could not import the data: down');
+            expect(console.error).toHaveBeenCalledWith(
+                'Could not restore the data after a failed import or restore:',
+                expect.any(Error)
+            );
+        });
+
         it('reports a backup of unknown date as an empty text, and refuses a damaged backup', async () => {
             await chrome.storage.local.set({ [IMPORT_BACKUP_KEY]: '{nope' });
             expect(await getImportBackupDate()).toBe('');
@@ -224,6 +256,25 @@ describe('export / import', () => {
             expect((await db.getAllTasks()).map(t => t.id)).toEqual(['keep']);
         });
 
+        it('lists the repairs: undated items, folders moved to My Board', () => {
+            const summary = previewImport(
+                JSON.stringify({
+                    version: '2.0.0',
+                    data: {
+                        boards: [{ id: 'b', name: 'B' }],
+                        folders: [makeFolder({ id: 'f', boardId: 'gone' })],
+                    },
+                })
+            );
+            expect(summary.warnings).toEqual(
+                expect.arrayContaining([
+                    'boards: 1 item had no creation date',
+                    'folders: 1 folder without a board was moved to "My Board"',
+                ])
+            );
+            expect(summary.counts).toEqual({ boards: 2, folders: 1 });
+        });
+
         it('has no export date for a file without one, and throws what importData throws', () => {
             expect(previewImport(JSON.stringify({ version: '1.0.0', data: {} }))).toEqual({
                 counts: {},
@@ -248,7 +299,12 @@ describe('export / import', () => {
         async function seedEverything() {
             await chrome.storage.local.set({ canvases, canvasSettings });
             await chrome.storage.local.set(
-                Object.fromEntries(EXTENSION_SETTING_KEYS.map((key, i) => [key, { marker: `ext-${i}` }]))
+                Object.fromEntries(
+                    EXTENSION_SETTING_KEYS.map((key, i) => [
+                        key,
+                        key === TRACK_ALL_TABS_KEY ? true : { marker: `ext-${i}` },
+                    ])
+                )
             );
             PAGE_SETTING_KEYS.forEach((key, i) => localStorage.setItem(key, `page-${i}`));
             useTimerStore.getState().updateSettings({ workDuration: 50, soundEnabled: false });
@@ -276,7 +332,9 @@ describe('export / import', () => {
             const stored = await chrome.storage.local.get(null);
             expect(stored.canvases).toEqual(canvases);
             expect(stored.canvasSettings).toEqual(canvasSettings);
-            EXTENSION_SETTING_KEYS.forEach((key, i) => expect(stored[key]).toEqual({ marker: `ext-${i}` }));
+            EXTENSION_SETTING_KEYS.forEach((key, i) =>
+                expect(stored[key]).toEqual(key === TRACK_ALL_TABS_KEY ? true : { marker: `ext-${i}` })
+            );
             PAGE_SETTING_KEYS.forEach((key, i) => expect(localStorage.getItem(key)).toBe(`page-${i}`));
             expect(useTimerStore.getState().settings).toMatchObject({ workDuration: 50, soundEnabled: false });
         });
@@ -294,10 +352,101 @@ describe('export / import', () => {
             const stored = await chrome.storage.local.get(null);
             expect(stored.canvases).toEqual([]);
             expect(stored).not.toHaveProperty('canvasSettings');
-            EXTENSION_SETTING_KEYS.forEach(key => expect(stored).not.toHaveProperty(key));
+            EXTENSION_SETTING_KEYS.filter(key => key !== TRACK_ALL_TABS_KEY).forEach(key =>
+                expect(stored).not.toHaveProperty(key)
+            );
             PAGE_SETTING_KEYS.forEach(key => expect(localStorage.getItem(key)).toBeNull());
             // No timer settings in the file: keep the current ones
             expect(useTimerStore.getState().settings.workDuration).toBe(50);
+        });
+
+        it.each([
+            ['off', false],
+            ['on', true],
+            ['missing', undefined],
+        ])('a file without the recording setting keeps it %s', async (_label, before) => {
+            await wipeEverything();
+            if (before !== undefined) await chrome.storage.local.set({ [TRACK_ALL_TABS_KEY]: before });
+            const old = { version: EXPORT_VERSION, timestamp: '', data: {}, settings: { extension: {}, page: {} } };
+            await importData(JSON.stringify(old));
+            const stored = await chrome.storage.local.get(null);
+            if (before === undefined) expect(stored).not.toHaveProperty(TRACK_ALL_TABS_KEY);
+            else expect(stored[TRACK_ALL_TABS_KEY]).toBe(before);
+        });
+
+        it.each([
+            ['settings that are text', { settings: 'x' }, 'settings'],
+            ['a timer that is a number', { settings: { timer: 3 } }, 'settings.timer'],
+            ['extension settings that are a list', { settings: { extension: [] } }, 'settings.extension'],
+            ['page settings that are text', { settings: { page: 'x' } }, 'settings.page'],
+            ['canvas settings that are a list', { data: { canvasSettings: [] } }, 'data.canvasSettings'],
+            ['recording as text', { settings: { extension: { [TRACK_ALL_TABS_KEY]: 'false' } } }, TRACK_ALL_TABS_KEY],
+        ])('refuses a file with %s, leaving the data alone', async (_label, part, field) => {
+            await db.addTask(makeTask({ id: 'keep' }));
+            await chrome.storage.local.set({ [TRACK_ALL_TABS_KEY]: false });
+            const text = JSON.stringify({ version: EXPORT_VERSION, timestamp: '', data: {}, ...part });
+            expect(() => previewImport(text)).toThrow(field);
+            await expect(importData(text)).rejects.toThrow('The file is damaged');
+            expect((await db.getAllTasks()).map(t => t.id)).toEqual(['keep']);
+            expect((await chrome.storage.local.get(TRACK_ALL_TABS_KEY))[TRACK_ALL_TABS_KEY]).toBe(false);
+        });
+
+        it('ignores an inherited "__proto__" key in the timer settings', async () => {
+            await wipeEverything();
+            const update = vi.spyOn(useTimerStore.getState(), 'updateSettings');
+            const timer = JSON.parse('{"workDuration": 40, "__proto__": {"workDuration": 99}}');
+            await importData(JSON.stringify({ version: EXPORT_VERSION, timestamp: '', data: {}, settings: { timer } }));
+            const call = update.mock.calls.find(c => 'workDuration' in c[0]);
+            expect(call?.[0]).toEqual({ workDuration: 40 });
+            expect(Object.getPrototypeOf(call?.[0])).toBe(Object.prototype);
+            update.mockRestore();
+        });
+
+        it('applies only the timer settings the app knows, with the right type and sensible numbers', async () => {
+            await wipeEverything();
+            const timer = {
+                workDuration: 50,
+                shortBreakDuration: 0,
+                longBreakDuration: -5,
+                longBreakInterval: 1000,
+                autoStartBreaks: 'yes',
+                autoStartWork: true,
+                soundEnabled: false,
+                madeUp: 1,
+            };
+            await importData(JSON.stringify({ version: EXPORT_VERSION, timestamp: '', data: {}, settings: { timer } }));
+            expect(useTimerStore.getState().settings).toEqual({
+                ...timerDefaults,
+                workDuration: 50,
+                autoStartWork: true,
+                soundEnabled: false,
+            });
+            expect(useTimerStore.getState().settings).not.toHaveProperty('madeUp');
+
+            for (const bad of [NaN, Infinity, 2.5, 1441, '25']) {
+                // JSON turns NaN and Infinity into null, which is not a number either
+                await importData(
+                    JSON.stringify({
+                        version: EXPORT_VERSION,
+                        timestamp: '',
+                        data: {},
+                        settings: { timer: { workDuration: bad } },
+                    })
+                );
+                expect(useTimerStore.getState().settings.workDuration).toBe(50);
+            }
+        });
+
+        it('a file with the recording setting sets it', async () => {
+            await chrome.storage.local.set({ [TRACK_ALL_TABS_KEY]: false });
+            const file = {
+                version: EXPORT_VERSION,
+                timestamp: '',
+                data: {},
+                settings: { extension: { [TRACK_ALL_TABS_KEY]: true }, page: {} },
+            };
+            await importData(JSON.stringify(file));
+            expect((await chrome.storage.local.get(TRACK_ALL_TABS_KEY))[TRACK_ALL_TABS_KEY]).toBe(true);
         });
 
         it('a 1.0.0 import keeps the current canvases and settings', async () => {

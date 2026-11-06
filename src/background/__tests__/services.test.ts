@@ -393,7 +393,7 @@ const cases: Case[] = [
         expected: { success: true },
         after: () => {
             expect(store().tabboard_tasks).toEqual([makeTask()]);
-            expect(store().history_items).toEqual([{ id: 'h' }]);
+            expect(store().history_items).toEqual([expect.objectContaining({ id: 'h' })]);
             expect(store().tabboard_notes).toEqual([]);
             expect(broadcasts()).toContain('STORAGE_DATA_IMPORTED');
         },
@@ -558,6 +558,39 @@ describe('special cases', () => {
         expect((store().tabboard_tabs as any[])[0].folderId).toBe('');
     });
 
+    it('DELETE_FOLDER broadcasts what it did, so other TabPlex tabs keep the moved tabs', async () => {
+        const sent = () =>
+            vi
+                .mocked(chrome.runtime.sendMessage)
+                .mock.calls.map(c => c[0] as unknown as { type: string; payload?: unknown })
+                .filter(m => m.type === 'STORAGE_FOLDER_DELETED')
+                .map(m => m.payload);
+        call(handlers.folder, 'DELETE_FOLDER', { id: 'a', moveTabs: true, targetFolderId: 'f2' });
+        await flush();
+        call(handlers.folder, 'DELETE_FOLDER', { id: 'b', moveTabs: true });
+        await flush();
+        call(handlers.folder, 'DELETE_FOLDER', { id: 'c' });
+        await flush();
+        expect(sent()).toEqual([
+            { id: 'a', moveTabs: true, targetFolderId: 'f2' },
+            { id: 'b', moveTabs: true, targetFolderId: '' },
+            { id: 'c', moveTabs: false, targetFolderId: '' },
+        ]);
+    });
+
+    it('DELETE_FOLDER treats a target folder that is not a string as unfiled', async () => {
+        await chrome.storage.local.set({ tabboard_tabs: [makeTab({ id: 't1' })] });
+        call(handlers.folder, 'DELETE_FOLDER', { id: 'folder_1', moveTabs: true, targetFolderId: { evil: 1 } });
+        await flush();
+        expect((store().tabboard_tabs as any[])[0].folderId).toBe('');
+        const payloads = vi
+            .mocked(chrome.runtime.sendMessage)
+            .mock.calls.map(c => c[0] as unknown as { type: string; payload?: unknown })
+            .filter(m => m.type === 'STORAGE_FOLDER_DELETED')
+            .map(m => m.payload);
+        expect(payloads).toEqual([{ id: 'folder_1', moveTabs: true, targetFolderId: '' }]);
+    });
+
     it('UPDATE_HISTORY fails for unknown items', async () => {
         const { sendResponse } = call(handlers.history, 'UPDATE_HISTORY', { id: 'nope', updates: {} });
         await flush();
@@ -569,67 +602,38 @@ describe('special cases', () => {
         await flush();
         expect(sendResponse).toHaveBeenCalledWith({ error: 'Bookmark not found' });
     });
-
-    it('logs session inference events', () => {
-        expect(call(handlers.session, 'SESSION_INFERENCE_COMPLETE', {}).keepOpen).toBe(false);
-        expect(console.log).toHaveBeenCalled();
-    });
 });
 
-describe('session inference', () => {
-    it('creates a session from tabs used in the last hour', async () => {
-        const { inferSessions } = await import('../session-service');
-        vi.setSystemTime(new Date('2026-10-03T12:00:00Z'));
-        await chrome.storage.local.set({
-            tabboard_tabs: [
-                makeTab({ id: 'recent', lastAccessed: '2026-10-03T11:30:00Z' }),
-                makeTab({ id: 'old', lastAccessed: '2026-10-03T09:00:00Z' }),
-            ],
-        });
-        await inferSessions();
-        const [session] = store().tabboard_sessions as any[];
-        expect(session.tabIds).toEqual(['recent']);
-        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'SESSION_INFERENCE_COMPLETE' })
-        );
-    });
+describe('session inference was removed from the background', () => {
+    const LEGACY_ALARM = 'tabplex-infer-sessions';
 
-    it('does nothing without recent tabs and logs failures', async () => {
-        const { inferSessions } = await import('../session-service');
-        await inferSessions();
-        expect(store().tabboard_sessions).toBeUndefined();
-        vi.mocked(fakeChrome().storage.local.get).mockRejectedValueOnce(new Error('x'));
-        await inferSessions();
-        expect(console.error).toHaveBeenCalledWith('Error inferring sessions:', expect.any(Error));
-    });
-
-    it('runs on a 30 minute alarm that is created once, not on a timer the sleeping worker would lose', async () => {
-        const setIntervalSpy = vi.spyOn(globalThis, 'setInterval');
-        const { INFER_SESSIONS_ALARM } = await import('../session-service');
-        await flush();
-        expect(setIntervalSpy).not.toHaveBeenCalled();
-        expect(fakeChrome().alarms.create).toHaveBeenCalledWith(INFER_SESSIONS_ALARM, { periodInMinutes: 30 });
-
-        // A restarted worker finds the alarm and does not add another
+    it('creates no alarm, clears the one an earlier build left, and still sets up only the cleanup alarm', async () => {
+        await chrome.alarms.create(LEGACY_ALARM, { periodInMinutes: 30 });
+        vi.mocked(fakeChrome().alarms.create).mockClear();
         vi.resetModules();
         await import('../session-service');
         await flush();
-        expect(fakeChrome().alarms.create).toHaveBeenCalledTimes(1);
-
-        await chrome.storage.local.set({ tabboard_tabs: [makeTab({ lastAccessed: new Date().toISOString() })] });
-        mock.browser.events.alarm.emit({ name: 'another-alarm' });
-        await flush();
-        expect(store().tabboard_sessions).toBeUndefined();
-        mock.browser.events.alarm.emit({ name: INFER_SESSIONS_ALARM });
-        await flush();
-        expect((store().tabboard_sessions as any[]).length).toBe(1);
+        expect(fakeChrome().alarms.clear).toHaveBeenCalledWith(LEGACY_ALARM);
+        expect(await chrome.alarms.get(LEGACY_ALARM)).toBeUndefined();
+        expect(fakeChrome().alarms.create).not.toHaveBeenCalledWith(LEGACY_ALARM, expect.anything());
     });
 
-    it('runs 5 seconds after startup', async () => {
+    it('does not fail to start when clearing the alarm fails', async () => {
+        vi.mocked(fakeChrome().alarms.clear).mockRejectedValueOnce(new Error('no alarms'));
+        vi.resetModules();
+        await expect(import('../session-service')).resolves.toBeDefined();
+        await flush();
+    });
+
+    it('creates no session on its own: not on an alarm, not after browser start', async () => {
+        vi.resetModules();
+        await import('../session-service');
         await chrome.storage.local.set({ tabboard_tabs: [makeTab({ lastAccessed: new Date().toISOString() })] });
+        mock.browser.events.alarm.emit({ name: LEGACY_ALARM });
         mock.browser.events.startup.emit();
-        await vi.advanceTimersByTimeAsync(5000);
-        expect((store().tabboard_sessions as any[]).length).toBe(1);
+        await vi.advanceTimersByTimeAsync(10_000);
+        expect(store().tabboard_sessions).toBeUndefined();
+        expect(broadcasts()).not.toContain('SESSION_INFERENCE_COMPLETE');
     });
 });
 

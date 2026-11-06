@@ -136,25 +136,15 @@ describe('board store', () => {
             store().moveTab('t1', 'f2');
             store().moveTab('missing', 'f2');
             expect(store().tabs[0]).toMatchObject({ title: 'A2', folderId: 'f2' });
-            store().moveAllTabsToFolder('f2', 'f3');
-            expect(store().tabs[0].folderId).toBe('f3');
             store().deleteTab('t1');
             store().deleteTabSilently('t2');
             expect(store().tabs).toEqual([]);
             await flushPromises();
-            // updateTab, moveTab and moveAllTabsToFolder each sync the changed tab; a missing tab sends nothing
-            expect(types(messages)).toEqual([
-                'ADD_TAB',
-                'ADD_TAB',
-                'UPDATE_TAB',
-                'UPDATE_TAB',
-                'UPDATE_TAB',
-                'DELETE_TAB',
-            ]);
-            expect(messages.slice(2, 5).map(m => m.payload)).toEqual([
+            // updateTab and moveTab each sync the changed tab; a missing tab sends nothing
+            expect(types(messages)).toEqual(['ADD_TAB', 'ADD_TAB', 'UPDATE_TAB', 'UPDATE_TAB', 'DELETE_TAB']);
+            expect(messages.slice(2, 4).map(m => m.payload)).toEqual([
                 expect.objectContaining({ id: 't1', title: 'A2', folderId: 'f1' }),
                 expect.objectContaining({ id: 't1', folderId: 'f2' }),
-                expect.objectContaining({ id: 't1', folderId: 'f3' }),
             ]);
             await flushPromises();
             expect(await db.getAllTabs()).toEqual([]);

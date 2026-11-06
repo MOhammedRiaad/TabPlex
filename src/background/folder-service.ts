@@ -8,12 +8,17 @@ interface DeleteFolderPayload {
     targetFolderId?: string;
 }
 
+/** The target folder id, or '' (unfiled) for anything that is not a string */
+const targetOf = (payload: DeleteFolderPayload): string =>
+    typeof payload.targetFolderId === 'string' ? payload.targetFolderId : '';
+
 /** The tabs of a folder that is going away: moved to another folder, or deleted with it */
-async function releaseFolderTabs({ id, moveTabs, targetFolderId }: DeleteFolderPayload): Promise<void> {
+async function releaseFolderTabs(payload: DeleteFolderPayload, moveTabs: boolean): Promise<void> {
+    const { id } = payload;
     const tabsInFolder = (await getAllTabs()).filter(tab => tab.folderId === id);
     if (tabsInFolder.length === 0) return;
     if (moveTabs) {
-        await Promise.all(tabsInFolder.map(tab => updateTab({ ...tab, folderId: targetFolderId || '' })));
+        await Promise.all(tabsInFolder.map(tab => updateTab({ ...tab, folderId: targetOf(payload) })));
     } else {
         await Promise.all(tabsInFolder.map(tab => deleteTab(tab.id)));
     }
@@ -36,10 +41,17 @@ export function handleFolderMessage(message: ExtensionMessage, sendResponse: (re
         case 'DELETE_FOLDER':
             if ((message.payload as DeleteFolderPayload | undefined)?.id) {
                 const payload = message.payload as DeleteFolderPayload;
+                const moveTabs = payload.moveTabs === true; // one decision for the tab move and the broadcast
                 return respondWith(
-                    releaseFolderTabs(payload)
+                    releaseFolderTabs(payload, moveTabs)
                         .then(() => deleteFolder(payload.id)) // Now delete the folder itself
-                        .then(() => broadcast('STORAGE_FOLDER_DELETED', { id: payload.id })),
+                        .then(() =>
+                            broadcast('STORAGE_FOLDER_DELETED', {
+                                id: payload.id,
+                                moveTabs,
+                                targetFolderId: targetOf(payload), // same fallback as releaseFolderTabs
+                            })
+                        ),
                     sendResponse,
                     { timeoutMs: 2000, timeoutError: 'Delete folder timed out' }
                 );

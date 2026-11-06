@@ -121,6 +121,12 @@ describe('message-handler', () => {
         expect(sendResponse).toHaveBeenCalledWith({ error: 'Unknown message type: GET_USER_INFO' });
     });
 
+    it('no longer infers sessions in the background (SESSION_INFERENCE_COMPLETE is gone)', () => {
+        const { keepOpen, sendResponse } = dispatch({ type: 'SESSION_INFERENCE_COMPLETE' });
+        expect(keepOpen).toBe(false);
+        expect(sendResponse).toHaveBeenCalledWith({ error: 'Unknown message type: SESSION_INFERENCE_COMPLETE' });
+    });
+
     it('moves a tab to another folder', async () => {
         await chrome.storage.local.set({ tabboard_tabs: [makeTab({ id: 't1' })] });
         const { keepOpen, sendResponse } = dispatch({ type: 'MOVE_TAB', payload: { tabId: 't1', newFolderId: 'f2' } });

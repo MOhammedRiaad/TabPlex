@@ -7,7 +7,13 @@ import { DISPLAY_NAME_KEY } from '../features/settings/utils/displayName';
 import { THEME_STORAGE_KEY } from '../hooks/useTheme';
 import { TimerSettings, useTimerStore } from '../store/timerStore';
 import { TRACK_ALL_TABS_KEY } from './tabTracking';
-import { MAX_IMPORT_CHARS, describeErrors, sanitizeCollections, type ImportCollections } from './importValidation';
+import {
+    MAX_IMPORT_CHARS,
+    checkSettingsShape,
+    describeErrors,
+    sanitizeCollections,
+    type ImportCollections,
+} from './importValidation';
 import { PARK_RESUME_SETTINGS_KEY, reconcileTasksWithBackground } from './taskContext';
 import { SUGGEST_DISMISSED_KEY } from './taskSuggest';
 import {
@@ -113,7 +119,10 @@ function readPageSettings(): Record<string, string> {
     return page;
 }
 
-/** Restores the custom canvases and every listed setting: present in the file → set, missing → removed */
+/**
+ * Restores the custom canvases and every listed setting: present in the file → set, missing → removed. The one
+ * exception is the recording setting, which stays as it is when the file has none.
+ */
 async function restoreCanvasesAndSettings(parsed: ExportData): Promise<void> {
     const { canvases = [], canvasSettings = null } = parsed.data ?? {};
     const extension = parsed.settings?.extension ?? {};
@@ -125,7 +134,8 @@ async function restoreCanvasesAndSettings(parsed: ExportData): Promise<void> {
     else toRemove.push(CANVAS_SETTINGS_KEY);
     for (const key of EXTENSION_SETTING_KEYS) {
         if (extension[key] !== undefined) toSet[key] = extension[key];
-        else toRemove.push(key);
+        // Files from v1.3.0 and earlier have no recording setting: removing it would turn recording back on
+        else if (key !== TRACK_ALL_TABS_KEY) toRemove.push(key);
     }
     await chrome.storage.local.set(toSet);
     await chrome.storage.local.remove(toRemove);
@@ -135,7 +145,38 @@ async function restoreCanvasesAndSettings(parsed: ExportData): Promise<void> {
         else localStorage.removeItem(key);
     }
 
-    if (parsed.settings?.timer) useTimerStore.getState().updateSettings(parsed.settings.timer);
+    if (parsed.settings?.timer) {
+        useTimerStore
+            .getState()
+            .updateSettings(pickTimerSettings(useTimerStore.getState().settings, parsed.settings.timer));
+    }
+}
+
+/** Allowed whole numbers per timer setting; the timer divides and multiplies by these, so 0 or -5 would break it */
+const TIMER_LIMITS: Partial<Record<keyof TimerSettings, [min: number, max: number]>> = {
+    workDuration: [1, 1440],
+    shortBreakDuration: [1, 1440],
+    longBreakDuration: [1, 1440],
+    longBreakInterval: [1, 100],
+};
+
+/** The timer settings of a file that the app knows: same key, same type, numbers within limits. The rest is dropped. */
+function pickTimerSettings(current: TimerSettings, fromFile: unknown): Partial<TimerSettings> {
+    const picked: Record<string, unknown> = {};
+    if (typeof fromFile !== 'object' || fromFile === null) return picked;
+    for (const [key, value] of Object.entries(fromFile)) {
+        if (
+            !Object.prototype.hasOwnProperty.call(current, key) ||
+            typeof value !== typeof current[key as keyof TimerSettings]
+        )
+            continue;
+        const limits = TIMER_LIMITS[key as keyof TimerSettings];
+        if (limits && !(Number.isInteger(value) && (value as number) >= limits[0] && (value as number) <= limits[1])) {
+            continue;
+        }
+        picked[key] = value;
+    }
+    return picked as Partial<TimerSettings>;
 }
 
 export const exportData = async (): Promise<string> => {
@@ -230,6 +271,23 @@ async function applyImport(parsedData: ExportData): Promise<void> {
     }
 }
 
+/** Writes a checked export; when that fails, puts the data in `backupJson` back and rethrows the original error */
+async function applyWithRollback(parsedData: ExportData, backupJson: string): Promise<void> {
+    try {
+        await applyImport(parsedData);
+    } catch (error) {
+        // Known limit: when the current data has no recording setting and the failed file set it to false, this
+        // rollback cannot remove it again, so recording stays off. That is the privacy-safe direction.
+        try {
+            await applyImport(JSON.parse(backupJson) as ExportData);
+        } catch (restoreError) {
+            console.error('Could not restore the data after a failed import or restore:', restoreError);
+        }
+        markImportInThisTab(false);
+        throw error;
+    }
+}
+
 /** What a file holds and what was repaired in it, for the confirmation shown before an import */
 export interface ImportSummary {
     /** Items per kind (only kinds that have any) */
@@ -260,7 +318,11 @@ function parseExportFile(jsonData: string): { parsedData: ExportData; summary: I
     }
 
     const checked = sanitizeCollections(file.data);
-    if (!checked.ok) throw new Error(`The file is damaged: ${describeErrors(checked.errors)}`);
+    const shapeErrors = checkSettingsShape(raw as Record<string, unknown>);
+    if (!checked.ok || shapeErrors.length > 0) {
+        const errors = [...(checked.ok ? [] : checked.errors), ...shapeErrors];
+        throw new Error(`The file is damaged: ${describeErrors(errors)}`);
+    }
     const { collections, canvases, warnings } = checked.value;
 
     const counts: ImportSummary['counts'] = {};
@@ -301,17 +363,7 @@ export const importData = async (jsonData: string): Promise<void> => {
             console.warn('Could not store the import backup:', error);
         }
 
-        try {
-            await applyImport(parsedData);
-        } catch (error) {
-            try {
-                await applyImport(JSON.parse(backup) as ExportData);
-            } catch (restoreError) {
-                console.error('Could not restore the data after a failed import:', restoreError);
-            }
-            markImportInThisTab(false);
-            throw error;
-        }
+        await applyWithRollback(parsedData, backup);
     } catch (error) {
         console.error('Error importing data:', error);
         throw error;
@@ -347,11 +399,15 @@ export const getImportBackupDate = async (): Promise<string | null> => {
     return typeof at === 'string' ? at : '';
 };
 
-/** Puts back the data kept from before the last import (checked like any import file). The backup stays. */
+/**
+ * Puts back the data kept from before the last import (checked like any import file). The backup stays. If writing
+ * fails, the data from before the restore is put back.
+ */
 export const restoreImportBackup = async (): Promise<void> => {
     const stored = await chrome.storage.local.get([IMPORT_BACKUP_KEY]);
     const backup = stored[IMPORT_BACKUP_KEY];
     if (typeof backup !== 'string') throw new Error('There is no backup to restore');
     const { parsedData } = parseExportFile(backup);
-    await applyImport(parsedData);
+    // The current data, so a failed restore can be undone. The stored backup itself stays.
+    await applyWithRollback(parsedData, await exportData());
 };

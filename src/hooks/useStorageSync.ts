@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useBoardStore } from '../store/boardStore';
+import { resetTimerStore } from '../store/timerStore';
 import { reconcileTasksWithBackground } from '../utils/taskContext';
 import { isImportInThisTab } from '../utils/exportImport';
 import {
@@ -86,8 +87,9 @@ export const useStorageSync = () => {
             // createdAt/updatedAt and send an ADD_* message to the background for every stored item
             // on every page load.
             useBoardStore.setState({
-                // IndexedDB returns them by id; keep the order they were created in (the board picker, the default board)
-                boards: storedBoards.sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+                // IndexedDB returns them by id; keep the order they were created in (the board picker, the default board).
+                // Stored data can lack the date too, so a missing one sorts first instead of throwing.
+                boards: storedBoards.sort((a, b) => String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? ''))),
                 folders: storedFolders,
                 tabs: sortedTabs,
                 tasks: reconciledTasks,
@@ -344,12 +346,31 @@ export const useStorageSync = () => {
                         deleteNoteSilentlyFromStore(event.data.payload.id);
                         break;
 
-                    case 'STORAGE_FOLDER_DELETED':
-                        deleteFolderSilentlyFromStore(event.data.payload.id);
+                    case 'STORAGE_FOLDER_DELETED': {
+                        const { id, moveTabs, targetFolderId } = event.data.payload as {
+                            id: string;
+                            moveTabs?: boolean;
+                            targetFolderId?: string;
+                        };
+                        // Same arguments as the tab that deleted it, or the moved tabs are dropped here and then from IndexedDB
+                        deleteFolderSilentlyFromStore(
+                            id,
+                            moveTabs === true,
+                            typeof targetFolderId === 'string' ? targetFolderId : ''
+                        );
                         break;
+                    }
 
                     case 'STORAGE_SESSION_DELETED':
                         deleteSessionSilentlyFromStore(event.data.payload.id);
+                        break;
+
+                    case 'STORAGE_DATA_CLEARED':
+                        // Another TabPlex tab deleted everything: reload so this tab can't write its old data back.
+                        // A running Pomodoro would otherwise store its state again before the reload,
+                        // so stop it first (the same reset as the tab that cleared).
+                        resetTimerStore();
+                        window.location.reload();
                         break;
 
                     case 'STORAGE_DATA_IMPORTED':
@@ -361,10 +382,8 @@ export const useStorageSync = () => {
             }
         };
 
-        // Listen for messages from background script
-        window.addEventListener('message', handleStorageChange);
-
-        // Also listen for messages from extension runtime.
+        // Only chrome.runtime.onMessage drives sync: it is reachable by this extension's own contexts only.
+        // A window 'message' listener would accept messages from any embedded frame (e.g. a tldraw embed).
         // Return false: this listener never responds. Returning true kept every message channel open
         // until it timed out ("message port closed before a response was received").
         const handleRuntimeMessage = (message: unknown) => {
@@ -374,7 +393,6 @@ export const useStorageSync = () => {
         chrome.runtime.onMessage.addListener(handleRuntimeMessage);
 
         return () => {
-            window.removeEventListener('message', handleStorageChange);
             chrome.runtime.onMessage.removeListener(handleRuntimeMessage);
         };
         // Store actions are stable references: the listeners are registered once

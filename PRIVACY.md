@@ -60,6 +60,8 @@ All data is stored using:
 
 - **IndexedDB**: Browser's local database (for structured data)
 - **chrome.storage.local**: Chrome's local storage API (for settings and sync)
+- **localStorage**: the page's own storage (for the theme, the timer, your name for the Today greeting and a few view preferences)
+- **chrome.storage.session**: memory only, emptied when the browser closes. Used by parked-task suggestions to remember which tabs were already offered (tab numbers, no addresses) and when the last suggestion was shown
 
 **Important**: This data never leaves your device. There are no servers, no cloud storage, and no data transmission.
 
@@ -85,7 +87,7 @@ TabPlex requests the following permissions to function:
 
 4. **`history`**
     - **Purpose**: Allow you to import browser history
-    - **Usage**: Only when you click "Load Recent History"
+    - **Usage**: Only when you click "Load Recent History" in History or "Infer Sessions from History" in Sessions
     - **Data Access**: Browser history (only when requested)
 
 5. **`notifications`**
@@ -127,8 +129,8 @@ TabPlex requests the following permissions to function:
 
 ### How Permissions Are Used
 
-- **No Background Tracking**: TabPlex does not monitor your browsing. New installs record only the tabs you put on a board or in a task. "Record every page I open" in Settings → Tab tracking & storage is off by default and keeps its list on your device
-- **Explicit Actions Only**: Data is only captured when you explicitly add tabs or import history
+- **No Background Tracking**: TabPlex does not monitor your browsing. New installs record only the tabs you put on a board or in a task. "Record every page I open" in Settings → Tab tracking & storage is off by default and keeps its list on your device. If you installed TabPlex before this setting existed, recording stays on until you turn it off there or use Clear All Data
+- **Explicit Actions Only**: Data is only captured when you explicitly add tabs or import history, or while "Record every page I open" is on
 - **No Analytics**: We do not track how you use the extension
 - **No Telemetry**: No usage statistics are collected
 
@@ -185,13 +187,13 @@ If you turn on **On-device AI summaries** in Settings, TabPlex uses your browser
 
 - **Access**: View all your data within the extension
 - **Export**: Download all data as JSON file
-- **Delete**: Remove all data by uninstalling the extension
+- **Delete**: Remove all data with Settings → Data Management → Clear All Data (see Data Deletion below) or by uninstalling the extension
 - **Modify**: Edit or delete individual items anytime
 
 ### Data Portability
 
 - Export feature creates a JSON backup of your boards, tabs, tasks, notes, sessions, history, canvases and settings (the optional tldraw canvas is not included yet)
-- Import feature restores data from backup
+- Import feature restores data from backup. A file made before "Record every page I open" existed (TabPlex 1.3.0 and earlier) leaves that setting as it is
 - No vendor lock-in - your data is yours
 
 ### Data Deletion
@@ -199,8 +201,9 @@ If you turn on **On-device AI summaries** in Settings, TabPlex uses your browser
 To completely remove all TabPlex data:
 
 1. **Option 1**: Uninstall the extension from Chrome
-2. **Option 2**: Clear browser data for the extension
-3. **Option 3**: Use Chrome's "Clear browsing data" for site data
+2. **Option 2**: Settings → Data Management → Clear All Data deletes your boards, folders, tabs, tasks, notes, sessions, history, canvases and settings, including the backup kept from your last import, and turns "Record every page I open" off. The optional tldraw canvas keeps its own storage: remove it by uninstalling (Option 1)
+3. **Option 3**: Clear browser data for the extension
+4. **Option 4**: Use Chrome's "Clear browsing data" for site data
 
 ## Children's Privacy
 
